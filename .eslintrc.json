@@ -63,6 +63,7 @@
       }
     }
   },
+  "enabled": false,
   "overrides": [
     {
       "files": [
