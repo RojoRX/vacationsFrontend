@@ -2,7 +2,7 @@
 import { useEffect, ReactNode } from 'react'
 
 // ** MUI Imports
-import { Direction } from '@mui/material'
+import { Direction as MUIDirection } from '@mui/material'
 
 // ** Emotion Imports
 import createCache from '@emotion/cache'
@@ -13,7 +13,7 @@ import stylisRTLPlugin from 'stylis-plugin-rtl'
 
 interface DirectionProps {
   children: ReactNode
-  direction: Direction
+  direction: MUIDirection
 }
 
 const styleCache = () =>
@@ -23,7 +23,7 @@ const styleCache = () =>
     stylisPlugins: [stylisRTLPlugin]
   })
 
-const Direction = (props: DirectionProps) => {
+const DirectionProvider = (props: DirectionProps) => {
   const { children, direction } = props
 
   useEffect(() => {
@@ -37,4 +37,4 @@ const Direction = (props: DirectionProps) => {
   return <>{children}</>
 }
 
-export default Direction
+export default DirectionProvider
