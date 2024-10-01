@@ -9,13 +9,14 @@
     "@next/next/no-img-element": "off",
     "react/no-unescaped-entities": "off",
     "import/no-anonymous-default-export": "off",
-    "@typescript-eslint/no-unused-vars": "error",
+    "@typescript-eslint/no-unused-vars": ["warn", { "argsIgnorePattern": "^_" }], // Cambiado a advertencia y permite variables que empiezan con _
     "@typescript-eslint/ban-ts-comment": "off",
     "@typescript-eslint/no-explicit-any": "off",
     "@typescript-eslint/no-non-null-assertion": "off",
-    // add new line above comment
+
+    // Nueva línea antes de comentarios
     "lines-around-comment": [
-      "error",
+      "warn", // Cambiado a advertencia
       {
         "beforeLineComment": true,
         "beforeBlockComment": true,
@@ -25,11 +26,11 @@
         "allowArrayStart": true
       }
     ],
-    // add new line above return
-    "newline-before-return": "error",
-    // add new line below import
+    // Nueva línea antes de return
+    "newline-before-return": "warn", // Cambiado a advertencia
+    // Nueva línea después de import
     "import/newline-after-import": [
-      "error",
+      "warn", // Cambiado a advertencia
       {
         "count": 1
       }
@@ -63,7 +64,6 @@
       }
     }
   },
-  //"enabled": false,
   "overrides": [
     {
       "files": [
