@@ -24,13 +24,13 @@ const navigation = (): HorizontalNavItemsType => {
     //     }
     //   ]
     // },
-    // {
-    //   title: 'Inicio',
-    //   path: '/welcome',  // La ruta que quieres asignar
-    //   action: 'read',
-    //   subject: 'welcome-dashboard',  // El mismo subject que en las reglas y en el componente
-    //   icon: 'mdi:home',  // El icono que quieras mostrar en el menú
-    // },    
+    {
+      title: 'Inicio',
+      path: '/welcome',  // La ruta que quieres asignar
+      action: 'read',
+      subject: 'welcome-dashboard',  // El mismo subject que en las reglas y en el componente
+      icon: 'mdi:home',  // El icono que quieras mostrar en el menú
+    },    
     {
       icon: 'mdi:apps',
       title: 'Apps',

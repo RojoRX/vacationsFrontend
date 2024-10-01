@@ -24,6 +24,9 @@ const defineRulesFor = (role: string, subject: string) => {
   } else if (role === 'client') {
     can(['read'], 'welcome-dashboard')  // Agrega esta línea
     can(['read'], 'welcome')
+    can('create', 'vacation-request')
+    can('read', 'vacation-summary') // Usuario puede leer sus datos
+    can('read', 'request-permission');
   } else {
     can(['read', 'create', 'update', 'delete'], subject)
   }

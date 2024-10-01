@@ -23,6 +23,66 @@ const navigation = (): VerticalNavItemsType => {
     //     }
     //   ]
     // },
+    // {
+    //   title: 'Solicitudes',
+    //   path: '/welcome',  // La ruta que quieres asignar
+    //   action: 'read',
+    //   subject: 'welcome-dashboard',  // El mismo subject que en las reglas y en el componente
+    //   icon: 'mdi:home',  // El icono que quieras mostrar en el menú
+    // },  
+    {
+      title: 'Gestion de Vacaciones',
+      icon: 'mdi:file-document-outline',
+      children: [
+        {
+          title: 'Solicitar Vacaciones',
+          path: '/vacations-form',
+          action: 'read',
+          subject: 'welcome-dashboard',
+        },
+        {
+          title: 'Consultar Vacaciones',
+          path: '/vacations/vacations-summary',  // Ruta que debe coincidir con la del router
+          action: 'read',  // Control de acceso si usas ACL
+          subject: 'vacation-summary',  // El mismo subject que en el ACL del componente
+        },
+        {
+          title: 'Edit',
+          path: '/apps/invoice/edit'
+        },
+        {
+          title: 'Add',
+          path: '/apps/invoice/add'
+        }
+      ]
+    },
+    {
+      title: 'Gestion de Licencias',
+      icon: 'mdi:file-document-outline',
+      children: [
+        {
+          title: 'Solicitar Licencia',
+          path: '/permissions/create-permission',
+          action: 'read',
+          subject: 'request-permission',
+        },
+        // {
+        //   title: 'Consultar Vacaciones',
+        //   path: '/vacations/vacations-summary',  // Ruta que debe coincidir con la del router
+        //   action: 'read',  // Control de acceso si usas ACL
+        //   subject: 'vacation-summary',  // El mismo subject que en el ACL del componente
+        // },
+        // {
+        //   title: 'Edit',
+        //   path: '/apps/invoice/edit'
+        // },
+        // {
+        //   title: 'Add',
+        //   path: '/apps/invoice/add'
+        // }
+      ]
+    },
+
     {
       sectionTitle: 'Apps & Pages'
     },
