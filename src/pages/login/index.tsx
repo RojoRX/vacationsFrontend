@@ -264,6 +264,9 @@ const LoginPage = () => {
                 Admin: <strong>admin@materialize.com</strong> / Pass: <strong>admin</strong>
               </Typography>
               <Typography variant='caption' sx={{ display: 'block', color: 'primary.main' }}>
+                Supervisor: <strong>client@materialize.com</strong> / Pass: <strong>supervisor</strong>
+              </Typography>
+              <Typography variant='caption' sx={{ display: 'block', color: 'primary.main' }}>
                 Client: <strong>client@materialize.com</strong> / Pass: <strong>client</strong>
               </Typography>
             </Alert>

@@ -34,28 +34,31 @@ const navigation = (): VerticalNavItemsType => {
       title: 'Gestion de Vacaciones',
       icon: 'mdi:file-document-outline',
       children: [
-        {
-          title: 'Solicitar Vacaciones',
-          path: '/vacations-form',
-          action: 'read',
-          subject: 'welcome-dashboard',
-        },
-        {
-          title: 'Consultar Vacaciones',
-          path: '/vacations/vacations-summary',  // Ruta que debe coincidir con la del router
-          action: 'read',  // Control de acceso si usas ACL
-          subject: 'vacation-summary',  // El mismo subject que en el ACL del componente
-        },
-        {
-          title: 'Edit',
-          path: '/apps/invoice/edit'
-        },
-        {
-          title: 'Add',
-          path: '/apps/invoice/add'
-        }
+          {
+              title: 'Solicitar Vacaciones',
+              path: '/vacations-form',
+              action: 'create',
+              subject: 'vacation-request-form', // Cambiado
+          },
+          {
+              title: 'Consultar Vacaciones',
+              path: '/vacations/vacations-summary',
+              action: 'read',
+              subject: 'vacation-summary',
+          },
+          {
+              title: 'Ver Solicitudes Vacaciones',
+              path: '/vacations/vacations-requests',
+              action: 'read',
+              subject: 'vacation-request-list', // Cambiado
+          },
+          {
+              title: 'Add',
+              path: '/apps/invoice/add'
+          }
       ]
-    },
+  },
+  
     {
       title: 'Gestion de Licencias',
       icon: 'mdi:file-document-outline',

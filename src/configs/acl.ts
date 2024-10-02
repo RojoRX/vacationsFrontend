@@ -17,22 +17,33 @@ export type ACLObj = {
  * admin can manage everything and client can just visit ACL page
  */
 const defineRulesFor = (role: string, subject: string) => {
-  const { can, rules } = new AbilityBuilder(AppAbility)
+  const { can, rules } = new AbilityBuilder(AppAbility);
 
   if (role === 'admin') {
-    can('manage', 'all')
+    can('manage', 'all'); // Admin tiene control total sobre todas las acciones y sujetos.
   } else if (role === 'client') {
-    can(['read'], 'welcome-dashboard')  // Agrega esta línea
-    can(['read'], 'welcome')
-    can('create', 'vacation-request')
-    can('read', 'vacation-summary') // Usuario puede leer sus datos
+    can(['read'], 'welcome-dashboard');
+    can(['read'], 'welcome');
+    can('create', 'vacation-request-form'); // Cambiado
+    can('read', 'vacation-request-list'); // Cambiado
+    can('read', 'vacation-summary');
     can('read', 'request-permission');
+  } else if (role === 'supervisor') {
+    can(['read'], 'welcome-dashboard');
+    can(['read'], 'welcome');
+    can('create', 'vacation-request-form'); // Cambiado
+    can('read', 'vacation-request-list'); // Cambiado
+    can('read', 'vacation-summary');
+    can('read', 'request-permission');
+    can('read', 'employee-reports');
   } else {
-    can(['read', 'create', 'update', 'delete'], subject)
+    can(['read', 'create', 'update', 'delete'], subject);
   }
 
-  return rules
-}
+  return rules;
+};
+
+
 
 export const buildAbilityFor = (role: string, subject: string): AppAbility => {
   return new AppAbility(defineRulesFor(role, subject), {
