@@ -95,18 +95,19 @@ const FormControlLabel = styled(MuiFormControlLabel)<FormControlLabelProps>(({ t
 }))
 
 const schema = yup.object().shape({
-  email: yup.string().email().required(),
-  password: yup.string().min(5).required()
+  username: yup.string().required('Username is required'), // Cambia 'email' a 'username'
+  password: yup.string().min(5).required('Password is required')
 })
 
 const defaultValues = {
-  password: 'admin',
-  email: 'admin@materialize.com'
+  password: 'testpassword',
+  username: 'testuser'
 }
 
 interface FormData {
-  email: string
+  // email: string
   password: string
+  username:string
 }
 
 const LoginPage = () => {
@@ -135,14 +136,14 @@ const LoginPage = () => {
   })
 
   const onSubmit = (data: FormData) => {
-    const { email, password } = data
-    auth.login({ email, password, rememberMe }, () => {
-      setError('email', {
+    const { username, password } = data; // Cambia 'email' a 'username'
+    auth.login({ username: username, password, rememberMe }, () => { // Cambia 'email' a 'username'
+      setError('username', { // Cambia 'email' a 'username'
         type: 'manual',
-        message: 'Email or Password is invalid'
-      })
-    })
-  }
+        message: 'Username or Password is invalid'
+      });
+    });
+  };
 
   const imageSource = skin === 'bordered' ? 'auth-v2-login-illustration-bordered' : 'auth-v2-login-illustration'
 
@@ -261,34 +262,34 @@ const LoginPage = () => {
             </Box>
             <Alert icon={false} sx={{ py: 3, mb: 6, ...bgColors.primaryLight, '& .MuiAlert-message': { p: 0 } }}>
               <Typography variant='caption' sx={{ mb: 2, display: 'block', color: 'primary.main' }}>
-                Admin: <strong>admin@materialize.com</strong> / Pass: <strong>admin</strong>
+                Admin: <strong>admin</strong> / Pass: <strong>admin</strong>
               </Typography>
               <Typography variant='caption' sx={{ display: 'block', color: 'primary.main' }}>
-                Supervisor: <strong>client@materialize.com</strong> / Pass: <strong>supervisor</strong>
+                Supervisor: <strong>patriciaSupervisor</strong> / Pass: <strong>supervisorpassword</strong>
               </Typography>
               <Typography variant='caption' sx={{ display: 'block', color: 'primary.main' }}>
-                Client: <strong>client@materialize.com</strong> / Pass: <strong>client</strong>
+                Client: <strong>testuser</strong> / Pass: <strong>testpassword</strong>
               </Typography>
             </Alert>
             <form noValidate autoComplete='off' onSubmit={handleSubmit(onSubmit)}>
               <FormControl fullWidth sx={{ mb: 4 }}>
                 <Controller
-                  name='email'
+                  name='username' // Cambia 'email' a 'username'
                   control={control}
                   rules={{ required: true }}
                   render={({ field: { value, onChange, onBlur } }) => (
                     <TextField
                       autoFocus
-                      label='Email'
+                      label='Username' // Cambia 'Email' a 'Username'
                       value={value}
                       onBlur={onBlur}
                       onChange={onChange}
-                      error={Boolean(errors.email)}
-                      placeholder='admin@materialize.com'
+                      error={Boolean(errors.username)} // Cambia 'email' a 'username'
+                      placeholder='testuser'
                     />
                   )}
                 />
-                {errors.email && <FormHelperText sx={{ color: 'error.main' }}>{errors.email.message}</FormHelperText>}
+                {/* {errors.email && <FormHelperText sx={{ color: 'error.main' }}>{errors.email.message}</FormHelperText>} */}
               </FormControl>
               <FormControl fullWidth>
                 <InputLabel htmlFor='auth-login-v2-password' error={Boolean(errors.password)}>

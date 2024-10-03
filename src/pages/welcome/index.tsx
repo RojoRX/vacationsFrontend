@@ -1,19 +1,26 @@
-import Grid from '@mui/material/Grid'
-import Typography from '@mui/material/Typography'
-import Button from '@mui/material/Button'
-import Card from '@mui/material/Card'
-import CardContent from '@mui/material/CardContent'
+// Importa el hook que creaste para obtener los datos del usuario
+import useUser from 'src/hooks/useUser';
+import Grid from '@mui/material/Grid';
+import Typography from '@mui/material/Typography';
+import Button from '@mui/material/Button';
+import Card from '@mui/material/Card';
+import CardContent from '@mui/material/CardContent';
 
 // ** Icon Imports
-import Icon from 'src/@core/components/icon'
+import Icon from 'src/@core/components/icon';
 
 // ** Custom Component Import
-import CardStatisticsVertical from 'src/@core/components/card-statistics/card-stats-vertical'
+import CardStatisticsVertical from 'src/@core/components/card-statistics/card-stats-vertical';
 
 // ** Styled Component Import
-import ApexChartWrapper from 'src/@core/styles/libs/react-apexcharts'
+import ApexChartWrapper from 'src/@core/styles/libs/react-apexcharts';
 
 const WelcomeDashboard = () => {
+  // Usa el hook para obtener los datos del usuario
+  const user = useUser();
+  // Agrega un console.log para verificar los datos del usuario
+  console.log('Datos del usuario:', user);
+
   return (
     <ApexChartWrapper>
       <Grid container spacing={6} className='match-height'>
@@ -22,7 +29,7 @@ const WelcomeDashboard = () => {
           <Card>
             <CardContent>
               <Typography variant="h5" component="div" gutterBottom>
-                Bienvenido, {}!
+                Bienvenido, {user ? user.fullName : 'Usuario'}!
               </Typography>
               <Typography variant="body2" color="textSecondary">
                 Este es tu sistema de gestión de vacaciones. Aquí puedes solicitar días de vacaciones o licencias. 
@@ -77,13 +84,13 @@ const WelcomeDashboard = () => {
         </Grid>
       </Grid>
     </ApexChartWrapper>
-  )
-}
+  );
+};
 
 // Configurar ACL para dar acceso a clientes
 WelcomeDashboard.acl = {
   action: 'read',
   subject: 'welcome-dashboard'  // El mismo subject que en las reglas de CASL
-}
+};
 
-export default WelcomeDashboard
+export default WelcomeDashboard;

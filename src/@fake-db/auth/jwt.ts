@@ -1,4 +1,4 @@
-// ** JWT import
+// ** JWT import Aqui se usan Mocks para simular usuarios y autenticarlos
 import jwt from 'jsonwebtoken'
 
 // ** Mock Adapter
@@ -13,28 +13,64 @@ import { UserDataType } from 'src/context/types'
 const users: UserDataType[] = [
   {
     id: 1,
-    role: 'admin',
-    password: 'admin',
-    fullName: 'John Doe',
-    username: 'johndoe',
-    email: 'admin@materialize.com'
-  },
-  {
-    id: 2,
+    ci: '1112233',
+    fecha_ingreso: '2012-08-01',
+    username: 'testuser',
+    password: 'testpassword', // Simplified password for mock
+    departmentId: 2,
     role: 'client',
-    password: 'client',
-    fullName: 'Jane Doe',
-    username: 'janedoe',
-    email: 'client@materialize.com'
+    fullName: 'Miguel Lopez Ramirez',
+    celular: '', // Cell phone left empty
+    profesion: ''
   },
   {
     id: 3,
+    ci: '9988776',
+    fecha_ingreso: '2016-03-10',
+    username: 'testSupervisor',
+    password: 'supervisorpassword', // Simplified password for mock
+    departmentId: 1,
+    role: 'client',
+    fullName: 'Carmen Sanchez Guiterrez',
+    celular: '', // Cell phone left empty
+    profesion: ''
+  },
+  {
+    id: 5,
+    ci: '12349876',
+    fecha_ingreso: '2019-05-12',
+    username: 'juanSupervisor',
+    password: 'supervisorpassword', // Simplified password for mock
+    departmentId: 3,
+    role: 'client',
+    fullName: 'Fernando Martinez Lopez',
+    celular: '69001122', // Added cell phone number
+    profesion: 'Ingeniero de Sistemas'
+  },
+  {
+    id: 6,
+    ci: '56781234',
+    fecha_ingreso: '2014-07-20',
+    username: 'patriciaSupervisor',
+    password: 'supervisorpassword', // Simplified password for mock
+    departmentId: 2,
     role: 'supervisor',
-    password: 'supervisor',
-    fullName: 'Bob Smith',
-    username: 'bobsmith',
-    email: 'client@materialize.com'
-  }
+    fullName: 'Patricia Quispe Chavez',
+    celular: '67778899', // Added cell phone number
+    profesion: 'Docente de Química'
+  },
+  {
+    id: 7,
+    ci: '00000000',
+    fecha_ingreso: '2016-03-10',
+    username: 'admin',
+    password: 'admin', // Simplified password for mock
+    departmentId: 1,
+    role: 'admin',
+    fullName: 'Administrador',
+    celular: '', // Cell phone left empty
+    profesion: ''
+  },
 ]
 
 // ! These two secrets should be in .env file and not in any other file
@@ -47,75 +83,79 @@ const jwtConfig = {
 type ResponseType = [number, { [key: string]: any }]
 
 mock.onPost('/jwt/login').reply(request => {
-  const { email, password } = JSON.parse(request.data)
+  const { username, password } = JSON.parse(request.data)
 
   let error = {
-    email: ['Something went wrong']
+    username: ['Something went wrong']
   }
 
-  const user = users.find(u => u.email === email && u.password === password)
+  const user = users.find(u => u.username === username && u.password === password)
 
   if (user) {
     const accessToken = jwt.sign({ id: user.id }, jwtConfig.secret as string, { expiresIn: jwtConfig.expirationTime })
 
+    // Store relevant user data
     const response = {
       accessToken,
       userData: { ...user, password: undefined }
     }
 
+    // Store user data in localStorage (or any state management solution)
+    window.localStorage.setItem('userData', JSON.stringify(response.userData));
+
     return [200, response]
   } else {
     error = {
-      email: ['email or Password is Invalid']
+      username: ['Username or Password is Invalid']
     }
 
     return [400, { error }]
   }
 })
 
-mock.onPost('/jwt/register').reply(request => {
-  if (request.data.length > 0) {
-    const { email, password, username } = JSON.parse(request.data)
-    const isEmailAlreadyInUse = users.find(user => user.email === email)
-    const isUsernameAlreadyInUse = users.find(user => user.username === username)
-    const error = {
-      email: isEmailAlreadyInUse ? 'This email is already in use.' : null,
-      username: isUsernameAlreadyInUse ? 'This username is already in use.' : null
-    }
+// mock.onPost('/jwt/register').reply(request => {
+//   if (request.data.length > 0) {
+//     const { email, password, username } = JSON.parse(request.data)
+//     const isEmailAlreadyInUse = users.find(user => user.email === email)
+//     const isUsernameAlreadyInUse = users.find(user => user.username === username)
+//     const error = {
+//       email: isEmailAlreadyInUse ? 'This email is already in use.' : null,
+//       username: isUsernameAlreadyInUse ? 'This username is already in use.' : null
+//     }
 
-    if (!error.username && !error.email) {
-      const { length } = users
-      let lastIndex = 0
-      if (length) {
-        lastIndex = users[length - 1].id
-      }
-      const userData = {
-        id: lastIndex + 1,
-        email,
-        password,
-        username,
-        avatar: null,
-        fullName: '',
-        role: 'admin'
-      }
+//     if (!error.username && !error.email) {
+//       const { length } = users
+//       let lastIndex = 0
+//       if (length) {
+//         lastIndex = users[length - 1].id
+//       }
+//       const userData = {
+//         id: lastIndex + 1,
+//         email,
+//         password,
+//         username,
+//         avatar: null,
+//         fullName: '',
+//         role: 'admin'
+//       }
 
-      users.push(userData)
+//       users.push(userData)
 
-      const accessToken = jwt.sign({ id: userData.id }, jwtConfig.secret as string)
+//       const accessToken = jwt.sign({ id: userData.id }, jwtConfig.secret as string)
 
-      const user = { ...userData }
-      delete user.password
+//       const user = { ...userData }
+//       delete user.password
 
-      const response = { accessToken }
+//       const response = { accessToken }
 
-      return [200, response]
-    }
+//       return [200, response]
+//     }
 
-    return [200, { error }]
-  } else {
-    return [401, { error: 'Invalid Data' }]
-  }
-})
+//     return [200, { error }]
+//   } else {
+//     return [401, { error: 'Invalid Data' }]
+//   }
+// })
 
 mock.onGet('/auth/me').reply(config => {
   // ** Get token from header

@@ -1,52 +1,66 @@
-import React, { useState, useEffect } from 'react'
-import axios from 'axios'
-import { FormControl, InputLabel, MenuItem, Select, CircularProgress, Typography, SelectChangeEvent } from '@mui/material'
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
+import { FormControl, InputLabel, MenuItem, Select, CircularProgress, Typography, SelectChangeEvent } from '@mui/material';
+import useUser from 'src/hooks/useUser';
 
-// Asegúrate de que esta interfaz esté declarada
 interface GestionPeriod {
-    startDate: string
-    endDate: string
-    label: string
+    startDate: string;
+    endDate: string;
+    label: string;
 }
 
 interface GestionSelectProps {
-    onChange: (selectedGestion: GestionPeriod) => void
-    selectedGestion: GestionPeriod | null
+    onChange: (selectedGestion: GestionPeriod) => void;
+    selectedGestion: GestionPeriod | null;
 }
 
 const GestionSelect: React.FC<GestionSelectProps> = ({ onChange, selectedGestion }) => {
-    const [gestionPeriods, setGestionPeriods] = useState<GestionPeriod[]>([])
-    const [loading, setLoading] = useState<boolean>(true)
-    const [error, setError] = useState<string | null>(null)
+    const user = useUser();
+    const [gestionPeriods, setGestionPeriods] = useState<GestionPeriod[]>([]);
+    const [loading, setLoading] = useState<boolean>(true);
+    const [error, setError] = useState<string | null>(null);
+    const [isUserLoaded, setIsUserLoaded] = useState<boolean>(false);
+
+    useEffect(() => {
+        if (user) {
+            setIsUserLoaded(true);
+        }
+    }, [user]);
 
     useEffect(() => {
         const fetchGestions = async () => {
-            try {
-                const response = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/gestion-periods/gestions/1112233`)
-                setGestionPeriods(response.data)
-                setLoading(false)
-            } catch (err) {
-                setError('Error al cargar las gestiones.')
-                setLoading(false)
+            if (isUserLoaded && user && user.ci) {
+                try {
+                    const response = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/gestion-periods/gestions/${user.ci}`);
+                    setGestionPeriods(response.data);
+                } catch (err) {
+                    setError('Error al cargar las gestiones.');
+                } finally {
+                    setLoading(false);
+                }
+            } else if (isUserLoaded) {
+                setError('Carnet de identidad no disponible.');
+                setLoading(false);
             }
-        }
-        fetchGestions()
-    }, [])
+        };
+
+        fetchGestions();
+    }, [isUserLoaded, user]);
 
     const handleChange = (event: SelectChangeEvent<string>) => {
-        const selectedLabel = event.target.value
-        const selectedGestion = gestionPeriods.find((gestion) => gestion.label === selectedLabel) || null
+        const selectedLabel = event.target.value;
+        const selectedGestion = gestionPeriods.find((gestion) => gestion.label === selectedLabel) || null;
         if (selectedGestion) {
-            onChange(selectedGestion)
+            onChange(selectedGestion);
         }
-    }
+    };
 
     if (loading) {
-        return <CircularProgress />
+        return <CircularProgress />;
     }
 
     if (error) {
-        return <Typography color="error">{error}</Typography>
+        return <Typography color="error">{error}</Typography>;
     }
 
     return (
@@ -66,7 +80,7 @@ const GestionSelect: React.FC<GestionSelectProps> = ({ onChange, selectedGestion
                 ))}
             </Select>
         </FormControl>
-    )
-}
+    );
+};
 
-export default GestionSelect
+export default GestionSelect;

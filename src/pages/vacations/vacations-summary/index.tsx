@@ -1,72 +1,139 @@
-import React, { useState } from 'react'
-import axios from 'axios'
-import GestionSelect from 'src/pages/gestion/gestion-selector'
-import { GestionPeriod } from 'src/interfaces'
+import React, { useState } from 'react';
+import axios from 'axios';
+import GestionSelect from 'src/pages/gestion/gestion-selector';
+import { GestionPeriod } from 'src/interfaces';
+import useUser from 'src/hooks/useUser';
+import {
+    Card,
+    CardContent,
+    Typography,
+    Grid,
+    List,
+    ListItem,
+    ListItemText,
+    Divider,
+} from '@mui/material';
 
 const VacationSummary = () => {
-    const [selectedGestion, setSelectedGestion] = useState<GestionPeriod | null>(null)
-    const [data, setData] = useState<any>(null)
+    const user = useUser();
+    const [selectedGestion, setSelectedGestion] = useState<GestionPeriod | null>(null);
+    const [data, setData] = useState<any>(null);
 
     const handleGestionChange = (gestion: GestionPeriod) => {
-        setSelectedGestion(gestion)
-        fetchVacationData(gestion.startDate, gestion.endDate)
-    }
+        setSelectedGestion(gestion);
+        fetchVacationData(gestion.startDate, gestion.endDate);
+    };
 
     const fetchVacationData = async (startDate: string, endDate: string) => {
+        if (!user || !user.ci) {
+            console.error('Carnet de identidad no disponible.');
+            return;
+        }
+
         try {
             const response = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/vacations`, {
                 params: {
-                    carnetIdentidad: '1112233',
+                    carnetIdentidad: user.ci,
                     startDate,
-                    endDate
-                }
-            })
-            setData(response.data)
+                    endDate,
+                },
+            });
+            setData(response.data);
         } catch (error) {
-            console.error('Error fetching vacation data:', error)
-            setData(null)
+            console.error('Error fetching vacation data:', error);
+            setData(null);
         }
-    }
+    };
 
     return (
         <div>
-            {/* Aquí pasamos la función handleGestionChange al selector */}
             <GestionSelect onChange={handleGestionChange} selectedGestion={selectedGestion} />
 
-            {/* Mostrar el resumen de vacaciones */}
             {data ? (
-                <div>
-                    <h2>Resumen de Vacaciones para {data.name || 'Usuario Desconocido'}</h2>
-                    <p>Fecha de Ingreso: {new Date(data.fechaIngreso).toLocaleDateString()}</p>
-                    <p>Antigüedad: {data.antiguedadEnAnios} años, {data.antiguedadEnMeses} meses ({data.antiguedadEnDias} días)</p>
-                    <p>Días Totales de Vacaciones: {data.diasDeVacacion}</p>
-                    <p>Días Restantes: {data.diasDeVacacionRestantes}</p>
+                <Card variant="outlined" sx={{ marginTop: 2 }}>
+                    <CardContent>
+                        <Typography variant="h5" component="div">
+                            Resumen de Vacaciones Disponibles por Gestion
+                        </Typography>
+                        <Typography variant="subtitle1" color="text.secondary">
+                            Usuario: {data.name || 'Usuario Desconocido'}
+                        </Typography>
+                        <Grid container spacing={2} sx={{ marginTop: 2 }}>
+                            <Grid item xs={12} sm={6}>
+                                <Typography variant="body1">
+                                    <strong>Fecha de Ingreso:</strong> {new Date(data.fechaIngreso).toLocaleDateString()}
+                                </Typography>
+                                <Typography variant="body1">
+                                    <strong>Antigüedad:</strong> {data.antiguedadEnAnios || 0} años, {data.antiguedadEnMeses || 0} meses ({data.antiguedadEnDias || 0} días)
+                                </Typography>
+                                <Typography variant="body1">
+                                    <strong>Días Totales de Vacaciones:</strong> {data.diasDeVacacion || 0}
+                                </Typography>
+                                <Typography variant="body1">
+                                    <strong>Días Restantes:</strong> {data.diasDeVacacionRestantes || 0}
+                                </Typography>
+                            </Grid>
 
-                    {/* Recesos Aplicados */}
-                    <h3>Recesos Aplicados</h3>
-                    {data.recesos.length > 0 ? (
-                        data.recesos.map((receso: any, index: number) => (
-                            <p key={index}>{receso.name}: del {new Date(receso.startDate).toLocaleDateString()} al {new Date(receso.endDate).toLocaleDateString()} ({receso.daysCount} días)</p>
-                        ))
-                    ) : (
-                        <p>No hay recesos aplicados.</p>
-                    )}
+                            <Grid item xs={12} sm={6}>
+                                <Typography variant="body1">
+                                    <strong>Licencias Autorizadas:</strong> {data.licenciasAutorizadas.totalAuthorizedDays || 0}
+                                </Typography>
+                                <Typography variant="body1">
+                                    <strong>Solicitudes de Vacación Autorizadas:</strong> {data.solicitudesDeVacacionAutorizadas.totalAuthorizedVacationDays || 0}
+                                </Typography>
+                            </Grid>
+                        </Grid>
 
-                    {/* Días No Hábiles */}
-                    <h3>Días No Hábiles</h3>
-                    {data.nonHolidayDaysDetails.length > 0 ? (
-                        data.nonHolidayDaysDetails.map((day: any, index: number) => (
-                            <p key={index}>{day.date}: {day.reason}</p>
-                        ))
-                    ) : (
-                        <p>No hay días no hábiles registrados.</p>
-                    )}
-                </div>
+                        <Divider sx={{ margin: '16px 0' }} />
+
+                        <Typography variant="h6">Recesos Aplicados</Typography>
+                        <List>
+                            {data.recesos.length > 0 ? (
+                                data.recesos.map((receso: any, index: number) => (
+                                    <ListItem key={index}>
+                                        
+                                        <ListItemText
+                                            primary={`${receso.name} Tipo de Receso: (${receso.type}):`} // Muestra el tipo de receso
+                                            secondary={`Del ${new Date(receso.startDate).toLocaleDateString()} al ${new Date(receso.endDate).toLocaleDateString()} (${receso.daysCount} días habiles)`}
+                                        />
+                                    </ListItem>
+                                ))
+                            ) : (
+                                <ListItem>
+                                    <ListItemText primary="No hay recesos aplicados." />
+                                </ListItem>
+                            )}
+                        </List>
+
+                        <Divider sx={{ margin: '16px 0' }} />
+
+                        <Typography variant="h6">Días No Hábiles o Feriados</Typography>
+                        <List>
+                            {data.nonHolidayDaysDetails.length > 0 ? (
+                                data.nonHolidayDaysDetails.map((day: any, index: number) => (
+                                    <ListItem key={index}>
+                                        <ListItemText primary={`${day.date}: ${day.reason}`} />
+                                    </ListItem>
+                                ))
+                            ) : (
+                                <ListItem>
+                                    <ListItemText primary="No hay días no hábiles registrados." />
+                                </ListItem>
+                            )}
+                        </List>
+                    </CardContent>
+                </Card>
             ) : (
-                <p>No se encontraron datos de vacaciones.</p>
+                <Typography>No se encontraron datos de vacaciones.</Typography>
             )}
         </div>
-    )
-}
+    );
+};
 
-export default VacationSummary
+// Configurar ACL para dar acceso a clientes
+VacationSummary.acl = {
+    action: 'read',
+    subject: 'vacation-summary',
+};
+
+export default VacationSummary;
