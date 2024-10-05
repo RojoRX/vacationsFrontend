@@ -155,7 +155,7 @@ const VacationSummary = () => {
                                                         <strong>Aprobado por Supervisor:</strong> {request.approvedBySupervisor ? 'Sí' : 'No'}
                                                     </Typography>
                                                     <Typography variant="body2">
-                                                        <strong>Periodo de Gestión:</strong> {request.managementPeriod.startYear} - {request.managementPeriod.endYear}
+                                                        <strong>Periodo de Gestión:</strong> {request.managementPeriodStart} - {request.managementPeriodEnd}
                                                     </Typography>
                                                 </>
                                             }
@@ -168,8 +168,6 @@ const VacationSummary = () => {
                                 </ListItem>
                             )}
                         </List>
-
-
                     </CardContent>
                 </Card>
 
