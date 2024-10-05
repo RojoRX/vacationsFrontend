@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import {
@@ -12,6 +11,7 @@ import {
     DialogContent,
     DialogActions,
 } from '@mui/material';
+import useUser from 'src/hooks/useUser';
 
 // Definición de tipos para las solicitudes de vacaciones
 interface VacationRequest {
@@ -39,6 +39,7 @@ interface VacationRequestsComponent extends React.FC {
 }
 
 const VacationRequestList: VacationRequestsComponent = () => {
+    const user = useUser(); // Obtener el usuario usando el hook
     const [requests, setRequests] = useState<VacationRequest[]>([]); // Arreglo de solicitudes
     const [selectedRequest, setSelectedRequest] = useState<VacationRequest | null>(null); // Solicitud seleccionada
     const [openDialog, setOpenDialog] = useState<boolean>(false); // Estado del diálogo
@@ -46,8 +47,13 @@ const VacationRequestList: VacationRequestsComponent = () => {
     useEffect(() => {
         // Fetch vacation requests from the API
         const fetchRequests = async () => {
+            if (!user || !user.ci) {
+                console.error('Carnet de identidad no disponible.');
+                return;
+            }
+
             try {
-                const response = await axios.get<VacationRequest[]>(`${process.env.NEXT_PUBLIC_API_BASE_URL}/vacation-requests/user/1`); // Cambia la URL por tu endpoint real
+                const response = await axios.get<VacationRequest[]>(`${process.env.NEXT_PUBLIC_API_BASE_URL}/vacation-requests/user/${user.ci}`); // Usar el carnet de identidad del usuario
                 setRequests(response.data);
             } catch (error) {
                 console.error('Error fetching vacation requests:', error);
@@ -55,7 +61,7 @@ const VacationRequestList: VacationRequestsComponent = () => {
         };
 
         fetchRequests();
-    }, []);
+    }, [user]); // Agregar user como dependencia para que se ejecute cuando user cambie
 
     const handleOpenDialog = (request: VacationRequest) => {
         setSelectedRequest(request);
@@ -126,7 +132,6 @@ const VacationRequestList: VacationRequestsComponent = () => {
 // Configurar ACL para dar acceso según el rol
 VacationRequestList.acl = {
     action: 'read',
-    subject: 'vacation-request-list', // Cambié 'vacation-request' a 'vacation-request-list'
+    subject: 'vacation-request-list',
 };
 
-export default VacationRequestList;

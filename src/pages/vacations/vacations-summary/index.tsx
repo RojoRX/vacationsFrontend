@@ -12,10 +12,13 @@ import {
     ListItem,
     ListItemText,
     Divider,
+    Button,
 } from '@mui/material';
+import { useRouter } from 'next/router'; // Importar useRouter
 
 const VacationSummary = () => {
     const user = useUser();
+    const router = useRouter(); // Inicializar useRouter
     const [selectedGestion, setSelectedGestion] = useState<GestionPeriod | null>(null);
     const [data, setData] = useState<any>(null);
 
@@ -45,15 +48,42 @@ const VacationSummary = () => {
         }
     };
 
+    // Nueva función para manejar el clic del botón
+    const handleRequestVacation = () => {
+        if (selectedGestion) {
+            console.log('Gestión seleccionada:', selectedGestion);
+            // Redirigir al componente de solicitar vacaciones y pasar datos en la query
+            router.push({
+                pathname: '/vacations-form', // Cambiar a la ruta de tu componente
+                query: { 
+                    startDate: selectedGestion.startDate,
+                    endDate: selectedGestion.endDate,
+                },
+            });
+        } else {
+            console.log('No hay gestión seleccionada.');
+        }
+    };
+
     return (
         <div>
             <GestionSelect onChange={handleGestionChange} selectedGestion={selectedGestion} />
+
+            {/* Botón para solicitar vacaciones */}
+            <Button 
+                variant="contained" 
+                color="primary" 
+                onClick={handleRequestVacation} 
+                sx={{ marginTop: 2 }}
+            >
+                Solicitar Vacaciones
+            </Button>
 
             {data ? (
                 <Card variant="outlined" sx={{ marginTop: 2 }}>
                     <CardContent>
                         <Typography variant="h5" component="div">
-                            Resumen de Vacaciones Disponibles por Gestion
+                            Resumen de Vacaciones Disponibles por Gestión
                         </Typography>
                         <Typography variant="subtitle1" color="text.secondary">
                             Usuario: {data.name || 'Usuario Desconocido'}
@@ -91,10 +121,9 @@ const VacationSummary = () => {
                             {data.recesos.length > 0 ? (
                                 data.recesos.map((receso: any, index: number) => (
                                     <ListItem key={index}>
-
                                         <ListItemText
                                             primary={`${receso.name} Tipo de Receso: (${receso.type}):`} // Muestra el tipo de receso
-                                            secondary={`Del ${new Date(receso.startDate).toLocaleDateString()} al ${new Date(receso.endDate).toLocaleDateString()} (${receso.daysCount} días habiles)`}
+                                            secondary={`Del ${new Date(receso.startDate).toLocaleDateString()} al ${new Date(receso.endDate).toLocaleDateString()} (${receso.daysCount} días hábiles)`}
                                         />
                                     </ListItem>
                                 ))
@@ -121,6 +150,7 @@ const VacationSummary = () => {
                                 </ListItem>
                             )}
                         </List>
+
                         {/* Sección de Solicitudes de Vacación Autorizadas */}
                         <Divider sx={{ margin: '16px 0' }} />
 
@@ -170,14 +200,13 @@ const VacationSummary = () => {
                         </List>
                     </CardContent>
                 </Card>
-
-
             ) : (
                 <Typography>No se encontraron datos de vacaciones.</Typography>
             )}
         </div>
     );
 };
+
 // Configurar ACL para dar acceso a clientes
 VacationSummary.acl = {
     action: 'read',

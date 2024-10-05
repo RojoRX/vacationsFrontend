@@ -1,72 +1,81 @@
-import React, { useState } from 'react'
-import Grid from '@mui/material/Grid'
-import Typography from '@mui/material/Typography'
-import Button from '@mui/material/Button'
-import Card from '@mui/material/Card'
-import CardContent from '@mui/material/CardContent'
-import DatePicker from 'react-datepicker'
-import 'react-datepicker/dist/react-datepicker.css'
-import Dialog from '@mui/material/Dialog'
-import DialogTitle from '@mui/material/DialogTitle'
-import DialogContent from '@mui/material/DialogContent'
-import DialogActions from '@mui/material/DialogActions'
-import IconButton from '@mui/material/IconButton'
-
-import axios from 'axios'
-
+import React, { useState } from 'react';
+import Grid from '@mui/material/Grid';
+import Typography from '@mui/material/Typography';
+import Button from '@mui/material/Button';
+import Card from '@mui/material/Card';
+import CardContent from '@mui/material/CardContent';
+import DatePicker from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
+import Dialog from '@mui/material/Dialog';
+import DialogTitle from '@mui/material/DialogTitle';
+import DialogContent from '@mui/material/DialogContent';
+import DialogActions from '@mui/material/DialogActions';
+import IconButton from '@mui/material/IconButton';
+import axios from 'axios';
+import useUser from 'src/hooks/useUser';
 // ** Icon Imports
-import Icon from 'src/@core/components/icon'
+import Icon from 'src/@core/components/icon';
 
 // ** Styled Component Import
-import ApexChartWrapper from 'src/@core/styles/libs/react-apexcharts'
+import ApexChartWrapper from 'src/@core/styles/libs/react-apexcharts';
 
 // Formulario de solicitud de vacaciones
 const VacationRequestSubmissionForm = () => {
-  const [startDate, setStartDate] = useState<Date | null>(null)
-  const [endDate, setEndDate] = useState<Date | null>(null)
-  const [vacationDays, setVacationDays] = useState(15) // Suponiendo días disponibles
-  const [dialogOpen, setDialogOpen] = useState(false)
-  const [dialogMessage, setDialogMessage] = useState('')
-  const [dialogSuccess, setDialogSuccess] = useState(false)
+  const user = useUser();
+  const [startDate, setStartDate] = useState<Date | null>(null);
+  const [endDate, setEndDate] = useState<Date | null>(null);
+  const [vacationDays, setVacationDays] = useState(15); // Suponiendo días disponibles
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [dialogMessage, setDialogMessage] = useState('');
+  const [dialogSuccess, setDialogSuccess] = useState(false);
 
   // Simular el CI y posición del usuario
-  const user = {
-    ci: '1112233',
-    position: 'Developer',
-  }
+  const position = 'Docente';
+
+  // Fechas de inicio y fin del periodo de gestión
+  const managementPeriodStart = '2015-08-02';
+  const managementPeriodEnd = '2016-07-30';
 
   const handleVacationRequest = async () => {
+    if (!user) {
+      setDialogMessage('Usuario no encontrado.')
+      setDialogSuccess(false)
+      setDialogOpen(true)
+      return
+    }
     const data = {
       ci: user.ci,
       startDate: startDate?.toISOString().split('T')[0], // Formatear a YYYY-MM-DD
       endDate: endDate?.toISOString().split('T')[0],
-      position: user.position,
-    }
+      position: position,
+      managementPeriodStart: managementPeriodStart, // Añadir periodo de gestión
+      managementPeriodEnd: managementPeriodEnd,     // Añadir periodo de gestión
+    };
 
     // Mostrar en consola los datos antes de enviarlos
-    console.log('Datos a enviar:', data)
+    console.log('Datos a enviar:', data);
 
     try {
       // Enviar los datos a la API usando axios
-      const response = await axios.post('/api/vacation-request', data)
+      const response = await axios.post(`${process.env.NEXT_PUBLIC_API_BASE_URL}/vacation-requests`, data);
 
       // Abrir el diálogo de éxito
-      setDialogMessage('¡Solicitud de vacaciones enviada con éxito!')
-      setDialogSuccess(true)
-      setDialogOpen(true)
-      console.log('Respuesta de la API:', response.data)
+      setDialogMessage('¡Solicitud de vacaciones enviada con éxito!');
+      setDialogSuccess(true);
+      setDialogOpen(true);
+      console.log('Respuesta de la API:', response.data);
     } catch (error) {
       // Abrir el diálogo de error
-      setDialogMessage('Hubo un error al enviar la solicitud.')
-      setDialogSuccess(false)
-      setDialogOpen(true)
-      console.error('Error al enviar la solicitud:', error)
+      setDialogMessage('Hubo un error al enviar la solicitud.');
+      setDialogSuccess(false);
+      setDialogOpen(true);
+      console.error('Error al enviar la solicitud:', error);
     }
-  }
+  };
 
   const handleCloseDialog = () => {
-    setDialogOpen(false)
-  }
+    setDialogOpen(false);
+  };
 
   return (
     <ApexChartWrapper>
@@ -150,19 +159,7 @@ const VacationRequestSubmissionForm = () => {
               color: (theme) => theme.palette.grey[500],
             }}
           >
-            <IconButton
-              aria-label="close"
-              onClick={handleCloseDialog}
-              sx={{
-                position: 'absolute',
-                right: 8,
-                top: 8,
-                color: (theme) => theme.palette.grey[500],
-              }}
-            >
-              X
-            </IconButton>
-
+            <Icon icon="mdi:close" />
           </IconButton>
         </DialogTitle>
         <DialogContent>
@@ -175,14 +172,13 @@ const VacationRequestSubmissionForm = () => {
         </DialogActions>
       </Dialog>
     </ApexChartWrapper>
-  )
-}
+  );
+};
 
 // Configurar ACL para dar acceso según el rol
 VacationRequestSubmissionForm.acl = {
   action: 'create',
-  subject: 'vacation-request-form', // Cambié 'vacation-requestForm' a 'vacation-request-form'
+  subject: 'vacation-request-form',
 };
 
-
-export default VacationRequestSubmissionForm
+export default VacationRequestSubmissionForm;
