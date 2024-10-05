@@ -91,7 +91,7 @@ const VacationSummary = () => {
                             {data.recesos.length > 0 ? (
                                 data.recesos.map((receso: any, index: number) => (
                                     <ListItem key={index}>
-                                        
+
                                         <ListItemText
                                             primary={`${receso.name} Tipo de Receso: (${receso.type}):`} // Muestra el tipo de receso
                                             secondary={`Del ${new Date(receso.startDate).toLocaleDateString()} al ${new Date(receso.endDate).toLocaleDateString()} (${receso.daysCount} días habiles)`}
@@ -121,15 +121,65 @@ const VacationSummary = () => {
                                 </ListItem>
                             )}
                         </List>
+                        {/* Sección de Solicitudes de Vacación Autorizadas */}
+                        <Divider sx={{ margin: '16px 0' }} />
+
+                        <Typography variant="h6">Solicitudes de Vacación Autorizadas</Typography>
+                        <Typography variant="body1">
+                            <strong>Total de Días Autorizados:</strong> {data.solicitudesDeVacacionAutorizadas.totalAuthorizedVacationDays || 0}
+                        </Typography>
+                        <List>
+                            {data.solicitudesDeVacacionAutorizadas.requests.length > 0 ? (
+                                data.solicitudesDeVacacionAutorizadas.requests.map((request: any, index: number) => (
+                                    <ListItem key={index}>
+                                        <ListItemText
+                                            primary={`Solicitud #${request.id} - ${request.position}`}
+                                            secondary={
+                                                <>
+                                                    <Typography variant="body2">
+                                                        <strong>Fecha de Solicitud:</strong> {new Date(request.requestDate).toLocaleDateString()}
+                                                    </Typography>
+                                                    <Typography variant="body2">
+                                                        <strong>Período:</strong> Del {new Date(request.startDate).toLocaleDateString()} al {new Date(request.endDate).toLocaleDateString()} ({request.totalDays} días)
+                                                    </Typography>
+                                                    <Typography variant="body2">
+                                                        <strong>Estado:</strong> {request.status}
+                                                    </Typography>
+                                                    <Typography variant="body2">
+                                                        <strong>Fecha de Retorno:</strong> {new Date(request.returnDate).toLocaleDateString()}
+                                                    </Typography>
+                                                    <Typography variant="body2">
+                                                        <strong>Aprobado por Recursos Humanos:</strong> {request.approvedByHR ? 'Sí' : 'No'}
+                                                    </Typography>
+                                                    <Typography variant="body2">
+                                                        <strong>Aprobado por Supervisor:</strong> {request.approvedBySupervisor ? 'Sí' : 'No'}
+                                                    </Typography>
+                                                    <Typography variant="body2">
+                                                        <strong>Periodo de Gestión:</strong> {request.managementPeriod.startYear} - {request.managementPeriod.endYear}
+                                                    </Typography>
+                                                </>
+                                            }
+                                        />
+                                    </ListItem>
+                                ))
+                            ) : (
+                                <ListItem>
+                                    <ListItemText primary="No hay solicitudes de vacación autorizadas." />
+                                </ListItem>
+                            )}
+                        </List>
+
+
                     </CardContent>
                 </Card>
+
+
             ) : (
                 <Typography>No se encontraron datos de vacaciones.</Typography>
             )}
         </div>
     );
 };
-
 // Configurar ACL para dar acceso a clientes
 VacationSummary.acl = {
     action: 'read',
