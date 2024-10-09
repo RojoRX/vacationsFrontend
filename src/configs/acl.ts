@@ -28,6 +28,7 @@ const defineRulesFor = (role: string, subject: string) => {
     can('read', 'vacation-request-list'); // Cambiado
     can('read', 'vacation-summary');
     can('read', 'request-permission');
+    can('read', 'vacation-request-details');
   } else if (role === 'supervisor') {
     can(['read'], 'welcome-dashboard');
     can(['read'], 'welcome');
@@ -36,6 +37,7 @@ const defineRulesFor = (role: string, subject: string) => {
     can('read', 'vacation-summary');
     can('read', 'request-permission');
     can('read', 'employee-reports');
+    can('read', 'vacation-request-details');
   } else {
     can(['read', 'create', 'update', 'delete'], subject);
   }
