@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Grid from '@mui/material/Grid';
 import Typography from '@mui/material/Typography';
 import Button from '@mui/material/Button';
@@ -29,27 +29,40 @@ const VacationRequestSubmissionForm = () => {
   const [dialogMessage, setDialogMessage] = useState('');
   const [dialogSuccess, setDialogSuccess] = useState(false);
 
-  // Simular el CI y posición del usuario
-  const position = 'Docente';
-
   // Fechas de inicio y fin del periodo de gestión
-  const managementPeriodStart = '2015-08-02';
-  const managementPeriodEnd = '2016-07-30';
+  const [managementPeriodStart, setManagementPeriodStart] = useState('');
+  const [managementPeriodEnd, setManagementPeriodEnd] = useState('');
+
+  // Efecto para extraer las fechas de la URL
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const start = params.get('startDate');
+    const end = params.get('endDate');
+
+    if (start) {
+      setManagementPeriodStart(start.split('T')[0]); // Formatear a YYYY-MM-DD
+    }
+
+    if (end) {
+      setManagementPeriodEnd(end.split('T')[0]); // Formatear a YYYY-MM-DD
+    }
+  }, []);
 
   const handleVacationRequest = async () => {
     if (!user) {
-      setDialogMessage('Usuario no encontrado.')
-      setDialogSuccess(false)
-      setDialogOpen(true)
-      return
+      setDialogMessage('Usuario no encontrado.');
+      setDialogSuccess(false);
+      setDialogOpen(true);
+      return;
     }
+
     const data = {
       ci: user.ci,
       startDate: startDate?.toISOString().split('T')[0], // Formatear a YYYY-MM-DD
       endDate: endDate?.toISOString().split('T')[0],
-      position: position,
-      managementPeriodStart: managementPeriodStart, // Añadir periodo de gestión
-      managementPeriodEnd: managementPeriodEnd,     // Añadir periodo de gestión
+      position: 'Docente',
+      managementPeriodStart, // Utilizar el valor obtenido de la URL
+      managementPeriodEnd,     // Utilizar el valor obtenido de la URL
     };
 
     // Mostrar en consola los datos antes de enviarlos
