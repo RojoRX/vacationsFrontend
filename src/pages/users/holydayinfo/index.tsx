@@ -47,7 +47,7 @@ const UserHolidayPeriods: React.FC<UserHolidayPeriodsProps> = ({ userId, year })
     const fetchHolidayPeriods = async () => {
         setLoading(true);
         try {
-            const response = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/user-holiday-periods/${userId}/${year}`);
+            const response = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/user-holiday-periods/${userId}`);
             if (Array.isArray(response.data)) {
                 setHolidayPeriods(response.data);
             } else {
