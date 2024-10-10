@@ -25,6 +25,7 @@ interface VacationRequest {
     requestId: number;
     userName: string;
     requestDate: string;
+    position: string;
     department: string;
     startDate: string;
     endDate: string;
@@ -97,6 +98,12 @@ const VacationRequestDetails: VacationRequestDetailsProps = () => {
         return <Typography variant="h6">No se encontró la solicitud.</Typography>;
     }
 
+    const formatearFecha = (fechaISO: string | number | Date) => {
+        const opciones: Intl.DateTimeFormatOptions = { year: 'numeric', month: '2-digit', day: '2-digit' };
+        return new Date(fechaISO).toLocaleDateString('es-ES', opciones);
+    };
+    
+
     return (
         <Card>
             <CardContent>
@@ -112,10 +119,13 @@ const VacationRequestDetails: VacationRequestDetailsProps = () => {
 
                 <Typography variant="h6" mt={2}>Datos de Solicitante</Typography>
                 <Typography variant="body1"><strong>Nombre de Usuario:</strong> {request.userName}</Typography>
-                <Typography variant="body1"><strong>ID de Solicitud:</strong> {request.requestId}</Typography>
+                {/* <Typography variant="body1"><strong>ID de Solicitud:</strong> {request.requestId}</Typography> */}
                 {/* <Typography variant="body1"><strong>Carnet de Identidad:</strong> {request.fechaIngreso}</Typography> */}
-                <Typography variant="body1"><strong>Fecha de Ingreso:</strong> {request.fechaIngreso}</Typography>
+                <Typography variant="body1"><strong>Fecha de Ingreso:</strong> {formatearFecha(request.fechaIngreso)}</Typography>
+                <Typography variant="body1"><strong>Fecha de Solicitud:</strong> {request.requestDate}</Typography>
                 <Typography variant="body1"><strong>Departamento:</strong> {request.department || 'No especificado'}</Typography>
+                <Typography variant="body1"><strong>Cargo que Ocupa:</strong> {request.position || 'No especificado'}</Typography>
+                <Typography variant="body1"><strong>Solicita Vacacion a partir de:</strong> {request.startDate || 'No especificado'}</Typography>
 
                 <Typography variant="h6" mt={2}>Informe del departamento de Personal</Typography>
                 <Typography variant="body1"><strong>Vacacion correspondiente a las gestion(es):</strong> {request.managementPeriodStart} - {request.managementPeriodEnd}</Typography>
@@ -141,7 +151,8 @@ const VacationRequestDetails: VacationRequestDetailsProps = () => {
                 <Typography variant="h6" mt={2}>Decreto del Departamento de Personal</Typography>
 
                 <Typography variant="body1">Se autoriza el uso de la vacacion por Decreto NO: </Typography>
-                <Typography variant="body1"><strong>Fecha de Inicio:</strong> {request.startDate}</Typography>
+                <Typography variant="body1"><strong>Fecha de Inicio de la vacacion:</strong> {request.startDate}</Typography>
+                <Typography variant="body1"><strong>Fecha de Final de la vacacion:</strong> {request.endDate}</Typography>
                 <Typography variant="body1"><strong>Fecha de Retorno:</strong> {request.returnDate}</Typography>
 
 
