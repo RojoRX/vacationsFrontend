@@ -91,13 +91,8 @@ const navigation = (): VerticalNavItemsType => {
     },
 
     {
-      title: 'Crear Receso',
-      path: '/recesos/create-form'
-
-    }, 
-    
-    {
       title: 'Administrar Recesos',
+      icon: 'mdi:calendar-blank-outline',
       path: '/recesos/management'
 
     }, 
