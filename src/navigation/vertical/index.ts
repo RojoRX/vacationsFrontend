@@ -52,10 +52,6 @@ const navigation = (): VerticalNavItemsType => {
               action: 'read',
               subject: 'vacation-request-list', // Cambiado
           },
-          {
-              title: 'Add',
-              path: '/apps/invoice/add'
-          }
       ]
   },
   
@@ -94,6 +90,12 @@ const navigation = (): VerticalNavItemsType => {
       title: 'Administrar Recesos',
       icon: 'mdi:calendar-blank-outline',
       path: '/recesos/management'
+
+    }, 
+    {
+      title: 'Administrar Usuarios',
+      icon: 'mdi:calendar-blank-outline',
+      path: '/users/search'
 
     }, 
 
