@@ -89,6 +89,19 @@ const navigation = (): VerticalNavItemsType => {
     {
       sectionTitle: 'Apps & Pages'
     },
+
+    {
+      title: 'Crear Receso',
+      path: '/recesos/create-form'
+
+    }, 
+    
+    {
+      title: 'Administrar Recesos',
+      path: '/recesos/management'
+
+    }, 
+
     {
       title: 'Email',
       icon: 'mdi:email-outline',
