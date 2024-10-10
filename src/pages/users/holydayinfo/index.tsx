@@ -121,7 +121,8 @@ const UserHolidayPeriods: React.FC<UserHolidayPeriodsProps> = ({ userId, year })
                         <TableHead>
                             <TableRow>
                                 <TableCell>ID</TableCell>
-                                <TableCell>Nombre</TableCell>
+                                <TableCell>Año</TableCell>
+                                <TableCell>Tipo de Receso</TableCell>
                                 <TableCell>Fecha de Inicio</TableCell>
                                 <TableCell>Fecha de Fin</TableCell>
                                 <TableCell>Acciones</TableCell>
@@ -131,6 +132,7 @@ const UserHolidayPeriods: React.FC<UserHolidayPeriodsProps> = ({ userId, year })
                             {holidayPeriods.map((period) => (
                                 <TableRow key={period.id}>
                                     <TableCell>{period.id}</TableCell>
+                                    <TableCell>{period.year}</TableCell>
                                     <TableCell>{period.name}</TableCell>
                                     <TableCell>{period.startDate.split('T')[0]}</TableCell> {/* Solo muestra YYYY-MM-DD */}
                                     <TableCell>{period.endDate.split('T')[0]}</TableCell>   {/* Solo muestra YYYY-MM-DD */}
