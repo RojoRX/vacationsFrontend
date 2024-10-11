@@ -8,6 +8,7 @@ import {
     DialogActions,
     DialogContent,
     DialogTitle,
+    MenuItem,
 } from '@mui/material';
 import axios from 'axios';
 
@@ -58,13 +59,18 @@ const CustomHolidayForm: React.FC<CustomHolidayFormProps> = ({ open, onClose, on
             <DialogTitle>Crear Receso Personalizado</DialogTitle>
             <DialogContent>
                 <form onSubmit={handleFormSubmit}>
-                    <TextField
+                <TextField
+                        select
                         label="Nombre del Receso"
                         value={name}
                         onChange={(e) => setName(e.target.value)}
                         fullWidth
                         margin="normal"
-                    />
+                    >
+                        <MenuItem value="INVIERNO">Invierno</MenuItem>
+                        <MenuItem value="FINDEGESTION">Fin de Gestión</MenuItem>
+                    </TextField>
+
 
                     <TextField
                         label="Fecha de Inicio"

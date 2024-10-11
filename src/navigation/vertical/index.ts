@@ -98,6 +98,12 @@ const navigation = (): VerticalNavItemsType => {
       path: '/users/search'
 
     }, 
+    {
+      title: 'Gestion de Departamentos',
+      icon: 'mdi:calendar-blank-outline',
+      path: '/departments'
+
+    }, 
 
     {
       title: 'Email',
