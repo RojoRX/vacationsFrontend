@@ -47,11 +47,17 @@ const navigation = (): VerticalNavItemsType => {
               subject: 'vacation-summary',
           },
           {
-              title: 'Ver Solicitudes Vacaciones',
+              title: 'Mis Solicitudes Vacaciones',
               path: '/vacations/vacations-requests',
               action: 'read',
               subject: 'vacation-request-list', // Cambiado
           },
+          {
+            title: 'Ver Solicitudes Vacaciones',
+            path: '/vacations/vacations-supervisor',
+            action: 'read',
+            subject: 'supervisor-vacation-requests', // Cambiado
+        },
       ]
   },
   

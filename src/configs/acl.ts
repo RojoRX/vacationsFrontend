@@ -38,6 +38,7 @@ const defineRulesFor = (role: string, subject: string) => {
     can('read', 'request-permission');
     can('read', 'employee-reports');
     can('read', 'vacation-request-details');
+    can('read', 'supervisor-vacation-requests');
   } else {
     can(['read', 'create', 'update', 'delete'], subject);
   }
