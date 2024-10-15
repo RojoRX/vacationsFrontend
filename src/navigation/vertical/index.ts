@@ -58,6 +58,20 @@ const navigation = (): VerticalNavItemsType => {
             action: 'read',
             subject: 'supervisor-vacation-requests', // Cambiado
         },
+
+        {
+          title: 'Ver Todas las Solicitudes',
+          path: '/vacations/vacations-admin',
+          action: 'read',
+          
+      },
+        {
+          title: 'Ver Solicitudes Vacaciones',
+          path: '/vacations/vacations-supervisor',
+          action: 'read',
+          subject: 'supervisor-vacation-requests', // Cambiado
+      },
+        
       ]
   },
   

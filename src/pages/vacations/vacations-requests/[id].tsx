@@ -12,6 +12,7 @@ import {
   FormControl,
   InputLabel,
   Chip,
+  Button,
 } from '@mui/material';
 import useUser from 'src/hooks/useUser';
 import { SelectChangeEvent } from '@mui/material/Select'; // Asegúrate de importar SelectChangeEvent
@@ -131,7 +132,17 @@ const VacationRequestDetails = () => {
       setError('Error al actualizar el estado de la solicitud.');
     }
   };
+  const toggleApprovedByHR = async () => {
+    if (!request) return;
 
+    try {
+      await axios.put(`${process.env.NEXT_PUBLIC_API_BASE_URL}/vacation-requests/${request.requestId}/toggle-approved-by-hr`);
+      setRequest((prev) => (prev ? { ...prev, approvedByHR: !prev.approvedByHR } : null));
+    } catch (error) {
+      console.error('Error toggling approvedByHR:', error);
+      setError('Error al actualizar la aprobación de Recursos Humanos.');
+    }
+  };
   const formatearFecha = (fechaISO: string | number | Date) => {
     const opciones: Intl.DateTimeFormatOptions = { year: 'numeric', month: '2-digit', day: '2-digit' };
     return new Date(fechaISO).toLocaleDateString('es-ES', opciones);
@@ -239,6 +250,9 @@ const VacationRequestDetails = () => {
         <Card variant="outlined" style={{ marginTop: '20px' }}>
           <CardContent>
             <Typography variant="h6" mt={2}>Decreto del Departamento de Personal</Typography>
+            <Typography variant="body1">
+              <strong>Autorizado por Personal:</strong> {request.approvedByHR ? 'Sí' : 'No'}
+            </Typography>
             <Typography variant="body1"><strong>Fecha Fin de la vacación:</strong> {request.endDate}</Typography>
             <Typography variant="body1"><strong>Total de días solicitados:</strong> {request.totalDays}</Typography>
             <Typography variant="body1"><strong>Regreso:</strong> {request.returnDate}</Typography>
@@ -246,10 +260,10 @@ const VacationRequestDetails = () => {
         </Card>
 
         {/* Sección #5 para actualizar el estado de la solicitud */}
-        {user && (user.role === 'HR' || user.role === 'supervisor') && (
+        {user && (user.role === 'admin' || user.role === 'supervisor') && (
           <Card variant="outlined" style={{ marginTop: '20px' }}>
             <CardContent>
-              <Typography variant="h6">Actualizar Estado de la Solicitud</Typography>
+              <Typography variant="h6">Actualizar Estado de la Solicitud por Jefe Superior</Typography>
               <FormControl variant="outlined" style={{ marginTop: '16px', minWidth: '120px' }}>
                 <InputLabel id="status-select-label">Estado</InputLabel>
                 <Select
@@ -264,6 +278,23 @@ const VacationRequestDetails = () => {
                   ))}
                 </Select>
               </FormControl>
+            </CardContent>
+          </Card>
+        )}
+
+         {/* Sección #4 - Modificar Aprobación de Recursos Humanos */}
+         {user?.role === 'admin' && (
+          <Card variant="outlined" style={{ marginTop: '20px' }}>
+            <CardContent>
+              <Typography variant="h6" mt={2}>Aprobación de Recursos Humanos</Typography>
+              <Typography variant="body1"><strong>Aprobado por Recursos Humanos:</strong> {request.approvedByHR ? 'Sí' : 'No'}</Typography>
+              <Button
+                variant="contained"
+                color={request.approvedByHR ? 'error' : 'success'}
+                onClick={toggleApprovedByHR}
+              >
+                {request.approvedByHR ? 'Desaprobar' : 'Aprobar'}
+              </Button>
             </CardContent>
           </Card>
         )}
