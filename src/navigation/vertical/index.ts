@@ -72,7 +72,7 @@ const navigation = (): VerticalNavItemsType => {
         {
           title: 'Solicitar Licencia',
           path: '/permissions/create-permission',
-          action: 'create',
+          action: 'read',
           subject: 'request-permission',
         },
         {
@@ -118,6 +118,12 @@ const navigation = (): VerticalNavItemsType => {
           title: 'Gestión de Departamentos',
           icon: 'mdi:office-building',
           path: '/departments',
+          action: 'manage',
+        },
+        {
+          title: 'Gestión de dias no habiles',
+          icon: 'mdi:office-building',
+          path: '/nonholidays',
           action: 'manage',
         },
       ],

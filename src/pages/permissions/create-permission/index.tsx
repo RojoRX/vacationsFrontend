@@ -16,6 +16,7 @@ import DialogActions from '@mui/material/DialogActions';
 import { useEffect, useState } from 'react';
 import { SelectChangeEvent } from '@mui/material';
 import axios from 'axios';
+import useUser from 'src/hooks/useUser';
 
 // Tipado para el estado del formulario
 interface FormData {
@@ -27,13 +28,13 @@ interface FormData {
 
 // Componente de Solicitud de Permisos
 const RequestPermission = () => {
+    const user = useUser();
     const [formData, setFormData] = useState<FormData>({
         licenseType: 'VACACION',
-        timeRequested: 'FULL_DAY',
+        timeRequested: '',
         startDate: '',
         endDate: ''
     });
-
     const [dialogOpen, setDialogOpen] = useState<boolean>(false);
     const [confirmationOpen, setConfirmationOpen] = useState<boolean>(false);
     const [dialogMessage, setDialogMessage] = useState<string>('');
@@ -75,7 +76,7 @@ const RequestPermission = () => {
         setFormData({ ...formData, startDate: value });
 
         // Si se selecciona "Día Completo" o "Medio Día", establecer la fecha de fin
-        if (formData.timeRequested === 'FULL_DAY' || formData.timeRequested === 'HALF_DAY') {
+        if (formData.timeRequested === 'Día Completo' || formData.timeRequested === 'Medio Día') {
             setFormData((prev) => ({
                 ...prev,
                 endDate: value // Establecer la fecha de fin igual a la de inicio
@@ -111,21 +112,21 @@ const RequestPermission = () => {
         e.preventDefault();
 
         // Validaciones
-        if (formData.timeRequested === 'MULTIPLE_DAYS' && formData.startDate === formData.endDate) {
+        if (formData.timeRequested === 'Varios Días' && formData.startDate === formData.endDate) {
             setDialogTitle('Error');
             setDialogMessage('Para "Varios Días", la fecha de inicio y fin no pueden ser iguales.');
             setDialogOpen(true);
             return;
         }
 
-        if ((formData.timeRequested === 'FULL_DAY' || formData.timeRequested === 'HALF_DAY') && !formData.startDate) {
+        if ((formData.timeRequested === 'Día Completo' || formData.timeRequested === 'Medio Día') && !formData.startDate) {
             setDialogTitle('Error');
             setDialogMessage('Por favor, seleccione una fecha de inicio.');
             setDialogOpen(true);
             return;
         }
 
-        if (formData.timeRequested === 'FULL_DAY' || formData.timeRequested === 'HALF_DAY') {
+        if (formData.timeRequested === 'Día Completo' || formData.timeRequested === 'Medio Día') {
             if (formData.startDate !== formData.endDate) {
                 setDialogTitle('Error');
                 setDialogMessage('Para "Día Completo" o "Medio Día", la fecha de inicio debe ser la misma que la de fin.');
@@ -139,58 +140,69 @@ const RequestPermission = () => {
         setDaysCount(totalDays);
 
         // Actualiza la función handleSubmit para preparar el mensaje de diálogo
-        const displayTotalDays = formData.timeRequested === 'HALF_DAY' ? 'medio día' : `${totalDays} día${totalDays > 1 ? 's' : ''}`;
+        const displayTotalDays = formData.timeRequested === 'Medio Día' ? 'medio día' : `${totalDays} día${totalDays > 1 ? 's' : ''}`;
 
         setDialogMessage(`
-    ¿Estás seguro de que deseas enviar la solicitud?
-    \nTipo de Licencia: ${formData.licenseType}
-    \nTiempo Solicitado: ${formData.timeRequested === 'FULL_DAY' ? 'Día Completo' : formData.timeRequested === 'HALF_DAY' ? 'Medio Día' : 'Varios Días'}
-    \nFecha de Inicio: ${formData.startDate}
-    \nFecha de Fin: ${formData.endDate}
-    \nTotal de Días: ${displayTotalDays}
-  `);
+        ¿Estás seguro de que deseas enviar la solicitud?
+        \nTipo de Licencia: ${formData.licenseType}
+        \nTiempo Solicitado: ${formData.timeRequested}
+        \nFecha de Inicio: ${formData.startDate}
+        \nFecha de Fin: ${formData.endDate}
+        \nTotal de Días: ${displayTotalDays}
+      `);
         setConfirmationOpen(true); // Abre el diálogo de confirmación
     };
 
     // Confirmar envío
     const confirmSubmit = async () => {
+        if (!user) {
+            setDialogTitle('Error');
+            setDialogMessage('Usuario no autenticado.');
+            setDialogOpen(true);
+            return;
+        }
+    
+        // Verificación de formato de fechas
+        const { startDate, endDate } = formData;
+        const formattedStartDate = new Date(startDate).toISOString().split('T')[0];
+        const formattedEndDate = new Date(endDate).toISOString().split('T')[0];
+    
         try {
-            await axios.post('/api/permissions', {
-                ...formData,
-                // totalDays // No enviar totalDays a la API como indicaste
+            await axios.post(`${process.env.NEXT_PUBLIC_API_BASE_URL}/licenses/${user.id}`, {
+                licenseType: formData.licenseType,
+                timeRequested: formData.timeRequested,
+                startDate: formattedStartDate, // Asegúrate de que se envíen en el formato correcto
+                endDate: formattedEndDate
             });
-
+    
             setDialogTitle('Éxito');
             setDialogMessage('Solicitud de permiso enviada con éxito.');
             setSubmitted(true);
         } catch (error: unknown) {
             setDialogTitle('Error');
-
-            // Manejar el error de manera segura
-            let errorMessage = 'Error al enviar la solicitud.'; // Mensaje por defecto
-            if (axios.isAxiosError(error)) { // Verificar si es un error de Axios
+            let errorMessage = 'Error al enviar la solicitud.';
+            if (axios.isAxiosError(error)) {
                 errorMessage = error.response?.data?.message || errorMessage;
             }
-
             setDialogMessage(errorMessage);
         } finally {
             setDialogOpen(true);
-            setConfirmationOpen(false); // Cierra el diálogo de confirmación
+            setConfirmationOpen(false);
         }
     };
+    
+    // // Consultar estado de la solicitud
+    // const checkStatus = async () => {
+    //     const response = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/licenses/status`); // Usando axios para verificar el estado
+    //     const data = await response.data;
+    //     setStatus(data.status); // Suponiendo que el API retorna el estado de la solicitud
+    // };
 
-    // Consultar estado de la solicitud
-    const checkStatus = async () => {
-        const response = await axios.get('/api/permissions/status'); // Usando axios para verificar el estado
-        const data = await response.data;
-        setStatus(data.status); // Suponiendo que el API retorna el estado de la solicitud
-    };
-
-    useEffect(() => {
-        if (submitted) {
-            checkStatus();
-        }
-    }, [submitted]);
+    // useEffect(() => {
+    //     if (submitted) {
+    //         checkStatus();
+    //     }
+    // }, [submitted]);
 
     // Manejar el cierre del diálogo
     const handleDialogClose = () => {
@@ -230,38 +242,57 @@ const RequestPermission = () => {
                                     value={formData.timeRequested}
                                     onChange={handleSelectChange}
                                 >
-                                    <MenuItem value="FULL_DAY">Día Completo</MenuItem>
-                                    <MenuItem value="HALF_DAY">Medio Día</MenuItem>
-                                    <MenuItem value="MULTIPLE_DAYS">Varios Días</MenuItem>
+                                    <MenuItem value="Medio Día">Medio Día</MenuItem>
+                                    <MenuItem value="Día Completo">Día Completo</MenuItem>
+                                    <MenuItem value="Varios Días">Varios Días</MenuItem>
                                 </Select>
                             </FormControl>
 
-                            <TextField
-                                label="Fecha de Inicio"
-                                type="date"
-                                name="startDate"
-                                value={formData.startDate}
-                                onChange={handleStartDateChange}
-                                InputLabelProps={{
-                                    shrink: true,
-                                }}
-                                fullWidth
-                                margin="normal"
-                            />
-                            <TextField
-                                label="Fecha de Fin"
-                                type="date"
-                                name="endDate"
-                                value={formData.endDate}
-                                onChange={handleEndDateChange}
-                                InputLabelProps={{
-                                    shrink: true,
-                                }}
-                                fullWidth
-                                margin="normal"
-                            />
+                            {formData.timeRequested !== 'Varios Días' && (
+                                <TextField
+                                    label="Fecha de Inicio"
+                                    type="date"
+                                    name="startDate"
+                                    value={formData.startDate}
+                                    onChange={handleStartDateChange}
+                                    fullWidth
+                                    margin="normal"
+                                    InputLabelProps={{
+                                        shrink: true,
+                                    }}
+                                />
+                            )}
 
-                            <Button variant="contained" color="primary" type="submit">
+                            {formData.timeRequested === 'Varios Días' && (
+                                <>
+                                    <TextField
+                                        label="Fecha de Inicio"
+                                        type="date"
+                                        name="startDate"
+                                        value={formData.startDate}
+                                        onChange={handleStartDateChange}
+                                        fullWidth
+                                        margin="normal"
+                                        InputLabelProps={{
+                                            shrink: true,
+                                        }}
+                                    />
+                                    <TextField
+                                        label="Fecha de Fin"
+                                        type="date"
+                                        name="endDate"
+                                        value={formData.endDate}
+                                        onChange={handleEndDateChange}
+                                        fullWidth
+                                        margin="normal"
+                                        InputLabelProps={{
+                                            shrink: true,
+                                        }}
+                                    />
+                                </>
+                            )}
+
+                            <Button type="submit" variant="contained" color="primary">
                                 Enviar Solicitud
                             </Button>
                         </form>
@@ -269,49 +300,26 @@ const RequestPermission = () => {
                 </Card>
             </Grid>
 
-            {/* Diálogo de Confirmación */}
-            <Dialog open={confirmationOpen} onClose={handleConfirmationClose}>
-                <DialogTitle>Confirmación de Solicitud</DialogTitle>
-                <DialogContent>
-                    <Typography variant="body1" gutterBottom>
-                        ¿Estás seguro de que deseas enviar la solicitud?
-                    </Typography>
-                    <Typography variant="subtitle1" gutterBottom>
-                        Tipo de Licencia: <strong>{formData.licenseType}</strong>
-                    </Typography>
-                    <Typography variant="subtitle1" gutterBottom>
-                        Tiempo Solicitado: <strong>{formData.timeRequested}</strong>
-                    </Typography>
-                    <Typography variant="subtitle1" gutterBottom>
-                        Fecha de Inicio: <strong>{formData.startDate}</strong>
-                    </Typography>
-                    <Typography variant="subtitle1" gutterBottom>
-                        Fecha de Fin: <strong>{formData.endDate}</strong>
-                    </Typography>
-                    <Typography variant="subtitle1" gutterBottom>
-                        Días Totales: <strong>{daysCount}</strong>
-                    </Typography>
-                </DialogContent>
-                <DialogActions>
-                    <Button onClick={handleConfirmationClose} color="secondary">
-                        Cancelar
-                    </Button>
-                    <Button onClick={confirmSubmit} color="primary">
-                        Confirmar
-                    </Button>
-                </DialogActions>
-            </Dialog>
-
-            {/* Diálogo de Información */}
+            {/* Diálogo para mostrar mensajes de estado */}
             <Dialog open={dialogOpen} onClose={handleDialogClose}>
                 <DialogTitle>{dialogTitle}</DialogTitle>
                 <DialogContent>
-                    <Typography variant="body1">{dialogMessage}</Typography>
+                    <Typography>{dialogMessage}</Typography>
                 </DialogContent>
                 <DialogActions>
-                    <Button onClick={handleDialogClose} color="primary">
-                        Cerrar
-                    </Button>
+                    <Button onClick={handleDialogClose} color="primary">Cerrar</Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* Diálogo de confirmación */}
+            <Dialog open={confirmationOpen} onClose={handleConfirmationClose}>
+                <DialogTitle>Confirmación de Solicitud</DialogTitle>
+                <DialogContent>
+                    <Typography>{dialogMessage}</Typography>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={handleConfirmationClose} color="primary">Cancelar</Button>
+                    <Button onClick={confirmSubmit} color="secondary">Confirmar</Button>
                 </DialogActions>
             </Dialog>
         </Grid>
