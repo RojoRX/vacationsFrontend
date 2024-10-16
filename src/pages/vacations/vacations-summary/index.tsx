@@ -13,6 +13,8 @@ import {
     ListItemText,
     Divider,
     Button,
+    Container,
+    Stack,
 } from '@mui/material';
 import { useRouter } from 'next/router'; // Importar useRouter
 
@@ -55,7 +57,23 @@ const VacationSummary = () => {
             // Redirigir al componente de solicitar vacaciones y pasar datos en la query
             router.push({
                 pathname: '/vacations-form', // Cambiar a la ruta de tu componente
-                query: { 
+                query: {
+                    startDate: selectedGestion.startDate,
+                    endDate: selectedGestion.endDate,
+                },
+            });
+        } else {
+            console.log('No hay gestión seleccionada.');
+        }
+    };
+    // Nueva función para manejar el clic del botón
+    const handleRequestLicense = () => {
+        if (selectedGestion) {
+            console.log('Gestión seleccionada:', selectedGestion);
+            // Redirigir al componente de solicitar vacaciones y pasar datos en la query
+            router.push({
+                pathname: '/permissions/create-permission', // Cambiar a la ruta de tu componente
+                query: {
                     startDate: selectedGestion.startDate,
                     endDate: selectedGestion.endDate,
                 },
@@ -68,16 +86,34 @@ const VacationSummary = () => {
     return (
         <div>
             <GestionSelect onChange={handleGestionChange} selectedGestion={selectedGestion} />
+            <Container>
+                {/* Stack organiza los botones horizontalmente en una fila */}
+                <Stack
+                    direction="row"
+                    spacing={2}
+                    justifyContent="flex-start"
+                    mt={4}
+                    mb={4}
+                >
+                    {/* Botón para solicitar vacaciones */}
+                    <Button
+                        variant="contained"
+                        color="primary"
+                        onClick={handleRequestVacation}
+                    >
+                        Solicitar Vacaciones
+                    </Button>
 
-            {/* Botón para solicitar vacaciones */}
-            <Button 
-                variant="contained" 
-                color="primary" 
-                onClick={handleRequestVacation} 
-                sx={{ marginTop: 2 }}
-            >
-                Solicitar Vacaciones
-            </Button>
+                    {/* Botón para solicitar licencia */}
+                    <Button
+                        variant="contained"
+                        color="info"
+                        onClick={handleRequestLicense}
+                    >
+                        Solicitar Licencia
+                    </Button>
+                </Stack>
+            </Container>
 
             {data ? (
                 <Card variant="outlined" sx={{ marginTop: 2 }}>
@@ -97,10 +133,10 @@ const VacationSummary = () => {
                                     <strong>Antigüedad:</strong> {data.antiguedadEnAnios || 0} años, {data.antiguedadEnMeses || 0} meses ({data.antiguedadEnDias || 0} días)
                                 </Typography>
                                 <Typography variant="body1">
-                                    <strong>Días Totales de Vacaciones:</strong> {data.diasDeVacacion || 0}
+                                    <strong>Días de Vacaciones por amtiguedad:</strong> {data.diasDeVacacion || 0}
                                 </Typography>
                                 <Typography variant="body1">
-                                    <strong>Días Restantes:</strong> {data.diasDeVacacionRestantes || 0}
+                                    <strong>Días Disponibles:</strong> {data.diasDeVacacionRestantes || 0}
                                 </Typography>
                             </Grid>
 

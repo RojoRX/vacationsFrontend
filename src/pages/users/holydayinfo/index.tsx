@@ -129,24 +129,31 @@ const UserHolidayPeriods: React.FC<UserHolidayPeriodsProps> = ({ userId, year })
                             </TableRow>
                         </TableHead>
                         <TableBody>
-                            {holidayPeriods.map((period) => (
-                                <TableRow key={period.id}>
-                                    <TableCell>{period.id}</TableCell>
-                                    <TableCell>{period.year}</TableCell>
-                                    <TableCell>{period.name}</TableCell>
-                                    <TableCell>{period.startDate.split('T')[0]}</TableCell> {/* Solo muestra YYYY-MM-DD */}
-                                    <TableCell>{period.endDate.split('T')[0]}</TableCell>   {/* Solo muestra YYYY-MM-DD */}
-                                    <TableCell>
-                                        <Button variant="contained" color="primary" onClick={() => handleOpenDialog(period)}>
-                                            Editar
-                                        </Button>
-                                        <Button variant="contained" color="secondary" onClick={() => handleDelete(period.id)} sx={{ ml: 1 }}>
-                                            Eliminar
-                                        </Button>
-                                    </TableCell>
+                            {holidayPeriods.length === 0 ? ( // Verifica si no hay recesos personalizados
+                                <TableRow>
+                                    <TableCell colSpan={6} align="center">No se encontraron recesos personalizados.</TableCell>
                                 </TableRow>
-                            ))}
+                            ) : (
+                                holidayPeriods.map((period) => (
+                                    <TableRow key={period.id}>
+                                        <TableCell>{period.id}</TableCell>
+                                        <TableCell>{period.year}</TableCell>
+                                        <TableCell>{period.name}</TableCell>
+                                        <TableCell>{period.startDate.split('T')[0]}</TableCell>
+                                        <TableCell>{period.endDate.split('T')[0]}</TableCell>
+                                        <TableCell>
+                                            <Button variant="contained" color="primary" onClick={() => handleOpenDialog(period)}>
+                                                Editar
+                                            </Button>
+                                            <Button variant="contained" color="secondary" onClick={() => handleDelete(period.id)} sx={{ ml: 1 }}>
+                                                Eliminar
+                                            </Button>
+                                        </TableCell>
+                                    </TableRow>
+                                ))
+                            )}
                         </TableBody>
+
 
                     </Table>
                 </TableContainer>

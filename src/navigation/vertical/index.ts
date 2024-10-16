@@ -101,6 +101,31 @@ const navigation = (): VerticalNavItemsType => {
         // }
       ]
     },
+    {
+      title: 'Gestion de Usuarios',
+      icon: 'mdi:file-document-outline',
+      children: [
+        {
+          title: 'Buscar Usuarios',
+          path: '/users/search-users',
+          action: 'read',
+        },
+        // {
+        //   title: 'Consultar Vacaciones',
+        //   path: '/vacations/vacations-summary',  // Ruta que debe coincidir con la del router
+        //   action: 'read',  // Control de acceso si usas ACL
+        //   subject: 'vacation-summary',  // El mismo subject que en el ACL del componente
+        // },
+        // {
+        //   title: 'Edit',
+        //   path: '/apps/invoice/edit'
+        // },
+        // {
+        //   title: 'Add',
+        //   path: '/apps/invoice/add'
+        // }
+      ]
+    },
 
     {
       sectionTitle: 'Apps & Pages'
