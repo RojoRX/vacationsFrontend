@@ -127,8 +127,9 @@ const VacationSummary = () => {
                         <Grid container spacing={2} sx={{ marginTop: 2 }}>
                             <Grid item xs={12} sm={6}>
                                 <Typography variant="body1">
-                                    <strong>Fecha de Ingreso:</strong> {new Date(data.fechaIngreso).toLocaleDateString()}
+                                    <strong>Fecha de Ingreso:</strong> {data.fechaIngreso.split('T')[0].split('-').reverse().join('/')}
                                 </Typography>
+
                                 <Typography variant="body1">
                                     <strong>Antigüedad:</strong> {data.antiguedadEnAnios || 0} años, {data.antiguedadEnMeses || 0} meses ({data.antiguedadEnDias || 0} días)
                                 </Typography>
@@ -158,10 +159,11 @@ const VacationSummary = () => {
                                 data.recesos.map((receso: any, index: number) => (
                                     <ListItem key={index}>
                                         <ListItemText
-                                            primary={`${receso.name} Tipo de Receso: (${receso.type}):`} // Muestra el tipo de receso
-                                            secondary={`Del ${new Date(receso.startDate).toLocaleDateString()} al ${new Date(receso.endDate).toLocaleDateString()} (${receso.daysCount} días hábiles)`}
+                                            primary={`${receso.name} Tipo de Receso: (${receso.type}):`}
+                                            secondary={`Del ${receso.startDate.split('T')[0].split('-').reverse().join('/')} al ${receso.endDate.split('T')[0].split('-').reverse().join('/')} (${receso.daysCount} días hábiles)`}
                                         />
                                     </ListItem>
+
                                 ))
                             ) : (
                                 <ListItem>

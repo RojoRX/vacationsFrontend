@@ -144,8 +144,12 @@ const HolidayManagement = () => {
                             {holidays.map((holiday) => (
                                 <TableRow key={holiday.id}>
                                     <TableCell>{holiday.name}</TableCell>
-                                    <TableCell>{new Date(holiday.startDate).toLocaleDateString()}</TableCell> {/* Muestra solo la fecha */}
-                                    <TableCell>{new Date(holiday.endDate).toLocaleDateString()}</TableCell> {/* Muestra solo la fecha */}
+                                    <TableCell>
+                                        {new Date(holiday.startDate).toLocaleDateString('es-ES', { timeZone: 'UTC' })}
+                                    </TableCell>
+                                    <TableCell>
+                                        {new Date(holiday.endDate).toLocaleDateString('es-ES', { timeZone: 'UTC' })}
+                                    </TableCell>
                                     <TableCell>{holiday.year}</TableCell>
                                     <TableCell>
                                         {/* Botón Editar */}
@@ -154,8 +158,9 @@ const HolidayManagement = () => {
                                             style={{
                                                 backgroundColor: '#1976d2',
                                                 color: 'white',
-                                                marginRight: '10px'
-                                            }}>
+                                                marginRight: '10px',
+                                            }}
+                                        >
                                             ✏️ Editar
                                         </Button>
                                         {/* Botón Eliminar */}
@@ -163,14 +168,16 @@ const HolidayManagement = () => {
                                             onClick={() => handleDeleteHoliday(holiday.id)}
                                             style={{
                                                 backgroundColor: '#d32f2f',
-                                                color: 'white'
-                                            }}>
+                                                color: 'white',
+                                            }}
+                                        >
                                             🗑️ Eliminar
                                         </Button>
                                     </TableCell>
                                 </TableRow>
                             ))}
                         </TableBody>
+
                     </Table>
                 </TableContainer>
             )}
@@ -192,10 +199,10 @@ const HolidayManagement = () => {
                     </TextField>
                     <TextField
                         label="Fecha de Inicio"
-                        type="date"  // Cambiado a 'date' para formato solo de fecha
+                        type="date"
                         fullWidth
                         margin="normal"
-                        value={editHoliday?.startDate.split('T')[0] || ''}  // Solo la parte de la fecha
+                        value={editHoliday?.startDate.split('T')[0] || ''}
                         onChange={(e) => setEditHoliday({ ...editHoliday!, startDate: e.target.value })}
                         InputLabelProps={{
                             shrink: true,
@@ -203,15 +210,16 @@ const HolidayManagement = () => {
                     />
                     <TextField
                         label="Fecha de Fin"
-                        type="date"  // Cambiado a 'date' para formato solo de fecha
+                        type="date"
                         fullWidth
                         margin="normal"
-                        value={editHoliday?.endDate.split('T')[0] || ''}  // Solo la parte de la fecha
+                        value={editHoliday?.endDate.split('T')[0] || ''}
                         onChange={(e) => setEditHoliday({ ...editHoliday!, endDate: e.target.value })}
                         InputLabelProps={{
                             shrink: true,
                         }}
                     />
+
                     <TextField
                         label="Año"
                         type="number"
