@@ -13,10 +13,16 @@ import {
   InputLabel,
   Chip,
   Button,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
 } from '@mui/material';
 import useUser from 'src/hooks/useUser';
 import { SelectChangeEvent } from '@mui/material/Select'; // Asegúrate de importar SelectChangeEvent
 import { People, Info, Approval, Assignment } from '@mui/icons-material';
+import PostponeVacationRequestForm from '../vacations-postponed';
 
 interface Recess {
   name: string;
@@ -56,6 +62,7 @@ interface VacationRequest {
   totalDays: number;
   status: string;
   returnDate: string;
+  reviewDate: string;
   postponedDate: string | null;
   postponedReason: string | null;
   approvedByHR: boolean;
@@ -85,6 +92,8 @@ const VacationRequestDetails = () => {
   const [error, setError] = useState<string | null>(null);
   const [selectedStatus, setSelectedStatus] = useState<string>('PENDING');
   const user = useUser(); // Hook para obtener el usuario actual
+  const [openDialog, setOpenDialog] = useState(false);
+  const [infoMessage, setInfoMessage] = useState('');
 
   const validStatuses = [
     { value: 'PENDING', label: 'Pendiente' },
@@ -94,44 +103,59 @@ const VacationRequestDetails = () => {
     { value: 'SUSPENDED', label: 'Suspendido' },
   ];
 
+  const fetchRequestDetails = async () => {
+    if (!id) return;
+
+    try {
+      const response = await axios.get<VacationRequest>(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/vacation-requests/${id}/details`
+      );
+      setRequest(response.data);
+      setSelectedStatus(response.data.status); // Establece el estado seleccionado al cargar
+    } catch (error) {
+      console.error('Error fetching vacation request details:', error);
+      setError('Error al obtener los detalles de la solicitud.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchRequestDetails = async () => {
-      if (!id) return;
-
-      try {
-        const response = await axios.get<VacationRequest>(
-          `${process.env.NEXT_PUBLIC_API_BASE_URL}/vacation-requests/${id}/details`
-        );
-        setRequest(response.data);
-        setSelectedStatus(response.data.status); // Establece el estado seleccionado al cargar
-      } catch (error) {
-        console.error('Error fetching vacation request details:', error);
-        setError('Error al obtener los detalles de la solicitud.');
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchRequestDetails();
   }, [id]);
 
-  const handleStatusChange = async (event: SelectChangeEvent<string>) => { // Cambia aquí el tipo del evento
+  const refreshRequestDetails = () => {
+    setLoading(true);
+    fetchRequestDetails(); // Vuelve a obtener los detalles de la solicitud
+  };
+
+  const handleStatusChange = async (event: SelectChangeEvent<string>) => {
     const newStatus = event.target.value as string;
+
+    // Verifica si se intenta establecer el estado como "POSTPONED"
+    if (newStatus === 'POSTPONED') {
+      setInfoMessage('Para postergar la solicitud, utilice el formulario de postergación.');
+      setOpenDialog(true); // Abre el diálogo
+      return;
+    }
 
     if (!request || newStatus === request.status) return;
 
+    // Lógica para cambiar el estado
     try {
       await axios.patch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/vacation-requests/${request.requestId}/status`, {
         status: newStatus,
       });
-      // Actualiza el estado local después de cambiarlo
       setRequest((prev) => (prev ? { ...prev, status: newStatus } : null));
-      setSelectedStatus(newStatus); // Actualiza el estado seleccionado
+      setSelectedStatus(newStatus);
     } catch (error) {
       console.error('Error updating status:', error);
       setError('Error al actualizar el estado de la solicitud.');
     }
   };
+
+
+
   const toggleApprovedByHR = async () => {
     if (!request) return;
 
@@ -154,7 +178,6 @@ const VacationRequestDetails = () => {
 
   const recesoInvierno = obtenerRecesoPorNombre('INVIERNO');
   const recesoFinDeGestion = obtenerRecesoPorNombre('FINDEGESTION');
-
   if (loading) {
     return <CircularProgress />;
   }
@@ -182,9 +205,13 @@ const VacationRequestDetails = () => {
         return 'default'; // color por defecto
     }
   };
+
+
   const estadoTraducido = validStatuses.find(status => status.value === request.status)?.label || request.status;
   return (
+
     <Card>
+
       <CardContent>
         <div style={{ textAlign: 'center' }}> {/* Centro el texto usando un div */}
           <Typography variant="h3" gutterBottom style={{ fontWeight: 'bold' }}>
@@ -240,7 +267,7 @@ const VacationRequestDetails = () => {
               <Chip label={estadoTraducido} color={getColor(request.status)} style={{ marginLeft: '8px' }} />
             </Typography>
             <Typography variant="body1"><strong>Fecha de Inicio:</strong> {request.startDate}</Typography>
-            <Typography variant="body1"><strong>Fecha de Autorización:</strong> {request.requestDate || 'No disponible'}</Typography>
+            <Typography variant="body1"><strong>Fecha de Revision Jefe Superior:</strong> {request.reviewDate || 'No disponible'}</Typography>
             <Typography variant="body1"><strong>Postergado hasta:</strong> {request.postponedDate || 'No disponible'}</Typography>
             <Typography variant="body1"><strong>Justificación de la postergación:</strong> {request.postponedReason || 'No disponible'}</Typography>
           </CardContent>
@@ -269,7 +296,7 @@ const VacationRequestDetails = () => {
                 <Select
                   labelId="status-select-label"
                   value={selectedStatus}
-                  onChange={handleStatusChange} // Llama a handleStatusChange directamente
+                  onChange={handleStatusChange}
                 >
                   {validStatuses.map((status) => (
                     <MenuItem key={status.value} value={status.value}>
@@ -282,8 +309,37 @@ const VacationRequestDetails = () => {
           </Card>
         )}
 
-         {/* Sección #4 - Modificar Aprobación de Recursos Humanos */}
-         {user?.role === 'admin' && (
+        {/* Sección #5 para actualizar el estado de la solicitud */}
+        {user && (user.role === 'admin' || user.role === 'supervisor') && (
+          <Card variant="outlined" style={{ marginTop: '20px' }}>
+            <CardContent>
+              {/* Cambia onSuccess a onRequestUpdate */}
+              <PostponeVacationRequestForm
+                requestId={request?.requestId}
+                onRequestUpdate={refreshRequestDetails}
+              />
+            </CardContent>
+          </Card>
+        )}
+
+
+        <Dialog open={openDialog} onClose={() => setOpenDialog(false)}>
+          <DialogTitle>Información Importante</DialogTitle>
+          <DialogContent>
+            <DialogContentText>
+              {infoMessage}
+            </DialogContentText>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setOpenDialog(false)} color="primary">
+              Cerrar
+            </Button>
+          </DialogActions>
+        </Dialog>
+
+
+        {/* Sección #4 - Modificar Aprobación de Recursos Humanos */}
+        {user?.role === 'admin' && (
           <Card variant="outlined" style={{ marginTop: '20px' }}>
             <CardContent>
               <Typography variant="h6" mt={2}>Aprobación de Recursos Humanos</Typography>
