@@ -132,6 +132,12 @@ const navigation = (): VerticalNavItemsType => {
           path: '/nonholidays',
           action: 'manage',
         },
+        {
+          title: 'Gestión de Políticas de Vacaciones',
+          icon: 'mdi:beach',
+          path: '/vacations/vacations-policy',
+          action: 'manage',
+        },
       ],
     },
 
