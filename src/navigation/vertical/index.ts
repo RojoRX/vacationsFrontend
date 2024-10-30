@@ -34,12 +34,12 @@ const navigation = (): VerticalNavItemsType => {
       title: 'Gestión de Vacaciones',
       icon: 'mdi:beach',
       children: [
-        {
-          title: 'Solicitar Vacaciones',
-          path: '/vacations-form',
-          action: 'create',
-          subject: 'vacation-request-form',
-        },
+        // {
+        //   title: 'Solicitar Vacaciones',
+        //   path: '/vacations-form',
+        //   action: 'create',
+        //   subject: 'vacation-request-form',
+        // },
         {
           title: 'Consultar Vacaciones',
           path: '/vacations/vacations-summary',

@@ -82,12 +82,13 @@ useEffect(() => {
   fetchVacationRequests();
 }, [user]);
 
-// Filtrar las solicitudes por nombre y estado
+// Filtrar las solicitudes por nombre, CI y estado
 const filteredRequests = requests
   .filter((request) => {
     const matchesName = request.user.username.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesCI = request.user.ci.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesStatus = statusFilter === '' || request.status === statusFilter;
-    return matchesName && matchesStatus;
+    return (matchesName || matchesCI) && matchesStatus;
   })
   .sort((a, b) => b.id - a.id); // Ordenar por ID de mayor a menor
 
@@ -145,6 +146,7 @@ return (
               <TableRow>
                 <TableCell>ID</TableCell>
                 <TableCell>Empleado</TableCell>
+                <TableCell>CI</TableCell>
                 <TableCell>Fecha de Solicitud</TableCell>
                 <TableCell>Estado</TableCell>
                 <TableCell>Acciones</TableCell>
@@ -157,6 +159,7 @@ return (
                   <TableRow key={request.id}>
                     <TableCell>{request.id}</TableCell>
                     <TableCell>{request.user.username}</TableCell>
+                    <TableCell>{request.user.ci}</TableCell>
                     <TableCell>{request.requestDate}</TableCell>
                     <TableCell>
                       {/* Mostrar estado con Chip de color y traducción */}
