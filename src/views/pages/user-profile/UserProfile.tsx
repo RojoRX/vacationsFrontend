@@ -118,7 +118,7 @@ const UserProfile = ({ tab, data }: { tab: string; data: UserProfileActiveTab })
                       </Box>
                     }
                   />
-                  <Tab
+                  {/* <Tab
                     value='teams'
                     label={
                       <Box sx={{ display: 'flex', alignItems: 'center', ...(!hideText && { '& svg': { mr: 2 } }) }}>
@@ -144,7 +144,7 @@ const UserProfile = ({ tab, data }: { tab: string; data: UserProfileActiveTab })
                         {!hideText && 'Connections'}
                       </Box>
                     }
-                  />
+                  /> */}
                 </TabList>
               </Grid>
               <Grid item xs={12}>
@@ -165,6 +165,11 @@ const UserProfile = ({ tab, data }: { tab: string; data: UserProfileActiveTab })
       )}
     </Grid>
   )
+}
+// ** Configuración ACL para UserProfile
+UserProfile.acl = {
+  action: 'read',
+  subject: 'user-profile',
 }
 
 export default UserProfile

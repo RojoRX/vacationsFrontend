@@ -120,5 +120,9 @@ const AboutOverivew = (props: Props) => {
     </Grid>
   )
 }
+AboutOverivew.acl = {
+  action: 'read',
+  subject: 'about-overview',
+}
 
 export default AboutOverivew
