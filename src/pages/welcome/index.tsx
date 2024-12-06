@@ -1,5 +1,5 @@
-// Importa el hook que creaste para obtener los datos del usuario
-import useUser from 'src/hooks/useUser';
+import { useEffect, useState } from 'react';
+import axios from 'axios';
 import Grid from '@mui/material/Grid';
 import Typography from '@mui/material/Typography';
 import Button from '@mui/material/Button';
@@ -15,15 +15,38 @@ import CardStatisticsVertical from 'src/@core/components/card-statistics/card-st
 // ** Styled Component Import
 import ApexChartWrapper from 'src/@core/styles/libs/react-apexcharts';
 
+// ** Custom Hook
+import useUser from 'src/hooks/useUser';
+import Link from 'next/link';
+
 const WelcomeDashboard = () => {
-  // Usa el hook para obtener los datos del usuario
+  // Usar el hook para obtener datos del usuario
   const user = useUser();
-  // Agrega un console.log para verificar los datos del usuario
-  console.log('Datos del usuario:', user);
+
+  // Estado para almacenar los datos de vacaciones
+  const [vacationData, setVacationData] = useState<null | { diasDeVacacionRestantes: number }>(null);
+
+  // Efecto para obtener los datos de vacaciones del usuario
+  useEffect(() => {
+    const fetchVacationData = async () => {
+      if (user && user.ci) {
+        try {
+          const response = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/vacations/automatic-period`, {
+            params: { carnetIdentidad: user.ci },
+          });
+          setVacationData(response.data);
+        } catch (error) {
+          console.error('Error fetching vacation data:', error);
+        }
+      }
+    };
+
+    fetchVacationData();
+  }, [user]);
 
   return (
     <ApexChartWrapper>
-      <Grid container spacing={6} className='match-height'>
+      <Grid container spacing={6} className="match-height">
         {/* Card de bienvenida */}
         <Grid item xs={12} md={12}>
           <Card>
@@ -32,7 +55,7 @@ const WelcomeDashboard = () => {
                 Bienvenido, {user ? user.fullName : 'Usuario'}!
               </Typography>
               <Typography variant="body2" color="textSecondary">
-                Este es tu sistema de gestión de vacaciones. Aquí puedes solicitar días de vacaciones o licencias. 
+                Este es tu sistema de gestión de vacaciones. Aquí puedes solicitar días de vacaciones o licencias.
                 Además, puedes revisar el estado actual de tus solicitudes y los días de vacaciones restantes.
               </Typography>
             </CardContent>
@@ -46,7 +69,9 @@ const WelcomeDashboard = () => {
             color="primary"
             icon={<Icon icon="mdi:beach" />}
             title="Vacaciones"
-            chipText="Disponible"
+            chipText={
+              'Disponible'
+            }
             trendNumber="+1 Solicitud"
           />
         </Grid>
@@ -56,7 +81,11 @@ const WelcomeDashboard = () => {
             color="secondary"
             icon={<Icon icon="mdi:briefcase" />}
             title="Licencia"
-            chipText="Disponible"
+            chipText={
+              vacationData
+                ? `Tienes ${vacationData.diasDeVacacionRestantes} días disponibles esta gestion`
+                : 'Cargando...'
+            }
             trendNumber="+1 Solicitud"
           />
         </Grid>
@@ -68,6 +97,8 @@ const WelcomeDashboard = () => {
             color="primary"
             startIcon={<Icon icon="mdi:beach" />}
             fullWidth
+            component={Link}
+            href="/vacations/vacations-summary/"
           >
             Solicitar Vacaciones
           </Button>
@@ -78,6 +109,8 @@ const WelcomeDashboard = () => {
             color="secondary"
             startIcon={<Icon icon="mdi:briefcase" />}
             fullWidth
+            component={Link}
+            href="/permissions/create-permission/"
           >
             Solicitar Licencia
           </Button>
@@ -90,7 +123,7 @@ const WelcomeDashboard = () => {
 // Configurar ACL para dar acceso a clientes
 WelcomeDashboard.acl = {
   action: 'read',
-  subject: 'welcome-dashboard'  // El mismo subject que en las reglas de CASL
+  subject: 'welcome-dashboard', // El mismo subject que en las reglas de CASL
 };
 
 export default WelcomeDashboard;
