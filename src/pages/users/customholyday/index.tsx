@@ -23,7 +23,6 @@ const CustomHolidayForm: React.FC<CustomHolidayFormProps> = ({ open, onClose, on
     const [name, setName] = useState<string>('INVIERNO');
     const [startDate, setStartDate] = useState<string>(new Date().toISOString().slice(0, 10)); // Solo la fecha
     const [endDate, setEndDate] = useState<string>(new Date().toISOString().slice(0, 10)); // Solo la fecha
-    const [year, setYear] = useState<number>(new Date().getFullYear());
     const [loading, setLoading] = useState<boolean>(false);
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState<string | null>(null);
@@ -39,7 +38,6 @@ const CustomHolidayForm: React.FC<CustomHolidayFormProps> = ({ open, onClose, on
                 name,
                 startDate: `${startDate}T00:00:00.000Z`, // Establece la hora por defecto para startDate
                 endDate: `${endDate}T23:59:59.999Z`,
-                year,
                 userId, // Añadir el userId al payload
             };
 
@@ -59,7 +57,7 @@ const CustomHolidayForm: React.FC<CustomHolidayFormProps> = ({ open, onClose, on
             <DialogTitle>Crear Receso Personalizado</DialogTitle>
             <DialogContent>
                 <form onSubmit={handleFormSubmit}>
-                <TextField
+                    <TextField
                         select
                         label="Nombre del Receso"
                         value={name}
@@ -70,7 +68,6 @@ const CustomHolidayForm: React.FC<CustomHolidayFormProps> = ({ open, onClose, on
                         <MenuItem value="INVIERNO">Invierno</MenuItem>
                         <MenuItem value="FINDEGESTION">Fin de Gestión</MenuItem>
                     </TextField>
-
 
                     <TextField
                         label="Fecha de Inicio"
@@ -96,15 +93,6 @@ const CustomHolidayForm: React.FC<CustomHolidayFormProps> = ({ open, onClose, on
                         }}
                     />
 
-                    <TextField
-                        label="Año"
-                        type="number"
-                        value={year}
-                        onChange={(e) => setYear(Number(e.target.value))}
-                        fullWidth
-                        margin="normal"
-                    />
-                    
                     {error && <Typography variant="body2" color="error" mt={2}>{error}</Typography>}
                     {success && <Typography variant="body2" color="success" mt={2}>{success}</Typography>}
                     <Button type="submit" variant="contained" color="primary" disabled={loading}>
