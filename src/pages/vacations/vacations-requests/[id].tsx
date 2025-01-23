@@ -23,6 +23,7 @@ import useUser from 'src/hooks/useUser';
 import { SelectChangeEvent } from '@mui/material/Select'; // Asegúrate de importar SelectChangeEvent
 import { People, Info, Approval, Assignment } from '@mui/icons-material';
 import PostponeVacationRequestForm from '../vacations-postponed';
+import { generateVacationAuthorizationPDF } from 'src/utils/pdfGenerator';
 
 interface Recess {
   name: string;
@@ -223,6 +224,15 @@ const VacationRequestDetails = () => {
           <Typography variant="h6" gutterBottom>
             Formulario de Solicitud y Concesión de Vacaciones
           </Typography>
+          {/* Botón para generar el PDF */}
+        <Button
+          variant="contained"
+          color="primary"
+          onClick={() => generateVacationAuthorizationPDF(request)}
+          style={{ marginTop: '20px' }}
+        >
+          Descargar Autorización en PDF
+        </Button>
         </div>
 
         {/* Sección #1 - Datos de Solicitante */}
@@ -285,6 +295,7 @@ const VacationRequestDetails = () => {
             <Typography variant="body1"><strong>Regreso:</strong> {request.returnDate}</Typography>
           </CardContent>
         </Card>
+
 
         {/* Sección #5 para actualizar el estado de la solicitud */}
         {user && (user.role === 'admin' || user.role === 'supervisor') && (
