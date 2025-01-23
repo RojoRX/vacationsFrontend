@@ -225,14 +225,16 @@ const VacationRequestDetails = () => {
             Formulario de Solicitud y Concesión de Vacaciones
           </Typography>
           {/* Botón para generar el PDF */}
-        <Button
-          variant="contained"
-          color="primary"
-          onClick={() => generateVacationAuthorizationPDF(request)}
-          style={{ marginTop: '20px' }}
-        >
-          Descargar Autorización en PDF
-        </Button>
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={() => generateVacationAuthorizationPDF(request)}
+            style={{ marginTop: '20px' }}
+            disabled={request.status !== "AUTHORIZED"} // Botón deshabilitado si no está autorizado
+          >
+            Descargar Autorización en PDF
+          </Button>
+
         </div>
 
         {/* Sección #1 - Datos de Solicitante */}
