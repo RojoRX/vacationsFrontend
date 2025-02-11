@@ -33,6 +33,7 @@ const defineRulesFor = (role: string, subject: string) => {
     can('read', 'user-profile'); // Agregar acceso al perfil de usuario para clientes
     can('read', 'profile-tab'); // Permitir acceso al componente ProfileTab para clientes
     can('read', 'about-overview'); 
+    can('read', 'user-profile-tab'); 
   } else if (role === 'supervisor') {
     can(['read'], 'welcome-dashboard');
     can(['read'], 'welcome');

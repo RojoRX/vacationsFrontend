@@ -143,18 +143,46 @@ const VacationRequestDetails = () => {
     if (!request || newStatus === request.status) return;
 
     // Lógica para cambiar el estado
+    // Lógica para cambiar el estado
     try {
+      console.log("Datos que se enviarán:", {
+        status: newStatus,
+        supervisorId: user?.id,
+      }); // Imprime los datos antes de enviarlos
+
+      if (!user?.id) {
+        console.error("Error: user.id es undefined. Asegúrate de que el usuario esté logueado y sus datos estén disponibles.");
+        setError('Error: No se puede obtener el ID del supervisor.');
+        return; // Detiene la ejecución si user.id es undefined
+      }
+
       await axios.patch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/vacation-requests/${request.requestId}/status`, {
         status: newStatus,
+        supervisorId: user?.id,
       });
+
+      console.log("Solicitud PATCH exitosa."); // Confirma que la solicitud se envió
+
       setRequest((prev) => (prev ? { ...prev, status: newStatus } : null));
       setSelectedStatus(newStatus);
     } catch (error) {
       console.error('Error updating status:', error);
-      setError('Error al actualizar el estado de la solicitud.');
-    }
+  
+      if (axios.isAxiosError(error)) {
+          if (error.response) {
+              console.error("Error del servidor:", error.response.data);
+              console.error("Código de estado:", error.response.status);
+              setError(`Error al actualizar el estado: ${error.response.data.message || error.message}`);
+          } else if (error.request) {
+              console.error("Error de solicitud:", error.request);
+              setError('Error al actualizar el estado: No se recibió respuesta del servidor.');
+          }
+      } else {
+        
+          setError('Error al actualizar el estado: Error de configuración.');
+      }
   };
-
+  }
 
 
   const toggleApprovedByHR = async () => {

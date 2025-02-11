@@ -139,6 +139,9 @@ const VacationSummary = () => {
                                 <Typography variant="body1">
                                     <strong>Días Disponibles:</strong> {data.diasDeVacacionRestantes || 0}
                                 </Typography>
+                                <Typography variant="body1">
+                                    <strong>Deuda:</strong> {data.deuda || 0}
+                                </Typography>
                             </Grid>
 
                             <Grid item xs={12} sm={6}>

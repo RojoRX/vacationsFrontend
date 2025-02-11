@@ -53,7 +53,7 @@ const users: UserDataType[] = [
     fecha_ingreso: '2014-07-20',
     username: 'patriciaSupervisor',
     password: 'supervisorpassword', // Simplified password for mock
-    departmentId: 2,
+    departmentId: 7,//2
     role: 'supervisor',
     fullName: 'Patricia Quispe Chavez',
     celular: '67778899', // Added cell phone number
@@ -71,6 +71,42 @@ const users: UserDataType[] = [
     celular: '', // Cell phone left empty
     profesion: ''
   },
+  {
+    id: 8,
+    ci: '12345678',
+    fecha_ingreso: '2009-08-10',
+    username: 'roberto_ramos',
+    password: 'password',
+    departmentId: 7,
+    role: 'client',
+    fullName: 'Roberto Ramos Castro',
+    celular: '67891234',
+    profesion: 'Físico'
+  },
+  {
+    id: 9,
+    ci: '87654321',
+    fecha_ingreso: '2009-06-20',
+    username: 'abad_santos',
+    password: 'password',
+    departmentId: 7,
+    role: 'client',
+    fullName: 'Abad Santos Ckacka Condori',
+    celular: '67912345',
+    profesion: 'Físico'
+  },
+  {
+    id: 10,
+    ci: '45678912',
+    fecha_ingreso: '2014-08-01',
+    username: 'quecana_oscar',
+    password: 'password',
+    departmentId: 16,
+    role: 'client',
+    fullName: 'Quecaña Carlo Oscar',
+    celular: '69056789',
+    profesion: 'Ingeniero en Minas'
+  }
 ]
 
 // ! These two secrets should be in .env file and not in any other file
