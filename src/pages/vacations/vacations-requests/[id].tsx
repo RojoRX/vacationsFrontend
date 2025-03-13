@@ -25,6 +25,19 @@ import { People, Info, Approval, Assignment } from '@mui/icons-material';
 import PostponeVacationRequestForm from '../vacations-postponed';
 import { generateVacationAuthorizationPDF } from 'src/utils/pdfGenerator';
 
+interface VacationDebt {
+  diasDisponibles: number;
+  deudaAcumulativaHastaEstaGestion:number;
+  startDate: string;
+  endDate: string;
+}
+
+
+interface GestionPeriod {
+  startDate: string;
+  endDate: string;
+}
+
 interface Recess {
   name: string;
   startDate: string;
@@ -53,6 +66,8 @@ interface AuthorizedVacationRequest {
 }
 
 interface VacationRequest {
+  ci: string;
+  gestion: GestionPeriod;
   requestId: number;
   userName: string;
   requestDate: string;
@@ -95,7 +110,9 @@ const VacationRequestDetails = () => {
   const user = useUser(); // Hook para obtener el usuario actual
   const [openDialog, setOpenDialog] = useState(false);
   const [infoMessage, setInfoMessage] = useState('');
+  const [debtData, setDebtData] = useState<VacationDebt | null>(null);
 
+  
   const validStatuses = [
     { value: 'PENDING', label: 'Pendiente' },
     { value: 'AUTHORIZED', label: 'Autorizado' },
@@ -106,13 +123,21 @@ const VacationRequestDetails = () => {
 
   const fetchRequestDetails = async () => {
     if (!id) return;
-
+  
     try {
       const response = await axios.get<VacationRequest>(
         `${process.env.NEXT_PUBLIC_API_BASE_URL}/vacation-requests/${id}/details`
       );
       setRequest(response.data);
-      setSelectedStatus(response.data.status); // Establece el estado seleccionado al cargar
+      setSelectedStatus(response.data.status);
+  
+      if (response.data.managementPeriodStart && response.data.managementPeriodEnd) {
+        const formattedStartDate = new Date(response.data.managementPeriodStart).toISOString().split('T')[0];
+        const formattedEndDate = new Date(response.data.managementPeriodEnd).toISOString().split('T')[0];
+        await fetchDebtData(formattedStartDate, formattedEndDate, response.data.ci); // Pasamos las fechas y el CI
+      } else {
+        console.error('managementPeriodStart or managementPeriodEnd is undefined in response:', response.data);
+      }
     } catch (error) {
       console.error('Error fetching vacation request details:', error);
       setError('Error al obtener los detalles de la solicitud.');
@@ -121,8 +146,57 @@ const VacationRequestDetails = () => {
     }
   };
 
+  const fetchDebtData = async (startDate: string, endDate: string, ci: string) => {
+    if (!ci) {
+      console.error('Carnet de identidad no disponible.');
+      return;
+    }
+  
+    try {
+
+      const response = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/vacations/accumulated-debt`, {
+        params: {
+          carnetIdentidad: ci,
+          endDate,
+        },
+      });
+  
+  
+  
+      const gestionStartDate = new Date(startDate);
+      const gestionEndDate = new Date(endDate);
+  
+
+  
+      const gestionDebt = response.data.detalles.find((detalle: any) => {
+        if (!detalle) {
+          console.error('Detalle is undefined.');
+          return false;
+        }
+  
+        const detalleStartDate = new Date(detalle.startDate);
+        const detalleEndDate = new Date(detalle.endDate);
+  
+
+  
+        return (
+          detalleStartDate.getTime() === gestionStartDate.getTime() &&
+          detalleEndDate.getTime() === gestionEndDate.getTime()
+        );
+      });
+  
+
+      setDebtData(gestionDebt || null);
+    } catch (error) {
+      console.error('Error fetching debt data:', error);
+      setDebtData(null);
+    }
+  };
+
   useEffect(() => {
-    fetchRequestDetails();
+    if (id) {
+      fetchRequestDetails();
+    }
   }, [id]);
 
   const refreshRequestDetails = () => {
@@ -294,7 +368,8 @@ const VacationRequestDetails = () => {
             <Typography variant="body1">
               <strong>Descanso de Fin de Año:</strong> {recesoFinDeGestion ? `${recesoFinDeGestion.daysCount} días (Tipo: ${recesoFinDeGestion.type})` : 'No disponible'}
             </Typography>
-            <Typography variant="body1"><strong>Días de Vacación Restantes:</strong> {request.diasDeVacacionRestantes}</Typography>
+            <Typography variant="body1"><strong>Días Acumulados de Deuda :</strong> {debtData?.deudaAcumulativaHastaEstaGestion ?? 0}</Typography>
+            <Typography variant="body1"><strong>Días de Vacación Disponibles Restantes:</strong> {debtData?.diasDisponibles ?? 0}</Typography>
           </CardContent>
         </Card>
 
