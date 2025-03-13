@@ -20,94 +20,70 @@ import { useRouter } from 'next/router'; // Importar useRouter
 
 const VacationSummary = () => {
     const user = useUser();
-    const router = useRouter(); // Inicializar useRouter
+    const router = useRouter();
     const [selectedGestion, setSelectedGestion] = useState<GestionPeriod | null>(null);
     const [data, setData] = useState<any>(null);
-    const [debtData, setDebtData] = useState<any>(null); // Nuevo estado para deuda acumulada
+    const [debtData, setDebtData] = useState<any>(null);
+    const [loading, setLoading] = useState(false); // Estado de carga
 
     const handleGestionChange = (gestion: GestionPeriod) => {
-        //console.log('Cambio de gestión seleccionado:', gestion);
         setSelectedGestion(gestion);
-    
-        // Usamos un callback en setState para asegurar que los datos sean correctos
-        setSelectedGestion(prevGestion => {
-            if (prevGestion) {
-                fetchVacationData(gestion.startDate, gestion.endDate);
-                fetchDebtData(gestion.endDate, gestion); // Pasar la gestión correcta
-            }
-            return gestion;
-        });
     };
-    
-    const fetchVacationData = async (startDate: string, endDate: string) => {
-        if (!user || !user.ci) {
-            //console.error('Carnet de identidad no disponible.');
-            return;
+
+    useEffect(() => {
+        if (selectedGestion) {
+            fetchVacationData(selectedGestion.startDate, selectedGestion.endDate);
+            fetchDebtData(selectedGestion.endDate, selectedGestion);
         }
-    
-        //console.log("Solicitando datos de vacaciones para:", { carnetIdentidad: user.ci, startDate, endDate });
-    
+    }, [selectedGestion]);
+
+    const fetchVacationData = async (startDate: string, endDate: string) => {
+        if (!user?.ci) return;
+
         try {
+            setLoading(true);
             const response = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/vacations`, {
-                params: {
-                    carnetIdentidad: user.ci,
-                    startDate,
-                    endDate,
-                },
+                params: { carnetIdentidad: user.ci, startDate, endDate },
             });
-            //console.log("Respuesta de vacaciones:", response.data);
             setData(response.data);
         } catch (error) {
-            //console.error('Error fetching vacation data:', error);
+            console.error('Error fetching vacation data:', error);
             setData(null);
+        } finally {
+            setLoading(false);
         }
     };
-    
-    // Función para obtener la deuda acumulada y días disponibles
+
     const fetchDebtData = async (endDate: string, gestion: GestionPeriod) => {
-        if (!user || !user.ci) {
-            console.error('Carnet de identidad no disponible.');
-            return;
-        }
-    
-        //console.log('Solicitando datos de deuda para:', { carnetIdentidad: user.ci, endDate });
-    
+        if (!user?.ci) return;
+
         try {
+            setLoading(true);
             const response = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/vacations/accumulated-debt`, {
-                params: {
-                    carnetIdentidad: user.ci,
-                    endDate,
-                },
+                params: { carnetIdentidad: user.ci, endDate },
             });
-    
-            //console.log('Respuesta de deuda recibida:', response.data);
-    
-            // Convertir las fechas de la gestión seleccionada
-            const gestionStartDate = new Date(gestion.startDate).toISOString().split('T')[0];
-            const gestionEndDate = new Date(gestion.endDate).toISOString().split('T')[0];
-    
-            //console.log('Filtrando detalle de deuda para la gestión:', { gestionStartDate, gestionEndDate });
-    
-            // Filtrar correctamente los detalles de deuda
+
+            const gestionStartDate = gestion.startDate.split('T')[0];
+            const gestionEndDate = gestion.endDate.split('T')[0];
+
             const gestionDebt = response.data.detalles.find((detalle: any) => {
-                const detalleStartDate = new Date(detalle.startDate).toISOString().split('T')[0];
-                const detalleEndDate = new Date(detalle.endDate).toISOString().split('T')[0];
-    
-                //console.log('Comparando detalle:', { detalleStartDate, detalleEndDate });
-    
-                return detalleStartDate === gestionStartDate && detalleEndDate === gestionEndDate;
+                return (
+                    detalle.startDate.split('T')[0] === gestionStartDate &&
+                    detalle.endDate.split('T')[0] === gestionEndDate
+                );
             });
-    
-            setDebtData(gestionDebt || null); // Establecer la deuda encontrada o null si no hay coincidencia
+
+            setDebtData(gestionDebt || { deuda: 0, deudaAcumulativaAnterior: 0, diasDisponibles: 0 });
         } catch (error) {
             console.error('Error fetching debt data:', error);
-            setDebtData(null);
+            setDebtData({ deuda: 0, deudaAcumulativaAnterior: 0, diasDisponibles: 0 });
+        } finally {
+            setLoading(false);
         }
     };
-    
+
     const handleRequestVacation = () => {
         if (selectedGestion) {
-            //console.log('Gestión seleccionada para solicitud de vacaciones:', selectedGestion);
             router.push({
                 pathname: '/vacations-form',
                 query: {
@@ -115,14 +91,11 @@ const VacationSummary = () => {
                     endDate: selectedGestion.endDate,
                 },
             });
-        } else {
-            //console.log('No hay gestión seleccionada.');
         }
     };
-    
+
     const handleRequestLicense = () => {
         if (selectedGestion) {
-            //console.log('Gestión seleccionada para solicitud de licencia:', selectedGestion);
             router.push({
                 pathname: '/permissions/create-permission',
                 query: {
@@ -130,11 +103,9 @@ const VacationSummary = () => {
                     endDate: selectedGestion.endDate,
                 },
             });
-        } else {
-            //console.log('No hay gestión seleccionada.');
         }
     };
-    
+
 
     return (
         <div>
