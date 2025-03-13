@@ -71,6 +71,11 @@ const VacationSummary = () => {
                 timeout: 5000, // Establecer un tiempo de espera
             });
     
+            // Verificar si la respuesta tiene datos válidos
+            if (!response.data || !response.data.detalles) {
+                throw new Error("Datos de deuda no válidos");
+            }
+    
             // Formatear las fechas de la gestión seleccionada
             const gestionStartDate = new Date(gestion.startDate).toISOString().split('T')[0];
             const gestionEndDate = new Date(gestion.endDate).toISOString().split('T')[0];
@@ -81,6 +86,11 @@ const VacationSummary = () => {
                 const detalleEndDate = new Date(detalle.endDate).toISOString().split('T')[0];
                 return detalleStartDate === gestionStartDate && detalleEndDate === gestionEndDate;
             });
+    
+            // Verificar si se encontró la deuda correspondiente
+            if (!gestionDebt) {
+                console.warn("No se encontró deuda para la gestión seleccionada");
+            }
     
             // Actualizar el estado con los datos de la deuda o valores por defecto si no se encuentra
             setDebtData(gestionDebt || { deuda: 0, deudaAcumulativaAnterior: 0, diasDisponibles: 0 });
