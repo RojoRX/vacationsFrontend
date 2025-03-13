@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import GestionSelect from 'src/pages/gestion/gestion-selector';
 import { GestionPeriod } from 'src/interfaces';
@@ -15,8 +15,10 @@ import {
     Button,
     Container,
     Stack,
+    CircularProgress,
 } from '@mui/material';
 import { useRouter } from 'next/router'; // Importar useRouter
+
 
 const VacationSummary = () => {
     const user = useUser();
@@ -24,24 +26,24 @@ const VacationSummary = () => {
     const [selectedGestion, setSelectedGestion] = useState<GestionPeriod | null>(null);
     const [data, setData] = useState<any>(null);
     const [debtData, setDebtData] = useState<any>(null);
-    const [loading, setLoading] = useState(false); // Estado de carga
+    const [loading, setLoading] = useState(false); // Declaración del estado de carga
 
     const handleGestionChange = (gestion: GestionPeriod) => {
         setSelectedGestion(gestion);
     };
 
     useEffect(() => {
-        if (selectedGestion) {
+        if (selectedGestion && user?.ci) {
             fetchVacationData(selectedGestion.startDate, selectedGestion.endDate);
             fetchDebtData(selectedGestion.endDate, selectedGestion);
         }
-    }, [selectedGestion]);
+    }, [selectedGestion, user?.ci]);
 
     const fetchVacationData = async (startDate: string, endDate: string) => {
         if (!user?.ci) return;
 
         try {
-            setLoading(true);
+            setLoading(true); // Activar el estado de carga
             const response = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/vacations`, {
                 params: { carnetIdentidad: user.ci, startDate, endDate },
             });
@@ -50,7 +52,7 @@ const VacationSummary = () => {
             console.error('Error fetching vacation data:', error);
             setData(null);
         } finally {
-            setLoading(false);
+            setLoading(false); // Desactivar el estado de carga
         }
     };
 
@@ -58,19 +60,18 @@ const VacationSummary = () => {
         if (!user?.ci) return;
 
         try {
-            setLoading(true);
+            setLoading(true); // Activar el estado de carga
             const response = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/vacations/accumulated-debt`, {
                 params: { carnetIdentidad: user.ci, endDate },
             });
 
-            const gestionStartDate = gestion.startDate.split('T')[0];
-            const gestionEndDate = gestion.endDate.split('T')[0];
+            const gestionStartDate = new Date(gestion.startDate).toISOString().split('T')[0];
+            const gestionEndDate = new Date(gestion.endDate).toISOString().split('T')[0];
 
             const gestionDebt = response.data.detalles.find((detalle: any) => {
-                return (
-                    detalle.startDate.split('T')[0] === gestionStartDate &&
-                    detalle.endDate.split('T')[0] === gestionEndDate
-                );
+                const detalleStartDate = new Date(detalle.startDate).toISOString().split('T')[0];
+                const detalleEndDate = new Date(detalle.endDate).toISOString().split('T')[0];
+                return detalleStartDate === gestionStartDate && detalleEndDate === gestionEndDate;
             });
 
             setDebtData(gestionDebt || { deuda: 0, deudaAcumulativaAnterior: 0, diasDisponibles: 0 });
@@ -78,7 +79,7 @@ const VacationSummary = () => {
             console.error('Error fetching debt data:', error);
             setDebtData({ deuda: 0, deudaAcumulativaAnterior: 0, diasDisponibles: 0 });
         } finally {
-            setLoading(false);
+            setLoading(false); // Desactivar el estado de carga
         }
     };
 
@@ -106,7 +107,6 @@ const VacationSummary = () => {
         }
     };
 
-
     return (
         <div>
             <GestionSelect onChange={handleGestionChange} selectedGestion={selectedGestion} />
@@ -121,7 +121,9 @@ const VacationSummary = () => {
                 </Stack>
             </Container>
 
-            {data ? (
+            {loading ? (
+                <CircularProgress /> // Indicador de carga
+            ) : data ? (
                 <Card variant="outlined" sx={{ marginTop: 2 }}>
                     <CardContent>
                         <Typography variant="h5" component="div">
@@ -142,29 +144,28 @@ const VacationSummary = () => {
                                     <strong>Días de Vacaciones por antigüedad:</strong> {data.diasDeVacacion || 0}
                                 </Typography>
                                 <Typography variant="body1">
-                                    <strong>Deuda de la Gestion:</strong> {debtData?.deuda || 0} {/* Mostrar la deuda */}
+                                    <strong>Deuda de la Gestión:</strong> {debtData?.deuda ?? 0}
                                 </Typography>
                                 <Typography variant="body1">
-                                    <strong>Deuda Acumulada Gestiones Anteriores:</strong> {debtData?.deudaAcumulativaAnterior || 0} {/* Mostrar la deuda */}
+                                    <strong>Deuda Acumulada Gestiones Anteriores:</strong> {debtData?.deudaAcumulativaAnterior ?? 0}
                                 </Typography>
                                 <Typography variant="body1">
-                                    <strong>Días Disponibles de Vacacion:</strong> {debtData?.diasDisponibles || 0} {/* Mostrar los días disponibles desde la deuda acumulada */}
+                                    <strong>Días Disponibles de Vacación:</strong> {debtData?.diasDisponibles ?? 0}
                                 </Typography>
-
                             </Grid>
                             <Grid item xs={12} sm={6}>
                                 <Typography variant="body1">
-                                    <strong>Licencias Autorizadas:</strong> {data.licenciasAutorizadas.totalAuthorizedDays || 0}
+                                    <strong>Licencias Autorizadas:</strong> {data.licenciasAutorizadas?.totalAuthorizedDays ?? 0}
                                 </Typography>
                                 <Typography variant="body1">
-                                    <strong>Solicitudes de Vacación Autorizadas:</strong> {data.solicitudesDeVacacionAutorizadas.totalAuthorizedVacationDays || 0}
+                                    <strong>Solicitudes de Vacación Autorizadas:</strong> {data.solicitudesDeVacacionAutorizadas?.totalAuthorizedVacationDays ?? 0}
                                 </Typography>
                             </Grid>
                         </Grid>
                         <Divider sx={{ margin: '16px 0' }} />
                         <Typography variant="h6">Recesos Aplicados</Typography>
                         <List>
-                            {data.recesos.length > 0 ? (
+                            {data.recesos?.length > 0 ? (
                                 data.recesos.map((receso: any, index: number) => (
                                     <ListItem key={index}>
                                         <ListItemText
@@ -183,7 +184,7 @@ const VacationSummary = () => {
                         <Divider sx={{ margin: '16px 0' }} />
                         <Typography variant="h6">Días No Hábiles o Feriados</Typography>
                         <List>
-                            {data.nonHolidayDaysDetails.length > 0 ? (
+                            {data.nonHolidayDaysDetails?.length > 0 ? (
                                 data.nonHolidayDaysDetails.map((day: any, index: number) => (
                                     <ListItem key={index}>
                                         <ListItemText primary={`${day.date}: ${day.reason}`} />
@@ -199,10 +200,10 @@ const VacationSummary = () => {
                         <Divider sx={{ margin: '16px 0' }} />
                         <Typography variant="h6">Solicitudes de Vacación Autorizadas</Typography>
                         <Typography variant="body1">
-                            <strong>Total de Días Autorizados:</strong> {data.solicitudesDeVacacionAutorizadas.totalAuthorizedVacationDays || 0}
+                            <strong>Total de Días Autorizados:</strong> {data.solicitudesDeVacacionAutorizadas?.totalAuthorizedVacationDays ?? 0}
                         </Typography>
                         <List>
-                            {data.solicitudesDeVacacionAutorizadas.requests.length > 0 ? (
+                            {data.solicitudesDeVacacionAutorizadas?.requests?.length > 0 ? (
                                 data.solicitudesDeVacacionAutorizadas.requests.map((request: any, index: number) => (
                                     <ListItem key={index}>
                                         <ListItemText
@@ -233,6 +234,8 @@ const VacationSummary = () => {
         </div>
     );
 };
+
+
 
 
 // Configurar ACL para dar acceso a clientes
