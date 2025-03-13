@@ -58,25 +58,36 @@ const VacationSummary = () => {
 
     const fetchDebtData = async (endDate: string, gestion: GestionPeriod) => {
         if (!user?.ci) return;
-
+    
         try {
             setLoading(true); // Activar el estado de carga
+    
+            // Limpiar el estado anterior antes de hacer la nueva solicitud
+            setDebtData(null);
+    
+            // Realizar la solicitud con un timeout de 5 segundos
             const response = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/vacations/accumulated-debt`, {
                 params: { carnetIdentidad: user.ci, endDate },
+                timeout: 5000, // Establecer un tiempo de espera
             });
-
+    
+            // Formatear las fechas de la gestión seleccionada
             const gestionStartDate = new Date(gestion.startDate).toISOString().split('T')[0];
             const gestionEndDate = new Date(gestion.endDate).toISOString().split('T')[0];
-
+    
+            // Buscar la deuda correspondiente a la gestión seleccionada
             const gestionDebt = response.data.detalles.find((detalle: any) => {
                 const detalleStartDate = new Date(detalle.startDate).toISOString().split('T')[0];
                 const detalleEndDate = new Date(detalle.endDate).toISOString().split('T')[0];
                 return detalleStartDate === gestionStartDate && detalleEndDate === gestionEndDate;
             });
-
+    
+            // Actualizar el estado con los datos de la deuda o valores por defecto si no se encuentra
             setDebtData(gestionDebt || { deuda: 0, deudaAcumulativaAnterior: 0, diasDisponibles: 0 });
         } catch (error) {
             console.error('Error fetching debt data:', error);
+    
+            // En caso de error, establecer valores por defecto
             setDebtData({ deuda: 0, deudaAcumulativaAnterior: 0, diasDisponibles: 0 });
         } finally {
             setLoading(false); // Desactivar el estado de carga
