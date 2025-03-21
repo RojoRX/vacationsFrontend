@@ -171,6 +171,10 @@ const VacationSummary = () => {
                                     <strong>Deuda Acumulada Gestiones Anteriores:</strong> {debtData?.deudaAcumulativaAnterior ?? 0}
                                 </Typography>
                                 <Typography variant="body1">
+                                <strong>Deuda Total Acumulada:</strong> {(debtData?.deudaAcumulativaAnterior ?? 0) + (debtData?.deuda ?? 0)}
+
+                                </Typography>
+                                <Typography variant="body1">
                                     <strong>Días Disponibles de Vacación:</strong> {debtData?.diasDisponibles ?? 0}
                                 </Typography>
                             </Grid>
