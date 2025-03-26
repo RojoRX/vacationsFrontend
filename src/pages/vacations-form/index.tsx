@@ -15,10 +15,12 @@ import axios, { AxiosError } from 'axios';
 import useUser from 'src/hooks/useUser';
 // ** Icon Imports
 import Icon from 'src/@core/components/icon';
-
+import { registerLocale } from 'react-datepicker';
 // ** Styled Component Import
 import ApexChartWrapper from 'src/@core/styles/libs/react-apexcharts';
+import { es } from 'date-fns/locale';
 
+registerLocale('es', es);
 // Formulario de solicitud de vacaciones
 const VacationRequestSubmissionForm = () => {
   const user = useUser();
@@ -115,16 +117,18 @@ const VacationRequestSubmissionForm = () => {
         <Grid item xs={12} md={6}>
           <Card>
             <CardContent>
-              <Typography variant="h6" component="div" gutterBottom>
-                Selecciona el inicio de tus vacaciones
+              <Typography variant="h6" gutterBottom>
+                Inicio de vacaciones
               </Typography>
               <DatePicker
                 selected={startDate}
-                onChange={date => setStartDate(date)}
+                onChange={setStartDate}
                 dateFormat="dd/MM/yyyy"
+                locale="es"
                 placeholderText="Selecciona una fecha"
                 minDate={new Date()}
                 className="form-control"
+                withPortal
               />
             </CardContent>
           </Card>
@@ -132,16 +136,18 @@ const VacationRequestSubmissionForm = () => {
         <Grid item xs={12} md={6}>
           <Card>
             <CardContent>
-              <Typography variant="h6" component="div" gutterBottom>
-                Selecciona el fin de tus vacaciones
+              <Typography variant="h6" gutterBottom>
+                Fin de vacaciones
               </Typography>
               <DatePicker
                 selected={endDate}
-                onChange={date => setEndDate(date)}
+                onChange={setEndDate}
                 dateFormat="dd/MM/yyyy"
+                locale="es"
                 placeholderText="Selecciona una fecha"
                 minDate={startDate}
                 className="form-control"
+                withPortal
               />
             </CardContent>
           </Card>
