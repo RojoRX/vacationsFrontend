@@ -47,6 +47,12 @@ const navigation = (): VerticalNavItemsType => {
           subject: 'vacation-summary',
         },
         {
+          title: 'Dashboard',
+          path: '/vacations/vacations-dashboard',
+          action: 'read',
+          subject: 'vacation-dashboard',
+        },
+        {
           title: 'Mis Solicitudes de Vacaciones',
           path: '/vacations/vacations-requests',
           action: 'read',

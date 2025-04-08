@@ -34,6 +34,7 @@ const defineRulesFor = (role: string, subject: string) => {
     can('read', 'profile-tab'); // Permitir acceso al componente ProfileTab para clientes
     can('read', 'about-overview'); 
     can('read', 'user-profile-tab'); 
+    can('read', 'vacation-dashboard'); 
   } else if (role === 'supervisor') {
     can(['read'], 'welcome-dashboard');
     can(['read'], 'welcome');
@@ -50,6 +51,8 @@ const defineRulesFor = (role: string, subject: string) => {
     can('read', 'profile-tab'); // Permitir acceso al componente ProfileTab para clientes
     can('read', 'about-overview'); 
     can('read', 'user-profile-tab'); 
+    can('read', 'vacation-dashboard'); 
+    
   } else {
     can(['read', 'create', 'update', 'delete'], subject);
   }
