@@ -31,7 +31,7 @@ const navigation = (): VerticalNavItemsType => {
     //   icon: 'mdi:home',  // El icono que quieras mostrar en el menú
     // },  
     {
-      title: 'Gestión de Vacaciones',
+      title: 'Vacaciones',
       icon: 'mdi:beach',
       children: [
         // {
@@ -72,7 +72,7 @@ const navigation = (): VerticalNavItemsType => {
       ],
     },
     {
-      title: 'Gestión de Licencias',
+      title: 'Licencias',
       icon: 'mdi:clipboard-text',
       children: [
         {
