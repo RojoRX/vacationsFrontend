@@ -75,12 +75,12 @@ const navigation = (): VerticalNavItemsType => {
       title: 'Licencias',
       icon: 'mdi:clipboard-text',
       children: [
-        {
+        /*{
           title: 'Solicitar Licencia',
           path: '/permissions/create-permission',
           action: 'read',
           subject: 'request-permission',
-        },
+        },*/
         {
           title: 'Mis Licencias',
           path: '/permissions/user-licenses',

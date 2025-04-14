@@ -20,7 +20,7 @@ interface CustomHolidayFormProps {
 }
 
 const CustomHolidayForm: React.FC<CustomHolidayFormProps> = ({ open, onClose, onSuccess, userId }) => {
-    const [name, setName] = useState<string>('INVIERNO');
+    const [name, setName] = useState<string>('');
     const [startDate, setStartDate] = useState<string>(new Date().toISOString().slice(0, 10)); // Solo la fecha
     const [endDate, setEndDate] = useState<string>(new Date().toISOString().slice(0, 10)); // Solo la fecha
     const [loading, setLoading] = useState<boolean>(false);

@@ -4,12 +4,10 @@ import {
     Container, Typography, Table, TableBody, TableCell, TableContainer,
     TableHead, TableRow, Paper, TablePagination, TextField, IconButton,
     Button, Dialog, DialogActions, DialogContent, DialogContentText,
-    DialogTitle,
-    Box
+    DialogTitle, Box, Grid, Avatar, Tooltip, Alert, Snackbar
 } from '@mui/material';
-import { Delete, Edit } from '@mui/icons-material';
+import { Delete, Edit, Add, Search, Business } from '@mui/icons-material';
 
-// Tipado de los datos que devuelve la API para un departamento
 interface DepartmentProps {
     id: number;
     name: string;
@@ -23,68 +21,70 @@ const DepartmentManagement: React.FC = () => {
     const [openDialog, setOpenDialog] = useState(false);
     const [selectedDepartment, setSelectedDepartment] = useState<DepartmentProps | null>(null);
     const [newDepartment, setNewDepartment] = useState({ name: '' });
+    const [snackbar, setSnackbar] = useState({
+        open: false,
+        message: '',
+        severity: 'success' as 'success' | 'error' | 'info' | 'warning'
+    });
 
     const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || '';
 
-    // Obtener departamentos al cargar el componente
     useEffect(() => {
         fetchDepartments();
     }, []);
 
-    // Función para obtener todos los departamentos
     const fetchDepartments = async () => {
         try {
             const response = await axios.get(`${API_BASE_URL}/departments`);
             setDepartments(response.data);
         } catch (error) {
-            console.error('Error fetching departments:', error);
+            showSnackbar('Error al cargar departamentos', 'error');
         }
     };
 
-    // Función para eliminar un departamento
     const handleDelete = async (id: number) => {
         try {
             await axios.delete(`${API_BASE_URL}/departments/${id}`);
-            fetchDepartments(); // Refrescar la lista después de eliminar
+            showSnackbar('Departamento eliminado correctamente', 'success');
+            fetchDepartments();
         } catch (error) {
-            console.error('Error deleting department:', error);
+            showSnackbar('Error al eliminar departamento', 'error');
         }
     };
 
-    // Función para crear un departamento
     const createDepartment = async () => {
         if (newDepartment.name.trim() === '') {
-            alert('El nombre del departamento no puede estar vacío.');
+            showSnackbar('El nombre del departamento no puede estar vacío', 'warning');
             return;
         }
 
         try {
             await axios.post(`${API_BASE_URL}/departments`, newDepartment);
+            showSnackbar('Departamento creado correctamente', 'success');
             fetchDepartments();
-            setNewDepartment({ name: '' }); // Limpiar formulario
+            setNewDepartment({ name: '' });
         } catch (error) {
-            console.error('Error creating department:', error);
+            showSnackbar('Error al crear departamento', 'error');
         }
     };
 
-    // Función para actualizar un departamento
     const updateDepartment = async (id: number) => {
         if (!selectedDepartment || selectedDepartment.name.trim() === '') {
-            alert('El nombre del departamento no puede estar vacío.');
+            showSnackbar('El nombre del departamento no puede estar vacío', 'warning');
             return;
         }
 
         try {
             await axios.put(`${API_BASE_URL}/departments/${id}`, selectedDepartment);
+            showSnackbar('Departamento actualizado correctamente', 'success');
             fetchDepartments();
-            setSelectedDepartment(null); // Limpiar la selección después de actualizar
+            setSelectedDepartment(null);
             setOpenDialog(false);
         } catch (error) {
-            console.error('Error updating department:', error);
+            showSnackbar('Error al actualizar departamento', 'error');
         }
     };
 
-    // Control de paginación
     const handleChangePage = (event: unknown, newPage: number) => {
         setPage(newPage);
     };
@@ -94,143 +94,261 @@ const DepartmentManagement: React.FC = () => {
         setPage(0);
     };
 
-    // Control de búsqueda
     const handleSearch = (event: React.ChangeEvent<HTMLInputElement>) => {
         setSearchTerm(event.target.value);
     };
 
-    // Función para abrir el diálogo de edición
     const handleEditClick = (department: DepartmentProps) => {
         setSelectedDepartment(department);
         setOpenDialog(true);
     };
 
-    // Función para cerrar el diálogo de edición
     const handleCloseDialog = () => {
         setOpenDialog(false);
         setSelectedDepartment(null);
     };
 
-    // Filtrado de departamentos para la búsqueda
+    const showSnackbar = (message: string, severity: 'success' | 'error' | 'info' | 'warning') => {
+        setSnackbar({
+            open: true,
+            message,
+            severity
+        });
+    };
+
+    const handleCloseSnackbar = () => {
+        setSnackbar({ ...snackbar, open: false });
+    };
+
     const filteredDepartments = departments.filter(department =>
         department.name.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
     return (
-        <Container>
-            <Typography variant="h4" gutterBottom>
-                Gestión de Departamentos
-            </Typography>
+        <Container maxWidth="lg" sx={{ py: 4 }}>
+            {/* Encabezado */}
+            <Box sx={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                mb: 4,
+                backgroundColor: 'primary.main',
+                color: 'primary.contrastText',
+                p: 3,
+                borderRadius: 1,
+                boxShadow: 3
+            }}>
+                <Avatar sx={{ mr: 2, backgroundColor: 'secondary.main' }}>
+                    <Business />
+                </Avatar>
+                <Typography variant="h4" component="h1">
+                    Gestión de Departamentos
+                </Typography>
+            </Box>
 
-            {/* Formulario para crear un nuevo departamento */}
-            <Paper elevation={3} style={{ padding: '20px', marginBottom: '30px' }}>
-                <Typography variant="h5" gutterBottom style={{ fontWeight: 'bold', textAlign: 'center' }}>
-                    Crear Nuevo Departamento o Unidad
+            {/* Formulario de creación */}
+            <Paper elevation={3} sx={{ p: 3, mb: 4, borderRadius: 2 }}>
+                <Typography variant="h6" gutterBottom sx={{ 
+                    fontWeight: 'bold', 
+                    mb: 3,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 1
+                }}>
+                    <Add color="primary" /> Nuevo Departamento
                 </Typography>
 
-                <Box component="form" noValidate autoComplete="off" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '15px' }}>
-                    <TextField
-                        label="Nombre del Departamento"
-                        variant="outlined"
-                        value={newDepartment.name}
-                        onChange={(e) => setNewDepartment({ ...newDepartment, name: e.target.value })}
-                        fullWidth
-                    />
-
-                    <Button
-                        variant="contained"
-                        color="primary"
-                        onClick={createDepartment}
-                        style={{ marginTop: '15px', width: '50%' }}
-                    >
-                        Crear Departamento
-                    </Button>
-                </Box>
+                <Grid container spacing={2} alignItems="center">
+                    <Grid item xs={12} md={9}>
+                        <TextField
+                            label="Nombre del Departamento"
+                            variant="outlined"
+                            value={newDepartment.name}
+                            onChange={(e) => setNewDepartment({ ...newDepartment, name: e.target.value })}
+                            fullWidth
+                            size="small"
+                        />
+                    </Grid>
+                    <Grid item xs={12} md={3}>
+                        <Button
+                            variant="contained"
+                            color="primary"
+                            onClick={createDepartment}
+                            fullWidth
+                            size="large"
+                            startIcon={<Add />}
+                        >
+                            Crear
+                        </Button>
+                    </Grid>
+                </Grid>
             </Paper>
 
-            {/* Campo de búsqueda */}
-            <TextField
-                label="Buscar departamento"
-                variant="outlined"
-                value={searchTerm}
-                onChange={handleSearch}
-                fullWidth
-                margin="normal"
-            />
+            {/* Búsqueda y tabla */}
+            <Paper elevation={3} sx={{ p: 3, borderRadius: 2 }}>
+                <Box sx={{ 
+                    display: 'flex', 
+                    justifyContent: 'space-between', 
+                    alignItems: 'center',
+                    mb: 3
+                }}>
+                    <Typography variant="h6" sx={{ 
+                        fontWeight: 'bold',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 1
+                    }}>
+                        <Business color="primary" /> Departamentos Registrados
+                    </Typography>
+                    
+                    <TextField
+                        label="Buscar departamento"
+                        variant="outlined"
+                        value={searchTerm}
+                        onChange={handleSearch}
+                        size="small"
+                        InputProps={{
+                            startAdornment: <Search color="action" sx={{ mr: 1 }} />
+                        }}
+                        sx={{ width: 300 }}
+                    />
+                </Box>
 
-            <Paper elevation={3} style={{ padding: '20px', marginTop: '30px' }}>
-                <Typography variant="h5" gutterBottom style={{ fontWeight: 'bold', textAlign: 'center' }}>
-                    Departamentos Registrados
-                </Typography>
-
-                <TableContainer component={Paper}>
+                <TableContainer>
                     <Table>
                         <TableHead>
                             <TableRow>
-                                <TableCell style={{ fontWeight: 'bold', textAlign: 'center' }}>ID</TableCell>
-                                <TableCell style={{ fontWeight: 'bold', textAlign: 'center' }}>Nombre del Departamento</TableCell>
-                                <TableCell style={{ fontWeight: 'bold', textAlign: 'center' }}>Acciones</TableCell>
+                                <TableCell sx={{ fontWeight: 'bold', width: '10%' }}>ID</TableCell>
+                                <TableCell sx={{ fontWeight: 'bold', width: '70%' }}>Nombre</TableCell>
+                                <TableCell sx={{ fontWeight: 'bold', width: '20%', textAlign: 'center' }}>Acciones</TableCell>
                             </TableRow>
                         </TableHead>
                         <TableBody>
-                            {filteredDepartments.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((department) => (
-                                <TableRow key={department.id}>
-                                    <TableCell style={{ textAlign: 'center' }}>{department.id}</TableCell>
-                                    <TableCell style={{ textAlign: 'center' }}>{department.name}</TableCell>
-                                    <TableCell style={{ textAlign: 'center' }}>
-                                        <IconButton aria-label="edit" color="primary" onClick={() => handleEditClick(department)}>
-                                            <Edit />
-                                        </IconButton>
-                                        <IconButton aria-label="delete" color="secondary" onClick={() => handleDelete(department.id)}>
-                                            <Delete />
-                                        </IconButton>
+                            {filteredDepartments.length > 0 ? (
+                                filteredDepartments
+                                    .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+                                    .map((department) => (
+                                        <TableRow key={department.id} hover>
+                                            <TableCell>{department.id}</TableCell>
+                                            <TableCell>{department.name}</TableCell>
+                                            <TableCell sx={{ textAlign: 'center' }}>
+                                                <Tooltip title="Editar">
+                                                    <IconButton 
+                                                        color="primary" 
+                                                        onClick={() => handleEditClick(department)}
+                                                        sx={{ mr: 1 }}
+                                                    >
+                                                        <Edit />
+                                                    </IconButton>
+                                                </Tooltip>
+                                                <Tooltip title="Eliminar">
+                                                    <IconButton 
+                                                        color="error" 
+                                                        onClick={() => {
+                                                            if (window.confirm('¿Estás seguro de eliminar este departamento?')) {
+                                                                handleDelete(department.id);
+                                                            }
+                                                        }}
+                                                    >
+                                                        <Delete />
+                                                    </IconButton>
+                                                </Tooltip>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))
+                            ) : (
+                                <TableRow>
+                                    <TableCell colSpan={3} sx={{ textAlign: 'center', py: 4 }}>
+                                        {searchTerm ? 
+                                            'No se encontraron departamentos con ese nombre' : 
+                                            'No hay departamentos registrados'}
                                     </TableCell>
                                 </TableRow>
-                            ))}
+                            )}
                         </TableBody>
                     </Table>
-
-                    <TablePagination
-                        rowsPerPageOptions={[10, 25, 50]}
-                        component="div"
-                        count={filteredDepartments.length}
-                        rowsPerPage={rowsPerPage}
-                        page={page}
-                        onPageChange={handleChangePage}
-                        onRowsPerPageChange={handleChangeRowsPerPage}
-                    />
                 </TableContainer>
+
+                <TablePagination
+                    rowsPerPageOptions={[10, 25, 50]}
+                    component="div"
+                    count={filteredDepartments.length}
+                    rowsPerPage={rowsPerPage}
+                    page={page}
+                    onPageChange={handleChangePage}
+                    onRowsPerPageChange={handleChangeRowsPerPage}
+                    labelRowsPerPage="Filas por página:"
+                    sx={{ mt: 2 }}
+                />
             </Paper>
 
-
-            {/* Diálogo de edición de departamentos */}
-            <Dialog open={openDialog} onClose={handleCloseDialog}>
-                <DialogTitle>Editar Departamento</DialogTitle>
-                <DialogContent>
-                    <DialogContentText>
-                        Modifica la información del departamento seleccionado.
-                    </DialogContentText>
+            {/* Diálogo de edición */}
+            <Dialog open={openDialog} onClose={handleCloseDialog} fullWidth maxWidth="sm">
+                <DialogTitle sx={{ 
+                    backgroundColor: 'primary.main',
+                    color: 'primary.contrastText',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 1
+                }}>
+                    <Edit sx={{ fontSize: 24 }} /> Editar Departamento
+                </DialogTitle>
+                <DialogContent sx={{ py: 3 }}>
                     <TextField
                         margin="dense"
-                        label="Nombre"
+                        label="Nombre del departamento"
                         type="text"
                         fullWidth
+                        variant="outlined"
                         value={selectedDepartment?.name || ''}
-                        onChange={(e) => setSelectedDepartment({ ...selectedDepartment, name: e.target.value } as DepartmentProps)}
+                        onChange={(e) => setSelectedDepartment({ 
+                            ...selectedDepartment, 
+                            name: e.target.value 
+                        } as DepartmentProps)}
                         required
+                        sx={{ mb: 2 }}
                     />
                 </DialogContent>
-                <DialogActions>
-                    <Button onClick={handleCloseDialog} color="secondary">
+                <DialogActions sx={{ px: 3, py: 2 }}>
+                    <Button 
+                        onClick={handleCloseDialog} 
+                        color="inherit"
+                        variant="outlined"
+                    >
                         Cancelar
                     </Button>
-                    <Button onClick={() => updateDepartment(selectedDepartment?.id || 0)} color="primary">
+                    <Button 
+                        onClick={() => updateDepartment(selectedDepartment?.id || 0)} 
+                        color="primary"
+                        variant="contained"
+                        startIcon={<Edit />}
+                    >
                         Guardar Cambios
                     </Button>
                 </DialogActions>
             </Dialog>
+
+            {/* Notificaciones */}
+            <Snackbar
+                open={snackbar.open}
+                autoHideDuration={6000}
+                onClose={handleCloseSnackbar}
+                anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+            >
+                <Alert 
+                    onClose={handleCloseSnackbar} 
+                    severity={snackbar.severity}
+                    sx={{ width: '100%' }}
+                >
+                    {snackbar.message}
+                </Alert>
+            </Snackbar>
         </Container>
     );
 };
 
+// Configuración ACL para el componente
+(DepartmentManagement as any).acl = {
+    action: 'manage',
+    subject: 'departments'
+  };
 export default DepartmentManagement;

@@ -21,6 +21,13 @@ const defineRulesFor = (role: string, subject: string) => {
 
   if (role === 'admin') {
     can('manage', 'all'); // Admin tiene control total sobre todas las acciones y sujetos.
+    can('manage', 'search-users');
+    can('manage', 'user-profile');
+    can('manage', 'holiday-periods');
+    can('manage', 'general-holidays');
+    can('manage', 'departments');
+    
+    
   } else if (role === 'client') {
     can(['read'], 'welcome-dashboard');
     can(['read'], 'welcome');
