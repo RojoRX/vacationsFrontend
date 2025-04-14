@@ -1,32 +1,23 @@
-import Grid from '@mui/material/Grid';
-import Typography from '@mui/material/Typography';
-import Card from '@mui/material/Card';
-import CardContent from '@mui/material/CardContent';
-import Button from '@mui/material/Button';
-import TextField from '@mui/material/TextField';
-import Select from '@mui/material/Select';
-import MenuItem from '@mui/material/MenuItem';
-import FormControl from '@mui/material/FormControl';
-import InputLabel from '@mui/material/InputLabel';
-import Dialog from '@mui/material/Dialog';
-import DialogTitle from '@mui/material/DialogTitle';
-import DialogContent from '@mui/material/DialogContent';
-import DialogActions from '@mui/material/DialogActions';
-import { useEffect, useState } from 'react';
-import { SelectChangeEvent } from '@mui/material';
+import React, { useEffect, useState } from 'react';
 import axios from 'axios';
+import {
+  Dialog, DialogTitle, DialogContent, DialogActions,
+  Button, TextField, Select, MenuItem, FormControl,
+  InputLabel, Typography, Box, Chip, Divider,
+  CircularProgress, Alert,
+  InputAdornment
+} from '@mui/material';
+import {
+  Event as EventIcon,
+  EventAvailable as EventAvailableIcon,
+  Close as CloseIcon,
+  Check as CheckIcon,
+  Send as SendIcon,
+} from '@mui/icons-material';
+import { SelectChangeEvent } from '@mui/material';
 import useUser from 'src/hooks/useUser';
+import { VacationData } from 'src/interfaces/vacationData';
 
-interface VacationData {
-  name: string;
-  email: string;
-  fechaIngreso: string;
-  antiguedadEnAnios: number;
-  diasDeVacacion: number;
-  diasDeVacacionRestantes: number;
-}
-
-// Tipado para el estado del formulario
 interface FormData {
   licenseType: string;
   timeRequested: string;
@@ -34,7 +25,20 @@ interface FormData {
   endDate: string;
 }
 
-const RequestPermission = () => {
+interface RequestPermissionDialogProps {
+  open: boolean;
+  onClose: () => void;
+  onSuccess?: () => void;
+}
+
+interface AclComponent extends React.FC<RequestPermissionDialogProps> {
+  acl?: {
+    action: string;
+    subject: string;
+  };
+}
+
+const RequestPermissionDialog: AclComponent = ({ open, onClose, onSuccess }) => {
   const user = useUser();
   const [formData, setFormData] = useState<FormData>({
     licenseType: 'VACACION',
@@ -43,16 +47,14 @@ const RequestPermission = () => {
     endDate: ''
   });
   const [vacationData, setVacationData] = useState<VacationData | null>(null);
-  const [dialogOpen, setDialogOpen] = useState<boolean>(false);
-  const [confirmationOpen, setConfirmationOpen] = useState<boolean>(false);
-  const [dialogMessage, setDialogMessage] = useState<string>('');
-  const [dialogTitle, setDialogTitle] = useState<string>('');
-  const [submitted, setSubmitted] = useState<boolean>(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
   const [daysCount, setDaysCount] = useState<number>(0);
 
   useEffect(() => {
     const fetchVacationData = async () => {
-      if (user && user.ci) {
+      if (user && user.ci && open) {
         try {
           const response = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/vacations/automatic-period`, {
             params: { carnetIdentidad: user.ci }
@@ -65,236 +67,257 @@ const RequestPermission = () => {
     };
 
     fetchVacationData();
-  }, [user]);
+  }, [user, open]);
 
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | { name?: string; value: unknown }>
-  ) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setFormData({ ...formData, [name as keyof FormData]: value });
+    setFormData(prev => ({ ...prev, [name]: value }));
   };
 
   const handleSelectChange = (event: SelectChangeEvent<string>) => {
     const { name, value } = event.target;
-    if (name === 'timeRequested') {
-      setFormData({
-        ...formData,
-        [name as keyof FormData]: value,
-        startDate: '',
-        endDate: ''
-      });
-    } else {
-      setFormData({ ...formData, [name as keyof FormData]: value });
-    }
+    setFormData(prev => ({
+      ...prev,
+      [name as string]: value,
+      ...(name === 'timeRequested' && { startDate: '', endDate: '' })
+    }));
   };
 
   const handleStartDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { value } = e.target;
-    setFormData({ ...formData, startDate: value });
-    if (formData.timeRequested === 'Día Completo' || formData.timeRequested === 'Medio Día') {
-      setFormData((prev) => ({
-        ...prev,
-        endDate: value
-      }));
-    }
+    setFormData(prev => ({
+      ...prev,
+      startDate: value,
+      ...(prev.timeRequested !== 'Varios Días' && { endDate: value })
+    }));
   };
 
   const handleEndDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { value } = e.target;
     if (new Date(value) < new Date(formData.startDate)) {
-      setDialogTitle('Error');
-      setDialogMessage('La fecha de fin no puede ser anterior a la fecha de inicio.');
-      setDialogOpen(true);
+      setError('La fecha de fin no puede ser anterior a la fecha de inicio');
       return;
     }
-    setFormData({ ...formData, endDate: value });
+    setFormData(prev => ({ ...prev, endDate: value }));
   };
 
   const calculateTotalDays = (): number => {
+    if (!formData.startDate || !formData.endDate) return 0;
     const startDate = new Date(formData.startDate);
     const endDate = new Date(formData.endDate);
     const timeDiff = endDate.getTime() - startDate.getTime();
     return Math.ceil(timeDiff / (1000 * 3600 * 24)) + 1;
   };
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const totalDays = calculateTotalDays();
-    setDaysCount(totalDays);
-    const displayTotalDays = formData.timeRequested === 'Medio Día' ? 'medio día' : `${totalDays} día${totalDays > 1 ? 's' : ''}`;
-    setDialogMessage(`
-        ¿Estás seguro de que deseas enviar la solicitud?
-        \nTipo de Licencia: ${formData.licenseType}
-        \nTiempo Solicitado: ${formData.timeRequested}
-        \nFecha de Inicio: ${formData.startDate}
-        \nFecha de Fin: ${formData.endDate}
-        \nTotal de Días: ${displayTotalDays}
-      `);
-    setConfirmationOpen(true);
-  };
+    setError(null);
+    setLoading(true);
 
-  const confirmSubmit = async () => {
-    if (!user) {
-      setDialogTitle('Error');
-      setDialogMessage('Usuario no autenticado.');
-      setDialogOpen(true);
+    if (!formData.startDate || !formData.timeRequested) {
+      setError('Complete todos los campos requeridos');
+      setLoading(false);
       return;
     }
-  
-    const { startDate, endDate } = formData;
-    const formattedStartDate = new Date(startDate).toISOString().split('T')[0];
-    const formattedEndDate = new Date(endDate).toISOString().split('T')[0];
-  
+
+    const totalDays = calculateTotalDays();
+    setDaysCount(totalDays);
+
     try {
-      await axios.post(`${process.env.NEXT_PUBLIC_API_BASE_URL}/licenses/${user.id}`, {
+      await axios.post(`${process.env.NEXT_PUBLIC_API_BASE_URL}/licenses/${user?.id}`, {
         licenseType: formData.licenseType,
         timeRequested: formData.timeRequested,
-        startDate: formattedStartDate,
-        endDate: formattedEndDate
+        startDate: formData.startDate,
+        endDate: formData.endDate || formData.startDate
       });
-      setDialogTitle('Éxito');
-      setDialogMessage('Solicitud de permiso enviada con éxito.');
-      setSubmitted(true);
-    } catch (error) {
-      // Verificación de tipo
-      if (axios.isAxiosError(error)) {
-        const errorMessage = error.response?.data?.message || 'Error al enviar la solicitud.';
-        setDialogTitle('Error');
-        setDialogMessage(errorMessage);
-      } else {
-        setDialogTitle('Error');
-        setDialogMessage('Error inesperado.');
-      }
+      setSuccess(true);
+      onSuccess?.();
+    } catch (err) {
+      setError(axios.isAxiosError(err) 
+        ? err.response?.data?.message || 'Error al enviar la solicitud'
+        : 'Error inesperado');
     } finally {
-      setDialogOpen(true);
-      setConfirmationOpen(false);
+      setLoading(false);
     }
   };
-  
 
-  const handleDialogClose = () => {
-    setDialogOpen(false);
+  const resetForm = () => {
+    setFormData({
+      licenseType: 'VACACION',
+      timeRequested: '',
+      startDate: '',
+      endDate: ''
+    });
+    setError(null);
+    setSuccess(false);
   };
 
-  const handleConfirmationClose = () => {
-    setConfirmationOpen(false);
+  const handleClose = () => {
+    resetForm();
+    onClose();
   };
 
   return (
-    <Grid container spacing={6} className='match-height'>
-      <Grid item xs={12}>
+    <Dialog 
+      open={open} 
+      onClose={handleClose}
+      maxWidth="sm"
+      fullWidth
+    >
+      <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+        Solicitud de Permiso
+      </DialogTitle>
+      
+      <DialogContent dividers>
         {vacationData && (
-          <Card>
-            <CardContent>
-              <Typography variant="h6">
-                Tienes {vacationData.diasDeVacacionRestantes} días disponibles de vacaciones en la gestión actual.
-              </Typography>
-            </CardContent>
-          </Card>
+          <Box mb={2}>
+            <Chip 
+              label={`Días disponibles: ${vacationData.diasDeVacacionRestantes}`}
+              color="info"
+              variant="outlined"
+              size="medium"
+            />
+          </Box>
         )}
-      </Grid>
 
-      <Grid item xs={12} md={12}>
-        <Card>
-          <CardContent>
-            <Typography variant="h5" component="div" gutterBottom>
-              Solicitud de Permisos
+        {error && (
+          <Alert severity="error" sx={{ mb: 2 }}>
+            {error}
+          </Alert>
+        )}
+
+        {success ? (
+          <Box textAlign="center" py={4}>
+            <CheckIcon color="success" sx={{ fontSize: 60 }} />
+            <Typography variant="h6" mt={2}>
+              Solicitud enviada con éxito
             </Typography>
-            <form onSubmit={handleSubmit}>
-              <FormControl fullWidth margin="normal">
-                <InputLabel id="licenseType-label">Tipo de Licencia</InputLabel>
-                <Select
-                  labelId="licenseType-label"
-                  name="licenseType"
-                  value={formData.licenseType}
-                  onChange={handleSelectChange}
-                >
-                  <MenuItem value="VACACION">Vacación</MenuItem>
-                </Select>
-              </FormControl>
+            <Typography variant="body2" color="text.secondary" mt={1}>
+              {formData.timeRequested === 'Medio Día' 
+                ? 'Medio día solicitado'
+                : `${daysCount} día${daysCount > 1 ? 's' : ''} solicitado${daysCount > 1 ? 's' : ''}`}
+            </Typography>
+          </Box>
+        ) : (
+          <form onSubmit={handleSubmit}>
+            <FormControl fullWidth margin="normal">
+              <InputLabel id="licenseType-label">Tipo de Licencia</InputLabel>
+              <Select
+                labelId="licenseType-label"
+                name="licenseType"
+                value={formData.licenseType}
+                onChange={handleSelectChange}
+                disabled={loading}
+              >
+                <MenuItem value="VACACION">Vacación</MenuItem>
+              </Select>
+            </FormControl>
 
-              <FormControl fullWidth margin="normal">
-                <InputLabel id="timeRequested-label">Tiempo Solicitado</InputLabel>
-                <Select
-                  labelId="timeRequested-label"
-                  name="timeRequested"
-                  value={formData.timeRequested}
-                  onChange={handleSelectChange}
-                >
-                  <MenuItem value="Medio Día">Medio Día</MenuItem>
-                  <MenuItem value="Día Completo">Día Completo</MenuItem>
-                  <MenuItem value="Varios Días">Varios Días</MenuItem>
-                </Select>
-              </FormControl>
+            <FormControl fullWidth margin="normal">
+              <InputLabel id="timeRequested-label">Tiempo Solicitado *</InputLabel>
+              <Select
+                labelId="timeRequested-label"
+                name="timeRequested"
+                value={formData.timeRequested}
+                onChange={handleSelectChange}
+                required
+                disabled={loading}
+              >
+                <MenuItem value="Medio Día">Medio Día</MenuItem>
+                <MenuItem value="Día Completo">Día Completo</MenuItem>
+                <MenuItem value="Varios Días">Varios Días</MenuItem>
+              </Select>
+            </FormControl>
 
-              {formData.timeRequested !== 'Varios Días' && (
-                <TextField
-                  label="Fecha de Inicio"
-                  type="date"
-                  name="startDate"
-                  value={formData.startDate}
-                  onChange={handleStartDateChange}
-                  fullWidth
-                  margin="normal"
-                  InputLabelProps={{ shrink: true }}
-                />
-              )}
+            <TextField
+              label="Fecha de Inicio *"
+              type="date"
+              name="startDate"
+              value={formData.startDate}
+              onChange={handleStartDateChange}
+              fullWidth
+              margin="normal"
+              InputLabelProps={{ shrink: true }}
+              required
+              disabled={loading || !formData.timeRequested}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <EventIcon color="action" />
+                  </InputAdornment>
+                ),
+              }}
+            />
 
-              {formData.timeRequested === 'Varios Días' && (
-                <>
-                  <TextField
-                    label="Fecha de Inicio"
-                    type="date"
-                    name="startDate"
-                    value={formData.startDate}
-                    onChange={handleStartDateChange}
-                    fullWidth
-                    margin="normal"
-                    InputLabelProps={{ shrink: true }}
-                  />
-                  <TextField
-                    label="Fecha de Fin"
-                    type="date"
-                    name="endDate"
-                    value={formData.endDate}
-                    onChange={handleEndDateChange}
-                    fullWidth
-                    margin="normal"
-                    InputLabelProps={{ shrink: true }}
-                  />
-                </>
-              )}
+            {formData.timeRequested === 'Varios Días' && (
+              <TextField
+                label="Fecha de Fin *"
+                type="date"
+                name="endDate"
+                value={formData.endDate}
+                onChange={handleEndDateChange}
+                fullWidth
+                margin="normal"
+                InputLabelProps={{ shrink: true }}
+                required
+                disabled={loading}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <EventAvailableIcon color="action" />
+                    </InputAdornment>
+                  ),
+                }}
+              />
+            )}
 
-              <Button type="submit" variant="contained" color="primary">
-                Enviar Solicitud
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
-      </Grid>
+            {formData.startDate && formData.endDate && formData.timeRequested === 'Varios Días' && (
+              <Typography variant="body2" color="text.secondary" mt={1}>
+                Total de días: {calculateTotalDays()}
+              </Typography>
+            )}
+          </form>
+        )}
+      </DialogContent>
 
-      <Dialog open={dialogOpen} onClose={handleDialogClose}>
-        <DialogTitle>{dialogTitle}</DialogTitle>
-        <DialogContent>{dialogMessage}</DialogContent>
-        <DialogActions>
-          <Button onClick={handleDialogClose}>Cerrar</Button>
-        </DialogActions>
-      </Dialog>
-
-      <Dialog open={confirmationOpen} onClose={handleConfirmationClose}>
-        <DialogTitle>Confirmar Solicitud</DialogTitle>
-        <DialogContent>{dialogMessage}</DialogContent>
-        <DialogActions>
-          <Button onClick={confirmSubmit}>Confirmar</Button>
-          <Button onClick={handleConfirmationClose}>Cancelar</Button>
-        </DialogActions>
-      </Dialog>
-    </Grid>
+      <DialogActions>
+        {success ? (
+          <Button 
+            onClick={handleClose} 
+            color="primary"
+            variant="contained"
+            startIcon={<CloseIcon />}
+          >
+            Cerrar
+          </Button>
+        ) : (
+          <>
+            <Button 
+              onClick={handleClose} 
+              color="inherit"
+              disabled={loading}
+            >
+              Cancelar
+            </Button>
+            <Button 
+              type="submit" 
+              variant="contained" 
+              color="primary"
+              onClick={handleSubmit}
+              disabled={loading}
+              startIcon={loading ? <CircularProgress size={20} /> : <SendIcon />}
+            >
+              {loading ? 'Enviando...' : 'Enviar Solicitud'}
+            </Button>
+          </>
+        )}
+      </DialogActions>
+    </Dialog>
   );
 };
 // Configurar ACL para dar acceso a empleados
-RequestPermission.acl = {
+RequestPermissionDialog.acl = {
     action: 'read',
     subject: 'request-permission'
 };
-export default RequestPermission;
+export default RequestPermissionDialog;

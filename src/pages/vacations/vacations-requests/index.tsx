@@ -53,7 +53,7 @@ interface VacationRequest {
     startDate: string;
     endDate: string;
     totalDays: number;
-    status: 'PENDING' | 'AUTHORIZED' | 'REJECTED' | 'CANCELLED';
+    status: 'PENDING' | 'AUTHORIZED' | 'DENIED' | 'SUSPENDED';
     postponedDate: string | null;
     postponedReason: string | null;
     returnDate: string;
@@ -289,7 +289,8 @@ const VacationRequestList: VacationRequestsComponent = () => {
                             <option value="all">Todos</option>
                             <option value="PENDING">Pendiente</option>
                             <option value="AUTHORIZED">Autorizado</option>
-                            <option value="REJECTED">Rechazado</option>
+                            <option value="DENIED">Rechazado</option>
+                            <option value="SUSPENDED">Suspendido</option>
                             <option value="CANCELLED">Cancelado</option>
                         </TextField>
 

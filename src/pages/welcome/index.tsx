@@ -18,6 +18,7 @@ import ApexChartWrapper from 'src/@core/styles/libs/react-apexcharts';
 // ** Custom Hook
 import useUser from 'src/hooks/useUser';
 import Link from 'next/link';
+import RequestPermissionDialog from '../permissions/create-permission';
 
 const WelcomeDashboard = () => {
   // Usar el hook para obtener datos del usuario
@@ -25,7 +26,7 @@ const WelcomeDashboard = () => {
 
   // Estado para almacenar los datos de vacaciones
   const [vacationData, setVacationData] = useState<null | { diasDeVacacionRestantes: number }>(null);
-
+  const [openDialog, setOpenDialog] = useState(false);
   // Efecto para obtener los datos de vacaciones del usuario
   useEffect(() => {
     const fetchVacationData = async () => {
@@ -108,12 +109,16 @@ const WelcomeDashboard = () => {
             variant="contained"
             color="secondary"
             startIcon={<Icon icon="mdi:briefcase" />}
+            onClick={() => setOpenDialog(true)}
             fullWidth
-            component={Link}
-            href="/permissions/create-permission/"
           >
             Solicitar Licencia
           </Button>
+          <RequestPermissionDialog
+            open={openDialog}
+            onClose={() => setOpenDialog(false)}
+            
+          />
         </Grid>
       </Grid>
     </ApexChartWrapper>

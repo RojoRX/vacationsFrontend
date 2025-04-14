@@ -18,6 +18,7 @@ export interface VacationData {
   antiguedadEnDias: number;
   diasDeVacacion: number;
   solicitudesDeVacacionAutorizadas: SolicitudesDeVacacionAutorizadas;
+  diasDeVacacionRestantes:number;
   licenciasAutorizadas: LicenciasAutorizadas;
   startDate: string;
   endDate: string;

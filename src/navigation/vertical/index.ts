@@ -41,19 +41,19 @@ const navigation = (): VerticalNavItemsType => {
         //   subject: 'vacation-request-form',
         // },
         {
-          title: 'Consultar Vacaciones',
-          path: '/vacations/vacations-summary',
-          action: 'read',
-          subject: 'vacation-summary',
-        },
-        {
-          title: 'Dashboard',
+          title: 'Resumen Vacaciones',
           path: '/vacations/vacations-dashboard',
           action: 'read',
           subject: 'vacation-dashboard',
         },
         {
-          title: 'Mis Solicitudes de Vacaciones',
+          title: 'Detalles Vacaciones',
+          path: '/vacations/vacations-summary',
+          action: 'read',
+          subject: 'vacation-summary',
+        },
+        {
+          title: 'Solicitudes de Vacaciones',
           path: '/vacations/vacations-requests',
           action: 'read',
           subject: 'vacation-request-list',
