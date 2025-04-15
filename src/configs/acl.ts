@@ -26,7 +26,7 @@ const defineRulesFor = (role: string, subject: string) => {
     can('manage', 'holiday-periods');
     can('manage', 'general-holidays');
     can('manage', 'departments');
-    
+    can('manage', 'all-licenses');
     
   } else if (role === 'client') {
     can(['read'], 'welcome-dashboard');

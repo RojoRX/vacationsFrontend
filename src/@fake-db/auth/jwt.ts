@@ -35,7 +35,7 @@ const users: UserDataType[] = [
     celular: '', // Cell phone left empty
     profesion: ''
   },
-  {
+  /*{
     id: 5,
     ci: '12349876',
     fecha_ingreso: '2019-05-12',
@@ -46,7 +46,7 @@ const users: UserDataType[] = [
     fullName: 'Fernando Martinez Lopez',
     celular: '69001122', // Added cell phone number
     profesion: 'Ingeniero de Sistemas'
-  },
+  },*/
   {
     id: 6,
     ci: '56781234',
@@ -60,7 +60,7 @@ const users: UserDataType[] = [
     profesion: 'Docente de Química'
   },
   {
-    id: 7,
+    id: 5,
     ci: '00000000',
     fecha_ingreso: '2016-03-10',
     username: 'admin',

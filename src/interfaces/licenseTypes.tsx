@@ -9,5 +9,6 @@ export interface License {
     immediateSupervisorApproval: boolean;
     personalDepartmentApproval: boolean;
     totalDays: string;
+    userId:number;
     // Puedes agregar más campos según sea necesario
 }

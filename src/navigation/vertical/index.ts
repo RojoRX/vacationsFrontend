@@ -72,7 +72,7 @@ const navigation = (): VerticalNavItemsType => {
       ],
     },
     {
-      title: 'Licencias',
+      title: 'Permisos',
       icon: 'mdi:clipboard-text',
       children: [
         /*{
@@ -82,16 +82,22 @@ const navigation = (): VerticalNavItemsType => {
           subject: 'request-permission',
         },*/
         {
-          title: 'Mis Licencias',
+          title: 'Mis Permisos',
           path: '/permissions/user-licenses',
           action: 'read',
           subject: 'user-licenses',
         },
         {
-          title: 'Licencias Departamento',
+          title: 'Permisos Departamento',
           path: '/permissions/department-permission',
           action: 'read',
           subject: 'department-permission',
+        },
+        {
+          title: 'Solicitudes de Permisos',
+          path: '/permissions/adminlicenses',
+          action: 'read',
+          subject: 'adminlicenses',
         },
       ],
     },
