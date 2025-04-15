@@ -55,6 +55,32 @@ const AllNotificationsDialog = ({ open, onClose }: Props) => {
     }
   }, [open, user?.id]);
 
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return new Intl.DateTimeFormat('es-BO', {
+      day: '2-digit',
+      month: 'long',
+      year: 'numeric'
+    }).format(date);
+  };
+
+  const beautifyNotificationMessage = (message: string): string => {
+    const dateRegex = /\d{4}-\d{2}-\d{2}T[^\s]+/g;
+    const matches = message.match(dateRegex);
+
+    if (matches && matches.length >= 2) {
+      const formattedStart = formatDate(matches[0]);
+      const formattedEnd = formatDate(matches[1]);
+
+      let newMessage = message.replace(matches[0], formattedStart);
+      newMessage = newMessage.replace(matches[1], formattedEnd);
+
+      return newMessage;
+    }
+
+    return message;
+  };
+
   return (
     <Dialog fullWidth maxWidth="sm" open={open} onClose={onClose} scroll="paper">
       <DialogTitle
@@ -83,23 +109,19 @@ const AllNotificationsDialog = ({ open, onClose }: Props) => {
         ) : (
           <List disablePadding>
             {notifications.map((notif) => (
-              <ListItem
-                key={notif.id}
-                divider
-                sx={{
-                  alignItems: 'flex-start',
-                  backgroundColor: notif.read ? 'inherit' : theme.palette.action.hover,
-                }}
-              >
-                <ListItemText
-                  primary={<Typography sx={{ fontWeight: 600 }}>{notif.message}</Typography>}
-                  secondary={
-                    <Typography variant="caption" color="text.secondary">
-                      {formatDistanceToNow(new Date(notif.createdAt))} ago
-                    </Typography>
-                  }
-                />
-              </ListItem>
+              <ListItemText
+                primary={
+                  <Typography sx={{ fontWeight: 600 }}>
+                    {beautifyNotificationMessage(notif.message)}
+                  </Typography>
+                }
+                secondary={
+                  <Typography variant="caption" color="text.secondary">
+                    {formatDistanceToNow(new Date(notif.createdAt))} ago
+                  </Typography>
+                }
+              />
+
             ))}
           </List>
         )}

@@ -110,18 +110,24 @@ const NotificationDropdown = ({ settings }: Props) => {
     if (user?.id) {
       const fetchNotifications = async () => {
         try {
-          const response = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/notifications/${user.id}/unread`);
+          if (!user?.id) return;
+      
+          // Siempre usamos el mismo endpoint
+          const url = `${process.env.NEXT_PUBLIC_API_BASE_URL}/notifications/${user.id}/unread`;
+      
+          const response = await axios.get(url);
           setNotificationsData(response.data);
         } catch (error) {
           console.error('Error fetching notifications:', error);
         }
       };
+      
 
       fetchNotifications();
-      const intervalId = setInterval(fetchNotifications, 10000);
+      const intervalId = setInterval(fetchNotifications, 10000); // Actualizar notificaciones cada 10 segundos
       return () => clearInterval(intervalId);
     }
-  }, [user?.id]);
+  }, [user?.id, user?.role]);
 
   const handleDropdownClose = () => setAnchorEl(null);
 
@@ -145,6 +151,32 @@ const NotificationDropdown = ({ settings }: Props) => {
   };
 
   const handleDropdownOpen = (event: SyntheticEvent) => setAnchorEl(event.currentTarget);
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return new Intl.DateTimeFormat('es-BO', {
+      day: '2-digit',
+      month: 'long',
+      year: 'numeric'
+    }).format(date);
+  };
+  const beautifyNotificationMessage = (message: string): string => {
+  const dateRegex = /\d{4}-\d{2}-\d{2}T[^\s]+/g;
+  const matches = message.match(dateRegex);
+
+  if (matches && matches.length >= 2) {
+    const formattedStart = formatDate(matches[0]);
+    const formattedEnd = formatDate(matches[1]);
+
+    // Reemplazar las fechas originales por las formateadas
+    let newMessage = message.replace(matches[0], formattedStart);
+    newMessage = newMessage.replace(matches[1], formattedEnd);
+
+    return newMessage;
+  }
+
+  return message; // Si no hay fechas, retornar el mensaje original
+};
 
   return (
     <Fragment>
@@ -193,7 +225,8 @@ const NotificationDropdown = ({ settings }: Props) => {
                   sx={{ width: '100%', display: 'flex', alignItems: 'center', cursor: 'pointer' }}
                 >
                   <Box sx={{ mx: 4, flex: '1 1', display: 'flex', flexDirection: 'column' }}>
-                    <MenuItemTitle>{notification.message}</MenuItemTitle>
+                  <MenuItemTitle>{beautifyNotificationMessage(notification.message)}</MenuItemTitle>
+
                     <MenuItemSubtitle variant="body2">
                       {formatDistanceToNow(new Date(notification.createdAt))} ago
                     </MenuItemSubtitle>
@@ -229,10 +262,9 @@ const NotificationDropdown = ({ settings }: Props) => {
           <Button fullWidth variant="contained" onClick={() => {
             handleDropdownClose();
             setTimeout(() => setAllDialogOpen(true), 300);
-          }}>
+          }} >
             LEER NOTIFICACIONES
           </Button>
-
         </MenuItem>
       </Menu>
 
@@ -245,7 +277,6 @@ const NotificationDropdown = ({ settings }: Props) => {
         open={allDialogOpen}
         onClose={() => setAllDialogOpen(false)}
       />
-
     </Fragment>
   );
 };
