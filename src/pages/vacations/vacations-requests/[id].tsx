@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import axios from 'axios';
+import React, { useEffect, useState, useCallback } from 'react';
+import axios, { AxiosError } from 'axios';
 import { useRouter } from 'next/router';
 import {
   Typography,
@@ -18,56 +18,38 @@ import {
   DialogContent,
   DialogContentText,
   DialogTitle,
+  Paper,
+  Divider,
+  Stack,
+  Alert,
+  IconButton,
+  Container
 } from '@mui/material';
+import {
+  People as PeopleIcon,
+  Info as InfoIcon,
+  Approval as ApprovalIcon,
+  Assignment as AssignmentIcon,
+  Close as CloseIcon,
+  Download as DownloadIcon,
+  Edit as EditIcon,
+  Check as CheckIcon,
+  Cancel as CancelIcon
+} from '@mui/icons-material';
 import useUser from 'src/hooks/useUser';
-import { SelectChangeEvent } from '@mui/material/Select'; // Asegúrate de importar SelectChangeEvent
-import { People, Info, Approval, Assignment } from '@mui/icons-material';
+import { SelectChangeEvent } from '@mui/material/Select';
 import PostponeVacationRequestForm from '../vacations-postponed';
 import { generateVacationAuthorizationPDF } from 'src/utils/pdfGenerator';
-
-interface VacationDebt {
-  diasDisponibles: number;
-  deudaAcumulativaHastaEstaGestion:number;
-  startDate: string;
-  endDate: string;
-}
-
-
-interface GestionPeriod {
-  startDate: string;
-  endDate: string;
-}
-
-interface Recess {
-  name: string;
-  startDate: string;
-  endDate: string;
-  totalDays: number;
-  nonHolidayDays: number;
-  daysCount: number;
-  type: string;
-}
-
-interface AuthorizedVacationRequest {
-  id: number;
-  position: string;
-  requestDate: string;
-  startDate: string;
-  endDate: string;
-  totalDays: number;
-  status: string;
-  postponedDate: string | null;
-  postponedReason: string | null;
-  returnDate: string;
-  approvedByHR: boolean;
-  approvedBySupervisor: boolean;
-  managementPeriodStart: string;
-  managementPeriodEnd: string;
-}
+import { format, parseISO } from 'date-fns';
+import { es } from 'date-fns/locale';
+import { VacationDebt } from 'src/interfaces/vacationDebt';
+import { Gestion } from 'src/interfaces/gestion';
+import { Receso } from 'src/interfaces/receso';
+import { AuthorizedVacationRequest } from 'src/interfaces/authorizedVacationRequest';
 
 interface VacationRequest {
   ci: string;
-  gestion: GestionPeriod;
+  gestion: Gestion;
   requestId: number;
   userName: string;
   requestDate: string;
@@ -89,7 +71,7 @@ interface VacationRequest {
   antiguedadEnAnios: number;
   diasDeVacacion: number;
   diasDeVacacionRestantes: number;
-  recesos: Recess[]; // Actualiza el tipo de recesos
+  recesos: Receso[];
   licenciasAutorizadas: {
     totalAuthorizedDays: number;
     requests: any[];
@@ -100,378 +82,439 @@ interface VacationRequest {
   };
 }
 
+const STATUS_OPTIONS = [
+  { value: 'PENDING', label: 'Pendiente', color: 'default' },
+  { value: 'AUTHORIZED', label: 'Autorizado', color: 'success' },
+  { value: 'POSTPONED', label: 'Postergado', color: 'warning' },
+  { value: 'DENIED', label: 'Rechazado', color: 'error' },
+  { value: 'SUSPENDED', label: 'Suspendido', color: 'info' },
+];
+
+const formatDate = (dateString: string) => {
+  try {
+    return format(parseISO(dateString), 'dd/MM/yyyy', { locale: es });
+  } catch {
+    return dateString.split('T')[0].split('-').reverse().join('/');
+  }
+};
+
 const VacationRequestDetails = () => {
   const router = useRouter();
   const { id } = router.query;
+  const user = useUser();
   const [request, setRequest] = useState<VacationRequest | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedStatus, setSelectedStatus] = useState<string>('PENDING');
-  const user = useUser(); // Hook para obtener el usuario actual
-  const [openDialog, setOpenDialog] = useState(false);
+  const [selectedStatus, setSelectedStatus] = useState('PENDING');
+  const [dialogOpen, setDialogOpen] = useState(false);
   const [infoMessage, setInfoMessage] = useState('');
   const [debtData, setDebtData] = useState<VacationDebt | null>(null);
 
-  
-  const validStatuses = [
-    { value: 'PENDING', label: 'Pendiente' },
-    { value: 'AUTHORIZED', label: 'Autorizado' },
-    { value: 'POSTPONED', label: 'Postergado' },
-    { value: 'DENIED', label: 'Rechazado' },
-    { value: 'SUSPENDED', label: 'Suspendido' },
-  ];
-
-  const fetchRequestDetails = async () => {
+  const fetchRequestDetails = useCallback(async () => {
     if (!id) return;
-  
+
     try {
+      setLoading(true);
+      setError(null);
+      
       const response = await axios.get<VacationRequest>(
         `${process.env.NEXT_PUBLIC_API_BASE_URL}/vacation-requests/${id}/details`
       );
+      
       setRequest(response.data);
       setSelectedStatus(response.data.status);
-  
+
       if (response.data.managementPeriodStart && response.data.managementPeriodEnd) {
-        const formattedStartDate = new Date(response.data.managementPeriodStart).toISOString().split('T')[0];
-        const formattedEndDate = new Date(response.data.managementPeriodEnd).toISOString().split('T')[0];
-        await fetchDebtData(formattedStartDate, formattedEndDate, response.data.ci); // Pasamos las fechas y el CI
-      } else {
-        console.error('managementPeriodStart or managementPeriodEnd is undefined in response:', response.data);
+        await fetchDebtData(
+          response.data.managementPeriodStart, 
+          response.data.managementPeriodEnd, 
+          response.data.ci
+        );
       }
-    } catch (error) {
-      console.error('Error fetching vacation request details:', error);
-      setError('Error al obtener los detalles de la solicitud.');
+    } catch (err) {
+      handleFetchError(err);
     } finally {
       setLoading(false);
     }
-  };
+  }, [id]);
 
   const fetchDebtData = async (startDate: string, endDate: string, ci: string) => {
-    if (!ci) {
-      console.error('Carnet de identidad no disponible.');
-      return;
-    }
-  
     try {
-
       const response = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/vacations/accumulated-debt`, {
-        params: {
-          carnetIdentidad: ci,
-          endDate,
-        },
+        params: { carnetIdentidad: ci, endDate },
+        timeout: 5000,
       });
   
+      console.log('Respuesta completa del servidor:', response.data);
   
+      // Verificar si hay detalles en la respuesta
+      if (!response.data.detalles || !Array.isArray(response.data.detalles)) {
+        console.error('Formato de datos inesperado: detalles no es un array');
+        throw new Error('Formato de datos inesperado');
+      }
   
-      const gestionStartDate = new Date(startDate);
-      const gestionEndDate = new Date(endDate);
+      // Formatear fechas de búsqueda
+      const gestionStart = new Date(startDate);
+      const gestionEnd = new Date(endDate);
   
-
-  
+      // Buscar la gestión que coincida con el rango de fechas
       const gestionDebt = response.data.detalles.find((detalle: any) => {
-        if (!detalle) {
-          console.error('Detalle is undefined.');
+        try {
+          const detalleStart = new Date(detalle.startDate);
+          const detalleEnd = new Date(detalle.endDate);
+          
+          // Comparar las fechas como objetos Date directamente
+          return (
+            detalleStart.getTime() === gestionStart.getTime() &&
+            detalleEnd.getTime() === gestionEnd.getTime()
+          );
+        } catch (e) {
+          console.error('Error al parsear fechas del detalle:', detalle, e);
           return false;
         }
-  
-        const detalleStartDate = new Date(detalle.startDate);
-        const detalleEndDate = new Date(detalle.endDate);
-  
-
-  
-        return (
-          detalleStartDate.getTime() === gestionStartDate.getTime() &&
-          detalleEndDate.getTime() === gestionEndDate.getTime()
-        );
       });
   
-
-      setDebtData(gestionDebt || null);
-    } catch (error) {
-      console.error('Error fetching debt data:', error);
-      setDebtData(null);
+      if (!gestionDebt) {
+        console.warn('No se encontró deuda para la gestión específica, usando el último registro');
+        // Usar el último registro si no se encuentra la gestión específica
+        const lastRecord = response.data.detalles[response.data.detalles.length - 1];
+        setDebtData({
+          diasDisponibles: lastRecord?.diasDisponibles ?? 0,
+          deudaAcumulativaAnterior: lastRecord?.deudaAcumulativaAnterior ?? 0,
+          deuda: lastRecord?.deuda ?? 0,
+          startDate: lastRecord?.startDate ?? '',
+          endDate: lastRecord?.endDate ?? '',
+          deudaAcumulativaHastaEstaGestion: lastRecord?.deudaAcumulativaHastaEstaGestion ?? 0,
+        });
+        return;
+      }
+  
+      console.log('Datos encontrados para la gestión:', gestionDebt);
+      setDebtData(gestionDebt);
+      
+    } catch (err) {
+      console.error('Error fetching debt data:', err);
+      setDebtData({ 
+        diasDisponibles: 0, 
+        deudaAcumulativaAnterior: 0,
+        deuda: 0,
+        startDate: '',
+        endDate: '',
+        deudaAcumulativaHastaEstaGestion: 0,
+      });
     }
+  };
+
+  const handleFetchError = (error: unknown) => {
+    let errorMessage = 'Error al obtener los detalles de la solicitud';
+    
+    if (axios.isAxiosError(error)) {
+      errorMessage = error.response?.data?.message || error.message;
+    } else if (error instanceof Error) {
+      errorMessage = error.message;
+    }
+    
+    console.error('Error:', error);
+    setError(errorMessage);
   };
 
   useEffect(() => {
-    if (id) {
-      fetchRequestDetails();
-    }
-  }, [id]);
-
-  const refreshRequestDetails = () => {
-    setLoading(true);
-    fetchRequestDetails(); // Vuelve a obtener los detalles de la solicitud
-  };
+    fetchRequestDetails();
+  }, [fetchRequestDetails]);
 
   const handleStatusChange = async (event: SelectChangeEvent<string>) => {
-    const newStatus = event.target.value as string;
+    const newStatus = event.target.value;
 
-    // Verifica si se intenta establecer el estado como "POSTPONED"
     if (newStatus === 'POSTPONED') {
       setInfoMessage('Para postergar la solicitud, utilice el formulario de postergación.');
-      setOpenDialog(true); // Abre el diálogo
+      setDialogOpen(true);
       return;
     }
 
-    if (!request || newStatus === request.status) return;
+    if (!request || newStatus === request.status || !user?.id) return;
 
-    // Lógica para cambiar el estado
-    // Lógica para cambiar el estado
     try {
-      console.log("Datos que se enviarán:", {
-        status: newStatus,
-        supervisorId: user?.id,
-      }); // Imprime los datos antes de enviarlos
+      await axios.patch(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/vacation-requests/${request.requestId}/status`,
+        { status: newStatus, supervisorId: user.id }
+      );
 
-      if (!user?.id) {
-        console.error("Error: user.id es undefined. Asegúrate de que el usuario esté logueado y sus datos estén disponibles.");
-        setError('Error: No se puede obtener el ID del supervisor.');
-        return; // Detiene la ejecución si user.id es undefined
-      }
-
-      await axios.patch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/vacation-requests/${request.requestId}/status`, {
-        status: newStatus,
-        supervisorId: user?.id,
-      });
-
-      console.log("Solicitud PATCH exitosa."); // Confirma que la solicitud se envió
-
-      setRequest((prev) => (prev ? { ...prev, status: newStatus } : null));
+      setRequest(prev => ({ ...prev!, status: newStatus }));
       setSelectedStatus(newStatus);
-    } catch (error) {
-      console.error('Error updating status:', error);
-  
-      if (axios.isAxiosError(error)) {
-          if (error.response) {
-              console.error("Error del servidor:", error.response.data);
-              console.error("Código de estado:", error.response.status);
-              setError(`Error al actualizar el estado: ${error.response.data.message || error.message}`);
-          } else if (error.request) {
-              console.error("Error de solicitud:", error.request);
-              setError('Error al actualizar el estado: No se recibió respuesta del servidor.');
-          }
-      } else {
-        
-          setError('Error al actualizar el estado: Error de configuración.');
-      }
+    } catch (err) {
+      handleStatusUpdateError(err);
+    }
   };
-  }
 
+  const handleStatusUpdateError = (error: unknown) => {
+    let errorMessage = 'Error al actualizar el estado';
+    
+    if (axios.isAxiosError(error)) {
+      errorMessage = error.response?.data?.message || error.message;
+    } else if (error instanceof Error) {
+      errorMessage = error.message;
+    }
+    
+    console.error('Error updating status:', error);
+    setError(errorMessage);
+  };
 
   const toggleApprovedByHR = async () => {
     if (!request) return;
 
     try {
-      await axios.put(`${process.env.NEXT_PUBLIC_API_BASE_URL}/vacation-requests/${request.requestId}/toggle-approved-by-hr`);
-      setRequest((prev) => (prev ? { ...prev, approvedByHR: !prev.approvedByHR } : null));
-    } catch (error) {
-      console.error('Error toggling approvedByHR:', error);
-      setError('Error al actualizar la aprobación de Recursos Humanos.');
+      await axios.put(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/vacation-requests/${request.requestId}/toggle-approved-by-hr`
+      );
+      setRequest(prev => ({ ...prev!, approvedByHR: !prev!.approvedByHR }));
+    } catch (err) {
+      handleStatusUpdateError(err);
     }
   };
-  const formatearFecha = (fechaISO: string | number | Date) => {
-    const opciones: Intl.DateTimeFormatOptions = { year: 'numeric', month: '2-digit', day: '2-digit' };
-    return new Date(fechaISO).toLocaleDateString('es-ES', opciones);
+
+  const getRecessByName = (name: string) => {
+    return request?.recesos.find(receso => receso.name === name);
   };
 
-  const obtenerRecesoPorNombre = (nombre: string) => {
-    return request?.recesos.find((receso) => receso.name === nombre);
-  };
+  const renderHeader = () => (
+    <Box textAlign="center" mb={4}>
+      <Typography variant="h4" fontWeight="bold" gutterBottom>
+        Universidad Autónoma Tomás Frías
+      </Typography>
+      <Typography variant="h6" gutterBottom>
+        Departamento de Personal
+      </Typography>
+      <Typography variant="h5" fontWeight="bold" gutterBottom>
+        Formulario de Solicitud y Concesión de Vacaciones
+      </Typography>
+      
+      {request?.status === "AUTHORIZED" && (
+        <Button
+          variant="contained"
+          startIcon={<DownloadIcon />}
+          onClick={() => generateVacationAuthorizationPDF(request)}
+          sx={{ mt: 2 }}
+        >
+          Descargar Autorización en PDF
+        </Button>
+      )}
+    </Box>
+  );
 
-  const recesoInvierno = obtenerRecesoPorNombre('INVIERNO');
-  const recesoFinDeGestion = obtenerRecesoPorNombre('FINDEGESTION');
+  const renderSection = (title: string, children: React.ReactNode) => (
+    <Paper elevation={2} sx={{ p: 3, mb: 3 }}>
+      <Typography variant="h6" fontWeight="bold" gutterBottom>
+        {title}
+      </Typography>
+      <Divider sx={{ mb: 2 }} />
+      {children}
+    </Paper>
+  );
+
+  const renderApplicantInfo = () => (
+    <>
+      <Typography variant="body1">
+        <strong>Nombre de Usuario:</strong> {request?.userName}
+      </Typography>
+      <Typography variant="body1">
+        <strong>Fecha de Ingreso:</strong> {formatDate(request?.fechaIngreso || '')}
+      </Typography>
+      <Typography variant="body1">
+        <strong>Fecha de Solicitud:</strong> {formatDate(request?.requestDate || '')}
+      </Typography>
+      <Typography variant="body1">
+        <strong>Departamento:</strong> {request?.department || 'No especificado'}
+      </Typography>
+      <Typography variant="body1">
+        <strong>Cargo que Ocupa:</strong> {request?.position || 'No especificado'}
+      </Typography>
+      <Typography variant="body1">
+        <strong>Solicita Vacacion a partir de:</strong> {formatDate(request?.startDate || '')}
+      </Typography>
+    </>
+  );
+
+  const renderPersonalDepartmentReport = () => (
+    <>
+      <Typography variant="body1">
+        <strong>Vacación correspondiente a las gestión(es):</strong> {formatDate(request?.managementPeriodStart || '')} - {formatDate(request?.managementPeriodEnd || '')}
+      </Typography>
+      <Typography variant="body1">
+        <strong>Años de Antigüedad:</strong> {request?.antiguedadEnAnios}
+      </Typography>
+      <Typography variant="body1">
+        <strong>Días de Vacación por Antigüedad:</strong> {request?.diasDeVacacion}
+      </Typography>
+      <Typography variant="body1">
+        <strong>Días de Licencia Autorizados cuenta Vacación:</strong> {request?.licenciasAutorizadas.totalAuthorizedDays ?? 'No disponibles'}
+      </Typography>
+      <Typography variant="body1">
+        <strong>Descanso pedagógico de Invierno:</strong> {getRecessByName('INVIERNO')?.daysCount || '0'} días
+      </Typography>
+      <Typography variant="body1">
+        <strong>Descanso de Fin de Año:</strong> {getRecessByName('FINDEGESTION')?.daysCount || '0'} días
+      </Typography>
+      <Typography variant="body1">
+        <strong>Días Acumulados de Deuda:</strong> {debtData?.deudaAcumulativaHastaEstaGestion ?? 0}
+      </Typography>
+      <Typography variant="body1">
+        <strong>Días de Vacación Disponibles Restantes:</strong> {debtData?.diasDisponibles ?? 0}
+      </Typography>
+    </>
+  );
+
+  const renderSupervisorAuthorization = () => (
+    <>
+      <Stack direction="row" alignItems="center" spacing={1}>
+        <strong>Estado:</strong>
+        <Chip 
+          label={STATUS_OPTIONS.find(s => s.value === request?.status)?.label || request?.status} 
+          color={STATUS_OPTIONS.find(s => s.value === request?.status)?.color as any} 
+        />
+      </Stack>
+      <Typography variant="body1">
+        <strong>Fecha de Inicio:</strong> {formatDate(request?.startDate || '')}
+      </Typography>
+      <Typography variant="body1">
+        <strong>Fecha de Revisión Jefe Superior:</strong> {request?.reviewDate ? formatDate(request.reviewDate) : 'No disponible'}
+      </Typography>
+      <Typography variant="body1">
+        <strong>Postergado hasta:</strong> {request?.postponedDate ? formatDate(request.postponedDate) : 'No disponible'}
+      </Typography>
+      <Typography variant="body1">
+        <strong>Justificación de la postergación:</strong> {request?.postponedReason || 'No disponible'}
+      </Typography>
+    </>
+  );
+
+  const renderPersonalDepartmentDecree = () => (
+    <>
+      <Typography variant="body1">
+        <strong>Autorizado por Personal:</strong> 
+        <Chip 
+          label={request?.approvedByHR ? 'Sí' : 'No'} 
+          color={request?.approvedByHR ? 'success' : 'error'} 
+          size="small"
+          sx={{ ml: 1 }}
+        />
+      </Typography>
+      <Typography variant="body1">
+        <strong>Fecha Fin de la vacación:</strong> {formatDate(request?.endDate || '')}
+      </Typography>
+      <Typography variant="body1">
+        <strong>Total de días solicitados:</strong> {request?.totalDays}
+      </Typography>
+      <Typography variant="body1">
+        <strong>Regreso:</strong> {formatDate(request?.returnDate || '')}
+      </Typography>
+    </>
+  );
+
+  const renderStatusUpdateSection = () => (
+    <FormControl fullWidth sx={{ mt: 2 }}>
+      <InputLabel id="status-select-label">Estado</InputLabel>
+      <Select
+        labelId="status-select-label"
+        value={selectedStatus}
+        onChange={handleStatusChange}
+        label="Estado"
+      >
+        {STATUS_OPTIONS.map((status) => (
+          <MenuItem key={status.value} value={status.value}>
+            {status.label}
+          </MenuItem>
+        ))}
+      </Select>
+    </FormControl>
+  );
+
+  const renderHRApprovalSection = () => (
+    <Stack direction="row" spacing={2} alignItems="center" sx={{ mt: 2 }}>
+      <Typography variant="body1">
+        <strong>Aprobado por Recursos Humanos:</strong>
+      </Typography>
+      <Button
+        variant="contained"
+        color={request?.approvedByHR ? 'error' : 'success'}
+        startIcon={request?.approvedByHR ? <CancelIcon /> : <CheckIcon />}
+        onClick={toggleApprovedByHR}
+      >
+        {request?.approvedByHR ? 'Desaprobar' : 'Aprobar'}
+      </Button>
+    </Stack>
+  );
+
   if (loading) {
-    return <CircularProgress />;
+    return (
+      <Box display="flex" justifyContent="center" alignItems="center" minHeight="300px">
+        <CircularProgress size={60} />
+      </Box>
+    );
   }
 
   if (error) {
-    return <Typography variant="h6" color="error">{error}</Typography>;
+    return (
+      <Alert severity="error" sx={{ my: 4 }}>
+        {error}
+      </Alert>
+    );
   }
 
   if (!request) {
-    return <Typography variant="h6">No se encontró la solicitud.</Typography>;
+    return (
+      <Alert severity="info" sx={{ my: 4 }}>
+        No se encontró la solicitud.
+      </Alert>
+    );
   }
-  const getColor = (status: any) => {
-    switch (status) {
-      case 'PENDING':
-        return 'default'; // color gris
-      case 'AUTHORIZED':
-        return 'success'; // color verde
-      case 'POSTPONED':
-        return 'warning'; // color amarillo
-      case 'DENIED':
-        return 'error'; // color rojo
-      case 'SUSPENDED':
-        return 'info'; // color azul
-      default:
-        return 'default'; // color por defecto
-    }
-  };
 
-
-  const estadoTraducido = validStatuses.find(status => status.value === request.status)?.label || request.status;
   return (
+    <Container maxWidth="md">
+      {renderHeader()}
 
-    <Card>
+      {renderSection('Datos de Solicitante', renderApplicantInfo())}
+      {renderSection('Informe del departamento de Personal', renderPersonalDepartmentReport())}
+      {renderSection('Autorización del jefe inmediato Superior', renderSupervisorAuthorization())}
+      {renderSection('Decreto del Departamento de Personal', renderPersonalDepartmentDecree())}
 
-      <CardContent>
-        <div style={{ textAlign: 'center' }}> {/* Centro el texto usando un div */}
-          <Typography variant="h3" gutterBottom style={{ fontWeight: 'bold' }}>
-            Universidad Autónoma Tomás Frías
-          </Typography>
-          <Typography variant="h5" gutterBottom>
-            Departamento de Personal
-          </Typography>
-          <Typography variant="h6" gutterBottom>
-            Formulario de Solicitud y Concesión de Vacaciones
-          </Typography>
-          {/* Botón para generar el PDF */}
-          <Button
-            variant="contained"
-            color="primary"
-            onClick={() => generateVacationAuthorizationPDF(request)}
-            style={{ marginTop: '20px' }}
-            disabled={request.status !== "AUTHORIZED"} // Botón deshabilitado si no está autorizado
+      {(user?.role === 'admin' || user?.role === 'supervisor') && (
+        renderSection('Actualizar Estado de la Solicitud', renderStatusUpdateSection())
+      )}
+
+      {(user?.role === 'admin' || user?.role === 'supervisor') && (
+        renderSection('Postergar Solicitud', (
+          <PostponeVacationRequestForm
+            requestId={request.requestId}
+            onRequestUpdate={fetchRequestDetails}
+          />
+        ))
+      )}
+
+      {user?.role === 'admin' && (
+        renderSection('Aprobación de Recursos Humanos', renderHRApprovalSection())
+      )}
+
+      <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)}>
+        <DialogTitle>
+          Información Importante
+          <IconButton
+            aria-label="close"
+            onClick={() => setDialogOpen(false)}
+            sx={{ position: 'absolute', right: 8, top: 8 }}
           >
-            Descargar Autorización en PDF
+            <CloseIcon />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent>
+          <DialogContentText>{infoMessage}</DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDialogOpen(false)} color="primary" autoFocus>
+            Entendido
           </Button>
-
-        </div>
-
-        {/* Sección #1 - Datos de Solicitante */}
-        <Card variant="outlined" style={{ marginTop: '20px' }}>
-          <CardContent>
-            <Typography variant="h6" mt={2}>Datos de Solicitante</Typography>
-            <Typography variant="body1"><strong>Nombre de Usuario:</strong> {request.userName}</Typography>
-            <Typography variant="body1"><strong>Fecha de Ingreso:</strong> {formatearFecha(request.fechaIngreso)}</Typography>
-            <Typography variant="body1"><strong>Fecha de Solicitud:</strong> {request.requestDate}</Typography>
-            <Typography variant="body1"><strong>Departamento:</strong> {request.department || 'No especificado'}</Typography>
-            <Typography variant="body1"><strong>Cargo que Ocupa:</strong> {request.position || 'No especificado'}</Typography>
-            <Typography variant="body1"><strong>Solicita Vacacion a partir de:</strong> {request.startDate || 'No especificado'}</Typography>
-          </CardContent>
-        </Card>
-
-        {/* Sección #2 - Informe del departamento de Personal */}
-        <Card variant="outlined" style={{ marginTop: '20px' }}>
-          <CardContent>
-            <Typography variant="h6" mt={2}>Informe del departamento de Personal</Typography>
-            <Typography variant="body1"><strong>Vacacion correspondiente a las gestion(es):</strong> {request.managementPeriodStart} - {request.managementPeriodEnd}</Typography>
-            <Typography variant="body1"><strong>Años de Antigüedad:</strong> {request.antiguedadEnAnios}</Typography>
-            <Typography variant="body1"><strong>Días de Vacación por Antigüedad:</strong> {request.diasDeVacacion}</Typography>
-            <Typography variant="body1">
-              <strong>Días de Licencia Autorizados cuenta Vacacion:</strong> {request.licenciasAutorizadas.totalAuthorizedDays !== undefined && request.licenciasAutorizadas.totalAuthorizedDays !== null ? request.licenciasAutorizadas.totalAuthorizedDays : 'No disponibles'}
-            </Typography>
-            <Typography variant="body1">
-              <strong>Descanso pedagógico de Invierno:</strong> {recesoInvierno ? `${recesoInvierno.daysCount} días (Tipo: ${recesoInvierno.type})` : 'No disponible'}
-            </Typography>
-            <Typography variant="body1">
-              <strong>Descanso de Fin de Año:</strong> {recesoFinDeGestion ? `${recesoFinDeGestion.daysCount} días (Tipo: ${recesoFinDeGestion.type})` : 'No disponible'}
-            </Typography>
-            <Typography variant="body1"><strong>Días Acumulados de Deuda :</strong> {debtData?.deudaAcumulativaHastaEstaGestion ?? 0}</Typography>
-            <Typography variant="body1"><strong>Días de Vacación Disponibles Restantes:</strong> {debtData?.diasDisponibles ?? 0}</Typography>
-          </CardContent>
-        </Card>
-
-        {/* Sección #3 - Autorización del jefe inmediato Superior */}
-        <Card variant="outlined" style={{ marginTop: '20px' }}>
-          <CardContent>
-            <Typography variant="h6" mt={2}>Autorización del jefe inmediato Superior</Typography>
-            <Typography variant="body1">
-              <strong>Estado:</strong>
-              <Chip label={estadoTraducido} color={getColor(request.status)} style={{ marginLeft: '8px' }} />
-            </Typography>
-            <Typography variant="body1"><strong>Fecha de Inicio:</strong> {request.startDate}</Typography>
-            <Typography variant="body1"><strong>Fecha de Revision Jefe Superior:</strong> {request.reviewDate || 'No disponible'}</Typography>
-            <Typography variant="body1"><strong>Postergado hasta:</strong> {request.postponedDate || 'No disponible'}</Typography>
-            <Typography variant="body1"><strong>Justificación de la postergación:</strong> {request.postponedReason || 'No disponible'}</Typography>
-          </CardContent>
-        </Card>
-
-        {/* Sección #4 - Decreto del Departamento de Personal */}
-        <Card variant="outlined" style={{ marginTop: '20px' }}>
-          <CardContent>
-            <Typography variant="h6" mt={2}>Decreto del Departamento de Personal</Typography>
-            <Typography variant="body1">
-              <strong>Autorizado por Personal:</strong> {request.approvedByHR ? 'Sí' : 'No'}
-            </Typography>
-            <Typography variant="body1"><strong>Fecha Fin de la vacación:</strong> {request.endDate}</Typography>
-            <Typography variant="body1"><strong>Total de días solicitados:</strong> {request.totalDays}</Typography>
-            <Typography variant="body1"><strong>Regreso:</strong> {request.returnDate}</Typography>
-          </CardContent>
-        </Card>
-
-
-        {/* Sección #5 para actualizar el estado de la solicitud */}
-        {user && (user.role === 'admin' || user.role === 'supervisor') && (
-          <Card variant="outlined" style={{ marginTop: '20px' }}>
-            <CardContent>
-              <Typography variant="h6">Actualizar Estado de la Solicitud por Jefe Superior</Typography>
-              <FormControl variant="outlined" style={{ marginTop: '16px', minWidth: '120px' }}>
-                <InputLabel id="status-select-label">Estado</InputLabel>
-                <Select
-                  labelId="status-select-label"
-                  value={selectedStatus}
-                  onChange={handleStatusChange}
-                >
-                  {validStatuses.map((status) => (
-                    <MenuItem key={status.value} value={status.value}>
-                      {status.label}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Sección #5 para actualizar el estado de la solicitud */}
-        {user && (user.role === 'admin' || user.role === 'supervisor') && (
-          <Card variant="outlined" style={{ marginTop: '20px' }}>
-            <CardContent>
-              {/* Cambia onSuccess a onRequestUpdate */}
-              <PostponeVacationRequestForm
-                requestId={request?.requestId}
-                onRequestUpdate={refreshRequestDetails}
-              />
-            </CardContent>
-          </Card>
-        )}
-
-
-        <Dialog open={openDialog} onClose={() => setOpenDialog(false)}>
-          <DialogTitle>Información Importante</DialogTitle>
-          <DialogContent>
-            <DialogContentText>
-              {infoMessage}
-            </DialogContentText>
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={() => setOpenDialog(false)} color="primary">
-              Cerrar
-            </Button>
-          </DialogActions>
-        </Dialog>
-
-
-        {/* Sección #4 - Modificar Aprobación de Recursos Humanos */}
-        {user?.role === 'admin' && (
-          <Card variant="outlined" style={{ marginTop: '20px' }}>
-            <CardContent>
-              <Typography variant="h6" mt={2}>Aprobación de Recursos Humanos</Typography>
-              <Typography variant="body1"><strong>Aprobado por Recursos Humanos:</strong> {request.approvedByHR ? 'Sí' : 'No'}</Typography>
-              <Button
-                variant="contained"
-                color={request.approvedByHR ? 'error' : 'success'}
-                onClick={toggleApprovedByHR}
-              >
-                {request.approvedByHR ? 'Desaprobar' : 'Aprobar'}
-              </Button>
-            </CardContent>
-          </Card>
-        )}
-      </CardContent>
-    </Card>
+        </DialogActions>
+      </Dialog>
+    </Container>
   );
 };
 

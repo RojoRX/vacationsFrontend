@@ -1,53 +1,49 @@
 import React, { useState, useEffect } from 'react';
-import Grid from '@mui/material/Grid';
-import Typography from '@mui/material/Typography';
-import Button from '@mui/material/Button';
-import Card from '@mui/material/Card';
-import CardContent from '@mui/material/CardContent';
+import { 
+  Grid,
+  Typography,
+  Button,
+  Card,
+  CardContent,
+  CardHeader,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  IconButton,
+  Box,
+  Alert,
+  Divider
+} from '@mui/material';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
-import Dialog from '@mui/material/Dialog';
-import DialogTitle from '@mui/material/DialogTitle';
-import DialogContent from '@mui/material/DialogContent';
-import DialogActions from '@mui/material/DialogActions';
-import IconButton from '@mui/material/IconButton';
 import axios, { AxiosError } from 'axios';
 import useUser from 'src/hooks/useUser';
-// ** Icon Imports
 import Icon from 'src/@core/components/icon';
 import { registerLocale } from 'react-datepicker';
-// ** Styled Component Import
 import ApexChartWrapper from 'src/@core/styles/libs/react-apexcharts';
 import { es } from 'date-fns/locale';
 
 registerLocale('es', es);
-// Formulario de solicitud de vacaciones
+
 const VacationRequestSubmissionForm = () => {
   const user = useUser();
   const [startDate, setStartDate] = useState<Date | null>(null);
   const [endDate, setEndDate] = useState<Date | null>(null);
-  const [vacationDays, setVacationDays] = useState(15); // Suponiendo días disponibles
+  const [vacationDays, setVacationDays] = useState(15);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dialogMessage, setDialogMessage] = useState('');
   const [dialogSuccess, setDialogSuccess] = useState(false);
-
-  // Fechas de inicio y fin del periodo de gestión
   const [managementPeriodStart, setManagementPeriodStart] = useState('');
   const [managementPeriodEnd, setManagementPeriodEnd] = useState('');
 
-  // Efecto para extraer las fechas de la URL
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const start = params.get('startDate');
     const end = params.get('endDate');
 
-    if (start) {
-      setManagementPeriodStart(start.split('T')[0]); // Formatear a YYYY-MM-DD
-    }
-
-    if (end) {
-      setManagementPeriodEnd(end.split('T')[0]); // Formatear a YYYY-MM-DD
-    }
+    if (start) setManagementPeriodStart(start.split('T')[0]);
+    if (end) setManagementPeriodEnd(end.split('T')[0]);
   }, []);
 
   const handleVacationRequest = async () => {
@@ -60,137 +56,171 @@ const VacationRequestSubmissionForm = () => {
   
     const data = {
       ci: user.ci,
-      startDate: startDate?.toISOString().split('T')[0], // Formatear a YYYY-MM-DD
+      startDate: startDate?.toISOString().split('T')[0],
       endDate: endDate?.toISOString().split('T')[0],
       position: 'Docente',
       managementPeriodStart,
       managementPeriodEnd,
     };
   
-    // console.log('Datos a enviar:', data);
-  
     try {
-      const response = await axios.post(`${process.env.NEXT_PUBLIC_API_BASE_URL}/vacation-requests`, data);
-  
+      await axios.post(`${process.env.NEXT_PUBLIC_API_BASE_URL}/vacation-requests`, data);
       setDialogMessage('¡Solicitud de vacaciones enviada con éxito!');
       setDialogSuccess(true);
       setDialogOpen(true);
-      console.log('Respuesta de la API:', response.data);
     } catch (error) {
-      // Verificamos si el error es de tipo AxiosError
       if (error instanceof AxiosError && error.response) {
-        // Muestra el mensaje de error específico del backend si está presente
         setDialogMessage(error.response.data.message || 'Hubo un error al enviar la solicitud.');
       } else {
-        // Muestra un mensaje genérico si no es un error de Axios
         setDialogMessage('Hubo un error al enviar la solicitud.');
       }
       setDialogSuccess(false);
       setDialogOpen(true);
-      console.error('Error al enviar la solicitud:', error);
     }    
   };
-  
 
-  const handleCloseDialog = () => {
-    setDialogOpen(false);
-  };
+  const handleCloseDialog = () => setDialogOpen(false);
 
   return (
     <ApexChartWrapper>
-      <Grid container spacing={6} className="match-height">
-        {/* Título del formulario */}
+      <Grid container spacing={6}>
+        {/* Encabezado */}
         <Grid item xs={12}>
-          <Card>
+          <Card elevation={3}>
+            <CardHeader 
+              title="Solicitud de Vacaciones" 
+              titleTypographyProps={{ variant: 'h4', fontWeight: 600 }}
+              subheader={`Tienes ${vacationDays} días de vacaciones disponibles`}
+            />
+            <Divider />
             <CardContent>
-              <Typography variant="h5" component="div" gutterBottom>
-                Solicitud de Vacaciones
-              </Typography>
-              <Typography variant="body2" color="textSecondary">
-                Aquí puedes solicitar tus vacaciones seleccionando las fechas deseadas. Tienes {vacationDays} días disponibles.
-              </Typography>
+              <Alert severity="info" icon={<Icon icon="mdi:information" />}>
+                Selecciona las fechas de inicio y fin para tu período de vacaciones
+              </Alert>
             </CardContent>
           </Card>
         </Grid>
 
-        {/* Selección de fechas */}
+        {/* Selectores de fecha */}
         <Grid item xs={12} md={6}>
-          <Card>
+          <Card elevation={2}>
+            <CardHeader 
+              title="Fecha de inicio" 
+              titleTypographyProps={{ variant: 'h6' }}
+              avatar={<Icon icon="mdi:calendar-start" />}
+            />
             <CardContent>
-              <Typography variant="h6" gutterBottom>
-                Inicio de vacaciones
-              </Typography>
-              <DatePicker
-                selected={startDate}
-                onChange={setStartDate}
-                dateFormat="dd/MM/yyyy"
-                locale="es"
-                placeholderText="Selecciona una fecha"
-                minDate={new Date()}
-                className="form-control"
-                withPortal
-              />
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={12} md={6}>
-          <Card>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>
-                Fin de vacaciones
-              </Typography>
-              <DatePicker
-                selected={endDate}
-                onChange={setEndDate}
-                dateFormat="dd/MM/yyyy"
-                locale="es"
-                placeholderText="Selecciona una fecha"
-                minDate={startDate}
-                className="form-control"
-                withPortal
-              />
+              <Box sx={{ display: 'flex', justifyContent: 'center' }}>
+                <DatePicker
+                  selected={startDate}
+                  onChange={setStartDate}
+                  dateFormat="dd/MM/yyyy"
+                  locale="es"
+                  placeholderText="Selecciona fecha"
+                  minDate={new Date()}
+                  className="form-control"
+                  withPortal
+                  customInput={
+                    <Button 
+                      variant="outlined" 
+                      fullWidth 
+                      startIcon={<Icon icon="mdi:calendar" />}
+                    >
+                      {startDate ? startDate.toLocaleDateString('es-ES') : 'Seleccionar fecha'}
+                    </Button>
+                  }
+                />
+              </Box>
             </CardContent>
           </Card>
         </Grid>
 
-        {/* Botón de solicitud */}
+        <Grid item xs={12} md={6}>
+          <Card elevation={2}>
+            <CardHeader 
+              title="Fecha de fin" 
+              titleTypographyProps={{ variant: 'h6' }}
+              avatar={<Icon icon="mdi:calendar-end" />}
+            />
+            <CardContent>
+              <Box sx={{ display: 'flex', justifyContent: 'center' }}>
+                <DatePicker
+                  selected={endDate}
+                  onChange={setEndDate}
+                  dateFormat="dd/MM/yyyy"
+                  locale="es"
+                  placeholderText="Selecciona fecha"
+                  minDate={startDate}
+                  className="form-control"
+                  withPortal
+                  customInput={
+                    <Button 
+                      variant="outlined" 
+                      fullWidth 
+                      startIcon={<Icon icon="mdi:calendar" />}
+                      disabled={!startDate}
+                    >
+                      {endDate ? endDate.toLocaleDateString('es-ES') : 'Seleccionar fecha'}
+                    </Button>
+                  }
+                />
+              </Box>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        {/* Botón de envío */}
         <Grid item xs={12}>
           <Button
             variant="contained"
             color="primary"
+            size="large"
             startIcon={<Icon icon="mdi:beach" />}
             fullWidth
             onClick={handleVacationRequest}
-            disabled={!startDate || !endDate} // Deshabilitar el botón si no hay fechas seleccionadas
+            disabled={!startDate || !endDate}
+            sx={{ py: 2, fontSize: '1.1rem' }}
           >
-            Enviar Solicitud de Vacaciones
+            Enviar Solicitud
           </Button>
         </Grid>
       </Grid>
 
-      {/* Diálogo de éxito o error */}
-      <Dialog open={dialogOpen} onClose={handleCloseDialog}>
-        <DialogTitle>
-          {dialogSuccess ? 'Éxito' : 'Error'}
+      {/* Diálogo de resultado */}
+      <Dialog 
+        open={dialogOpen} 
+        onClose={handleCloseDialog}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle sx={{ display: 'flex', alignItems: 'center' }}>
+          <Icon 
+            icon={dialogSuccess ? "mdi:check-circle" : "mdi:alert-circle"} 
+            color={dialogSuccess ? "success" : "error"}
+            
+          />
+          {dialogSuccess ? 'Solicitud exitosa' : 'Error en la solicitud'}
           <IconButton
             aria-label="close"
             onClick={handleCloseDialog}
-            sx={{
-              position: 'absolute',
-              right: 8,
-              top: 8,
-              color: (theme) => theme.palette.grey[500],
-            }}
+            sx={{ position: 'absolute', right: 8, top: 8 }}
           >
             <Icon icon="mdi:close" />
           </IconButton>
         </DialogTitle>
         <DialogContent>
-          <Typography>{dialogMessage}</Typography>
+          <Typography variant="body1" sx={{ mt: 2 }}>
+            {dialogMessage}
+          </Typography>
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleCloseDialog} color="primary">
-            Cerrar
+          <Button 
+            onClick={handleCloseDialog} 
+            variant="contained"
+            color={dialogSuccess ? "success" : "error"}
+            startIcon={<Icon icon="mdi:check" />}
+          >
+            Entendido
           </Button>
         </DialogActions>
       </Dialog>
@@ -198,7 +228,6 @@ const VacationRequestSubmissionForm = () => {
   );
 };
 
-// Configurar ACL para dar acceso según el rol
 VacationRequestSubmissionForm.acl = {
   action: 'create',
   subject: 'vacation-request-form',

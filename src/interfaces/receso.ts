@@ -1,8 +1,9 @@
 export interface Receso {
-    name: string;
-    type: string;
-    startDate: string;
-    endDate: string;
-    daysCount: number;
-  }
-  
+  name: string;
+  startDate: string;
+  endDate: string;
+  totalDays: number;
+  nonHolidayDays: number;
+  daysCount: number;
+  type: string;
+}

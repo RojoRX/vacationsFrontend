@@ -4,8 +4,9 @@ export interface VacationDebt {
   deuda: number;
   deudaAcumulativaAnterior: number;
   diasDisponibles: number;
+  deudaAcumulativaHastaEstaGestion: number;
   }
-  
+
   export interface GestionData {
     key: string;
     data: import('./vacationData').VacationData;
