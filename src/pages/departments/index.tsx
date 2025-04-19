@@ -36,25 +36,24 @@ const DepartmentManagement: React.FC = () => {
     const fetchDepartments = async () => {
         try {
             const response = await axios.get(`${API_BASE_URL}/departments`);
-            setDepartments(response.data);
-        } catch (error) {
-            showSnackbar('Error al cargar departamentos', 'error');
+            const ordered = response.data.sort((a: DepartmentProps, b: DepartmentProps) => b.id - a.id);
+            setDepartments(ordered);
+        } catch (error: any) {
+            showSnackbar(error?.response?.data?.message || 'Error al cargar departamentos', 'error');
         }
     };
 
-    const handleDelete = async (id: number) => {
-        try {
-            await axios.delete(`${API_BASE_URL}/departments/${id}`);
-            showSnackbar('Departamento eliminado correctamente', 'success');
-            fetchDepartments();
-        } catch (error) {
-            showSnackbar('Error al eliminar departamento', 'error');
-        }
+    const validateName = (name: string) => {
+        const trimmed = name.trim();
+        if (!trimmed) return 'El nombre no puede estar vacío.';
+        if (trimmed.length < 3) return 'El nombre debe tener al menos 3 caracteres.';
+        return null;
     };
 
     const createDepartment = async () => {
-        if (newDepartment.name.trim() === '') {
-            showSnackbar('El nombre del departamento no puede estar vacío', 'warning');
+        const validation = validateName(newDepartment.name);
+        if (validation) {
+            showSnackbar(validation, 'warning');
             return;
         }
 
@@ -63,27 +62,43 @@ const DepartmentManagement: React.FC = () => {
             showSnackbar('Departamento creado correctamente', 'success');
             fetchDepartments();
             setNewDepartment({ name: '' });
-        } catch (error) {
-            showSnackbar('Error al crear departamento', 'error');
+        } catch (error: any) {
+            const message = error?.response?.data?.message || 'Error al crear departamento';
+            showSnackbar(message, 'error');
         }
     };
 
     const updateDepartment = async (id: number) => {
-        if (!selectedDepartment || selectedDepartment.name.trim() === '') {
-            showSnackbar('El nombre del departamento no puede estar vacío', 'warning');
+        const name = selectedDepartment?.name || '';
+        const validation = validateName(name);
+        if (validation) {
+            showSnackbar(validation, 'warning');
             return;
         }
 
         try {
-            await axios.put(`${API_BASE_URL}/departments/${id}`, selectedDepartment);
+            await axios.put(`${API_BASE_URL}/departments/${id}`, { name });
             showSnackbar('Departamento actualizado correctamente', 'success');
             fetchDepartments();
             setSelectedDepartment(null);
             setOpenDialog(false);
-        } catch (error) {
-            showSnackbar('Error al actualizar departamento', 'error');
+        } catch (error: any) {
+            const message = error?.response?.data?.message || 'Error al actualizar departamento';
+            showSnackbar(message, 'error');
         }
     };
+
+    const handleDelete = async (id: number) => {
+        try {
+            await axios.delete(`${API_BASE_URL}/departments/${id}`);
+            showSnackbar('Departamento eliminado correctamente', 'success');
+            fetchDepartments();
+        } catch (error: any) {
+            const message = error?.response?.data?.message || 'Error al eliminar departamento';
+            showSnackbar(message, 'error');
+        }
+    };
+
 
     const handleChangePage = (event: unknown, newPage: number) => {
         setPage(newPage);
@@ -120,16 +135,17 @@ const DepartmentManagement: React.FC = () => {
         setSnackbar({ ...snackbar, open: false });
     };
 
-    const filteredDepartments = departments.filter(department =>
-        department.name.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const filteredDepartments = departments
+        .filter(department =>
+            department.name.toLowerCase().includes(searchTerm.toLowerCase())
+        );
 
     return (
         <Container maxWidth="lg" sx={{ py: 4 }}>
             {/* Encabezado */}
-            <Box sx={{ 
-                display: 'flex', 
-                alignItems: 'center', 
+            <Box sx={{
+                display: 'flex',
+                alignItems: 'center',
                 mb: 4,
                 backgroundColor: 'primary.main',
                 color: 'primary.contrastText',
@@ -147,8 +163,8 @@ const DepartmentManagement: React.FC = () => {
 
             {/* Formulario de creación */}
             <Paper elevation={3} sx={{ p: 3, mb: 4, borderRadius: 2 }}>
-                <Typography variant="h6" gutterBottom sx={{ 
-                    fontWeight: 'bold', 
+                <Typography variant="h6" gutterBottom sx={{
+                    fontWeight: 'bold',
                     mb: 3,
                     display: 'flex',
                     alignItems: 'center',
@@ -185,13 +201,13 @@ const DepartmentManagement: React.FC = () => {
 
             {/* Búsqueda y tabla */}
             <Paper elevation={3} sx={{ p: 3, borderRadius: 2 }}>
-                <Box sx={{ 
-                    display: 'flex', 
-                    justifyContent: 'space-between', 
+                <Box sx={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
                     alignItems: 'center',
                     mb: 3
                 }}>
-                    <Typography variant="h6" sx={{ 
+                    <Typography variant="h6" sx={{
                         fontWeight: 'bold',
                         display: 'flex',
                         alignItems: 'center',
@@ -199,7 +215,7 @@ const DepartmentManagement: React.FC = () => {
                     }}>
                         <Business color="primary" /> Departamentos Registrados
                     </Typography>
-                    
+
                     <TextField
                         label="Buscar departamento"
                         variant="outlined"
@@ -232,8 +248,8 @@ const DepartmentManagement: React.FC = () => {
                                             <TableCell>{department.name}</TableCell>
                                             <TableCell sx={{ textAlign: 'center' }}>
                                                 <Tooltip title="Editar">
-                                                    <IconButton 
-                                                        color="primary" 
+                                                    <IconButton
+                                                        color="primary"
                                                         onClick={() => handleEditClick(department)}
                                                         sx={{ mr: 1 }}
                                                     >
@@ -241,8 +257,8 @@ const DepartmentManagement: React.FC = () => {
                                                     </IconButton>
                                                 </Tooltip>
                                                 <Tooltip title="Eliminar">
-                                                    <IconButton 
-                                                        color="error" 
+                                                    <IconButton
+                                                        color="error"
                                                         onClick={() => {
                                                             if (window.confirm('¿Estás seguro de eliminar este departamento?')) {
                                                                 handleDelete(department.id);
@@ -258,8 +274,8 @@ const DepartmentManagement: React.FC = () => {
                             ) : (
                                 <TableRow>
                                     <TableCell colSpan={3} sx={{ textAlign: 'center', py: 4 }}>
-                                        {searchTerm ? 
-                                            'No se encontraron departamentos con ese nombre' : 
+                                        {searchTerm ?
+                                            'No se encontraron departamentos con ese nombre' :
                                             'No hay departamentos registrados'}
                                     </TableCell>
                                 </TableRow>
@@ -283,7 +299,7 @@ const DepartmentManagement: React.FC = () => {
 
             {/* Diálogo de edición */}
             <Dialog open={openDialog} onClose={handleCloseDialog} fullWidth maxWidth="sm">
-                <DialogTitle sx={{ 
+                <DialogTitle sx={{
                     backgroundColor: 'primary.main',
                     color: 'primary.contrastText',
                     display: 'flex',
@@ -300,24 +316,24 @@ const DepartmentManagement: React.FC = () => {
                         fullWidth
                         variant="outlined"
                         value={selectedDepartment?.name || ''}
-                        onChange={(e) => setSelectedDepartment({ 
-                            ...selectedDepartment, 
-                            name: e.target.value 
+                        onChange={(e) => setSelectedDepartment({
+                            ...selectedDepartment,
+                            name: e.target.value
                         } as DepartmentProps)}
                         required
                         sx={{ mb: 2 }}
                     />
                 </DialogContent>
                 <DialogActions sx={{ px: 3, py: 2 }}>
-                    <Button 
-                        onClick={handleCloseDialog} 
+                    <Button
+                        onClick={handleCloseDialog}
                         color="inherit"
                         variant="outlined"
                     >
                         Cancelar
                     </Button>
-                    <Button 
-                        onClick={() => updateDepartment(selectedDepartment?.id || 0)} 
+                    <Button
+                        onClick={() => updateDepartment(selectedDepartment?.id || 0)}
                         color="primary"
                         variant="contained"
                         startIcon={<Edit />}
@@ -328,16 +344,18 @@ const DepartmentManagement: React.FC = () => {
             </Dialog>
 
             {/* Notificaciones */}
+            {/* Snackbar */}
             <Snackbar
                 open={snackbar.open}
                 autoHideDuration={6000}
                 onClose={handleCloseSnackbar}
-                anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+                anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
             >
-                <Alert 
-                    onClose={handleCloseSnackbar} 
+                <Alert
+                    onClose={handleCloseSnackbar}
                     severity={snackbar.severity}
                     sx={{ width: '100%' }}
+                    variant="filled"
                 >
                     {snackbar.message}
                 </Alert>
@@ -350,5 +368,5 @@ const DepartmentManagement: React.FC = () => {
 (DepartmentManagement as any).acl = {
     action: 'manage',
     subject: 'departments'
-  };
+};
 export default DepartmentManagement;
