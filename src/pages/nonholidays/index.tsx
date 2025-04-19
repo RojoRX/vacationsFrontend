@@ -32,45 +32,95 @@ const NonHolidayManager: React.FC = () => {
   const [snackbarSeverity, setSnackbarSeverity] = useState<'success' | 'error'>('success');
   const [filterYear, setFilterYear] = useState<number | ''>('');
   const [filterDescription, setFilterDescription] = useState('');
+  const [validationErrors, setValidationErrors] = useState<{ date?: string; description?: string }>({});
 
   useEffect(() => {
     fetchNonHolidays();
   }, []);
 
   const fetchNonHolidays = async () => {
-    const response = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/non-holidays`);
-    setNonHolidays(response.data);
-    setFilteredNonHolidays(response.data); // Inicialmente mostramos todos los días no hábiles
+    try {
+      const response = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/non-holidays`);
+      setNonHolidays(response.data);
+      setFilteredNonHolidays(response.data);
+    } catch (error) {
+      setSnackbarSeverity('error');
+      setSnackbarMessage('Error al cargar los días no hábiles');
+      setSnackbarOpen(true);
+    }
   };
 
   const handleOpen = (nonHoliday?: NonHoliday) => {
-    setCurrentNonHoliday(nonHoliday ? { ...nonHoliday } : { id: 0, year: new Date().getFullYear(), date: '', description: '' });
+    setValidationErrors({});
+    setCurrentNonHoliday(
+      nonHoliday ? { ...nonHoliday } : { id: 0, year: new Date().getFullYear(), date: '', description: '' }
+    );
     setOpen(true);
   };
 
   const handleClose = () => {
     setOpen(false);
     setCurrentNonHoliday(null);
+    setValidationErrors({});
+  };
+
+  const sanitizeDescription = (input: string): string => {
+    const allowed = input
+      .replace(/[^a-zA-Z0-9\s.,áéíóúÁÉÍÓÚñÑ\-()]/g, '') // solo caracteres permitidos
+      .replace(/\s{2,}/g, ' ') // reemplaza múltiples espacios
+      .trim(); // elimina espacios al inicio y final
+    return allowed;
+  };
+
+  const validate = (): boolean => {
+    const errors: { date?: string; description?: string } = {};
+
+    if (!currentNonHoliday?.date) {
+      errors.date = 'La fecha es obligatoria';
+    }
+
+    const sanitized = sanitizeDescription(currentNonHoliday?.description || '');
+    if (!sanitized) {
+      errors.description = 'La descripción es obligatoria y no debe contener caracteres inválidos';
+    }
+
+    setValidationErrors(errors);
+
+    return Object.keys(errors).length === 0;
   };
 
   const handleSave = async () => {
+    if (!validate()) return;
+
     try {
       if (currentNonHoliday) {
+        const sanitizedDescription = sanitizeDescription(currentNonHoliday.description);
+
+        const dataToSend = {
+          ...currentNonHoliday,
+          description: sanitizedDescription,
+        };
+
         if (currentNonHoliday.id) {
-          await axios.put(`${process.env.NEXT_PUBLIC_API_BASE_URL}/non-holidays/${currentNonHoliday.id}`, currentNonHoliday);
+          await axios.put(`${process.env.NEXT_PUBLIC_API_BASE_URL}/non-holidays/${currentNonHoliday.id}`, dataToSend);
           setSnackbarMessage('Día no hábil actualizado exitosamente');
         } else {
-          await axios.post(`${process.env.NEXT_PUBLIC_API_BASE_URL}/non-holidays`, currentNonHoliday);
+          await axios.post(`${process.env.NEXT_PUBLIC_API_BASE_URL}/non-holidays`, dataToSend);
           setSnackbarMessage('Día no hábil agregado exitosamente');
         }
+
         setSnackbarSeverity('success');
         setSnackbarOpen(true);
         handleClose();
         fetchNonHolidays();
       }
-    } catch (error) {
+    } catch (error: any) {
       setSnackbarSeverity('error');
-      setSnackbarMessage('Error al guardar el día no hábil');
+      if (error.response?.data?.message) {
+        setSnackbarMessage(error.response.data.message);
+      } else {
+        setSnackbarMessage('Error al guardar el día no hábil');
+      }
       setSnackbarOpen(true);
     }
   };
@@ -82,9 +132,13 @@ const NonHolidayManager: React.FC = () => {
       setSnackbarSeverity('success');
       setSnackbarOpen(true);
       fetchNonHolidays();
-    } catch (error) {
+    } catch (error: any) {
       setSnackbarSeverity('error');
-      setSnackbarMessage('Error al eliminar el día no hábil');
+      if (error.response?.data?.message) {
+        setSnackbarMessage(error.response.data.message);
+      } else {
+        setSnackbarMessage('Error al eliminar el día no hábil');
+      }
       setSnackbarOpen(true);
     }
   };
@@ -108,10 +162,11 @@ const NonHolidayManager: React.FC = () => {
   };
 
   const handleDescriptionChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = sanitizeDescription(e.target.value);
     if (currentNonHoliday) {
       setCurrentNonHoliday({
         ...currentNonHoliday,
-        description: e.target.value,
+        description: value,
       });
     }
   };
@@ -135,7 +190,7 @@ const NonHolidayManager: React.FC = () => {
       return matchesYear && matchesDescription;
     });
     setFilteredNonHolidays(filtered);
-    setPage(0); // Reiniciar la página al filtrar
+    setPage(0);
   };
 
   return (
@@ -199,7 +254,7 @@ const NonHolidayManager: React.FC = () => {
         onRowsPerPageChange={handleChangeRowsPerPage}
       />
       <Dialog open={open} onClose={handleClose}>
-        <DialogTitle>{currentNonHoliday ? 'Editar Día No Hábil' : 'Agregar Día No Hábil'}</DialogTitle>
+        <DialogTitle>{currentNonHoliday?.id ? 'Editar Día No Hábil' : 'Agregar Día No Hábil'}</DialogTitle>
         <DialogContent>
           <TextField
             margin="dense"
@@ -207,8 +262,10 @@ const NonHolidayManager: React.FC = () => {
             type="date"
             fullWidth
             variant="outlined"
-            value={currentNonHoliday ? currentNonHoliday.date : ''}
+            value={currentNonHoliday?.date || ''}
             onChange={handleDateChange}
+            error={!!validationErrors.date}
+            helperText={validationErrors.date}
           />
           <TextField
             margin="dense"
@@ -216,8 +273,10 @@ const NonHolidayManager: React.FC = () => {
             type="text"
             fullWidth
             variant="outlined"
-            value={currentNonHoliday ? currentNonHoliday.description : ''}
+            value={currentNonHoliday?.description || ''}
             onChange={handleDescriptionChange}
+            error={!!validationErrors.description}
+            helperText={validationErrors.description}
           />
         </DialogContent>
         <DialogActions>
