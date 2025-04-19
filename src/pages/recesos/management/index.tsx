@@ -18,10 +18,9 @@ import {
     CalendarToday as CalendarIcon
 } from '@mui/icons-material';
 import axios from 'axios';
-import { format, parseISO } from 'date-fns';
+import { format, parseISO, eachDayOfInterval, isWeekend } from 'date-fns';
 import { es } from 'date-fns/locale';
 import GeneralHolidayForm from '../create-form';
-
 interface GeneralHolidayPeriod {
     id: number;
     name: string;
@@ -50,7 +49,7 @@ const HolidayManagement: AclComponent = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [typeFilter, setTypeFilter] = useState<string>('all');
 
-    // Función fetch modificada
+    // Modificamos la función fetchHolidays para ordenar los resultados
     const fetchHolidays = async (year: number | null = null) => {
         setLoading(true);
         try {
@@ -59,7 +58,11 @@ const HolidayManagement: AclComponent = () => {
                 : `${process.env.NEXT_PUBLIC_API_BASE_URL}/general-holiday-periods`;
 
             const response = await axios.get(url);
-            setHolidays(response.data);
+            // Ordenar por fecha de inicio descendente (más recientes primero)
+            const sortedData = response.data.sort((a: GeneralHolidayPeriod, b: GeneralHolidayPeriod) => {
+                return new Date(b.startDate).getTime() - new Date(a.startDate).getTime();
+            });
+            setHolidays(sortedData);
         } catch (error) {
             console.error('Error fetching holidays:', error);
             setSnackbarMessage('Error al cargar los recesos generales');
@@ -71,16 +74,16 @@ const HolidayManagement: AclComponent = () => {
         fetchHolidays();
     }, []);
 
-const handleYearFilter = (year: number | null) => {
-  setFilteredYear(year);
-  // Si year es null, obtenemos todos los registros
-  if (year === null) {
-    fetchHolidays();
-  } else {
-    fetchHolidays(year);
-  }
-  setPage(0);
-};
+    const handleYearFilter = (year: number | null) => {
+        setFilteredYear(year);
+        // Si year es null, obtenemos todos los registros
+        if (year === null) {
+            fetchHolidays();
+        } else {
+            fetchHolidays(year);
+        }
+        setPage(0);
+    };
 
     const handleEditHoliday = (holiday: GeneralHolidayPeriod) => {
         setEditHoliday({ ...holiday });
@@ -126,11 +129,16 @@ const handleYearFilter = (year: number | null) => {
         return format(parseISO(dateString), 'dd MMM yyyy', { locale: es });
     };
 
-    const calculateDuration = (startDate: string, endDate: string) => {
+    const calculateDuration = (startDate: string, endDate: string): number => {
         const start = parseISO(startDate);
         const end = parseISO(endDate);
-        return Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1;
-    };
+      
+        const allDays = eachDayOfInterval({ start, end });
+      
+        const workingDays = allDays.filter(date => !isWeekend(date));
+      
+        return workingDays.length;
+      };
 
     // Filtrado modificado
     const filteredHolidays = holidays.filter(holiday => {
@@ -148,6 +156,54 @@ const handleYearFilter = (year: number | null) => {
 
         return matchesSearch && matchesType && matchesYear;
     });
+    // Nuevo estado para manejar errores
+    const [errors, setErrors] = useState({
+        name: '',
+        startDate: '',
+        endDate: '',
+        year: ''
+    });
+
+    // Función de validación
+    const validateForm = (holiday: Partial<GeneralHolidayPeriod>) => {
+        const newErrors = {
+            name: '',
+            startDate: '',
+            endDate: '',
+            year: ''
+        };
+
+        let isValid = true;
+
+        if (!holiday.name) {
+            newErrors.name = 'El tipo de receso es requerido';
+            isValid = false;
+        }
+
+        if (!holiday.startDate) {
+            newErrors.startDate = 'La fecha de inicio es requerida';
+            isValid = false;
+        }
+
+        if (!holiday.endDate) {
+            newErrors.endDate = 'La fecha de fin es requerida';
+            isValid = false;
+        } else if (holiday.startDate && new Date(holiday.endDate) < new Date(holiday.startDate)) {
+            newErrors.endDate = 'La fecha de fin no puede ser anterior a la de inicio';
+            isValid = false;
+        }
+
+        if (!holiday.year) {
+            newErrors.year = 'El año es requerido';
+            isValid = false;
+        } else if (holiday.year < 2000 || holiday.year > new Date().getFullYear() + 5) {
+            newErrors.year = 'El año debe ser válido';
+            isValid = false;
+        }
+
+        setErrors(newErrors);
+        return isValid;
+    };
 
     return (
         <Box sx={{ width: '100%', p: 3 }}>
@@ -185,7 +241,7 @@ const handleYearFilter = (year: number | null) => {
                         }}
                     >
                         <Box sx={{ display: 'flex', gap: 2, width: { xs: '100%', sm: 'auto' } }}>
-                              {/**<TextField
+                            {/**<TextField
                                 size="small"
                                 label="Año"
                                 type="number"
@@ -201,7 +257,7 @@ const handleYearFilter = (year: number | null) => {
                                         </InputAdornment>
                                     ),
                                 }}
-                            /> */} 
+                            /> */}
 
                             <FormControl size="small" sx={{ minWidth: 120 }}>
                                 <InputLabel>Tipo</InputLabel>
@@ -286,7 +342,7 @@ const handleYearFilter = (year: number | null) => {
                                                     </Box>
                                                 </TableCell>
                                                 <TableCell>
-                                                    {calculateDuration(holiday.startDate, holiday.endDate)} días
+                                                    {calculateDuration(holiday.startDate, holiday.endDate)} días hábiles
                                                 </TableCell>
                                                 <TableCell>{holiday.year}</TableCell>
                                                 <TableCell align="right">
@@ -342,42 +398,97 @@ const handleYearFilter = (year: number | null) => {
                         margin="normal"
                         value={editHoliday?.name || ''}
                         onChange={(e) => editHoliday && setEditHoliday({ ...editHoliday, name: e.target.value })}
+                        error={!!errors.name}
+                        helperText={errors.name}
                     >
                         <MenuItem value="INVIERNO">Invierno</MenuItem>
                         <MenuItem value="FINDEGESTION">Fin de Gestión</MenuItem>
                     </TextField>
+
                     <TextField
                         label="Fecha de Inicio"
                         type="date"
                         fullWidth
                         margin="normal"
                         value={editHoliday?.startDate.split('T')[0] || ''}
-                        onChange={(e) => editHoliday && setEditHoliday({ ...editHoliday, startDate: e.target.value })}
+                        onChange={(e) => {
+                            if (editHoliday) {
+                                const newHoliday = { ...editHoliday, startDate: e.target.value };
+                                setEditHoliday(newHoliday);
+                                // Validar fechas
+                                if (newHoliday.endDate && new Date(newHoliday.endDate) < new Date(e.target.value)) {
+                                    setErrors(prev => ({
+                                        ...prev,
+                                        endDate: 'La fecha de fin no puede ser anterior a la de inicio'
+                                    }));
+                                } else {
+                                    setErrors(prev => ({ ...prev, endDate: '' }));
+                                }
+                            }
+                        }}
                         InputLabelProps={{ shrink: true }}
+                        error={!!errors.startDate}
+                        helperText={errors.startDate}
+                        InputProps={{
+                            endAdornment: (
+                                <InputAdornment position="end">
+                                    <IconButton edge="end">
+                                        <EventIcon />
+                                    </IconButton>
+                                </InputAdornment>
+                            )
+                        }}
                     />
+
                     <TextField
                         label="Fecha de Fin"
                         type="date"
                         fullWidth
                         margin="normal"
                         value={editHoliday?.endDate.split('T')[0] || ''}
-                        onChange={(e) => editHoliday && setEditHoliday({ ...editHoliday, endDate: e.target.value })}
+                        onChange={(e) => {
+                            if (editHoliday) {
+                                const newHoliday = { ...editHoliday, endDate: e.target.value };
+                                setEditHoliday(newHoliday);
+                                // Validar que la fecha de fin no sea anterior a la de inicio
+                                if (newHoliday.startDate && new Date(e.target.value) < new Date(newHoliday.startDate)) {
+                                    setErrors(prev => ({
+                                        ...prev,
+                                        endDate: 'La fecha de fin no puede ser anterior a la de inicio'
+                                    }));
+                                } else {
+                                    setErrors(prev => ({ ...prev, endDate: '' }));
+                                }
+                            }
+                        }}
                         InputLabelProps={{ shrink: true }}
+                        error={!!errors.endDate}
+                        helperText={errors.endDate}
+                        disabled={!editHoliday?.startDate}
+                        InputProps={{
+                            endAdornment: (
+                                <InputAdornment position="end">
+                                    <IconButton edge="end">
+                                        <EventIcon />
+                                    </IconButton>
+                                </InputAdornment>
+                            )
+                        }}
                     />
-                    <TextField
-                        label="Año"
-                        type="number"
-                        fullWidth
-                        margin="normal"
-                        value={editHoliday?.year || ''}
-                        onChange={(e) => editHoliday && setEditHoliday({ ...editHoliday, year: Number(e.target.value) })}
-                    />
+
                 </DialogContent>
                 <DialogActions>
-                    <Button onClick={() => setOpenDialog(false)} color="inherit">
+                    <Button onClick={() => {
+                        setOpenDialog(false);
+                        setErrors({ name: '', startDate: '', endDate: '', year: '' });
+                    }} color="inherit">
                         Cancelar
                     </Button>
-                    <Button onClick={handleSaveHoliday} color="primary" variant="contained">
+                    <Button onClick={() => {
+                        if (editHoliday && validateForm(editHoliday)) {
+                            handleSaveHoliday();
+                        }
+                    }} color="primary" variant="contained">
                         Guardar Cambios
                     </Button>
                 </DialogActions>

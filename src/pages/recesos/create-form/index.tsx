@@ -1,110 +1,233 @@
 import React, { useState } from 'react';
-import { Box, Button, TextField, MenuItem, Typography, Dialog, DialogActions, DialogContent, DialogTitle } from '@mui/material';
+import { 
+  Box, 
+  Button, 
+  TextField, 
+  MenuItem, 
+  Typography, 
+  Dialog, 
+  DialogActions, 
+  DialogContent, 
+  DialogTitle, 
+  CircularProgress, 
+  IconButton, 
+  InputAdornment,
+  Alert
+} from '@mui/material';
+import { Event as EventIcon } from '@mui/icons-material';
 import axios from 'axios';
 
 interface GeneralHolidayFormProps {
-    open: boolean;
-    onClose: () => void;
-    onSuccess: () => void; // Nueva prop para la función de actualización
+  open: boolean;
+  onClose: () => void;
+  onSuccess: () => void;
+}
+
+interface GeneralHolidayPeriod {
+  name: string;
+  startDate: string;
+  endDate: string;
 }
 
 const GeneralHolidayForm: React.FC<GeneralHolidayFormProps> = ({ open, onClose, onSuccess }) => {
-    const [name, setName] = useState<string>('INVIERNO');
-    const [startDate, setStartDate] = useState<string>(new Date().toISOString().slice(0, 10)); // Solo la fecha
-    const [endDate, setEndDate] = useState<string>(new Date().toISOString().slice(0, 10)); // Solo la fecha 
-    const [year, setYear] = useState<number>(new Date().getFullYear());
-    const [loading, setLoading] = useState<boolean>(false);
-    const [error, setError] = useState<string | null>(null);
-    const [success, setSuccess] = useState<string | null>(null);
+  const [newHoliday, setNewHoliday] = useState<Partial<GeneralHolidayPeriod>>({
+    name: 'INVIERNO',
+    startDate: new Date().toISOString().split('T')[0],
+    endDate: new Date().toISOString().split('T')[0],
+  });
 
-    const handleFormSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
-        event.preventDefault();
-        setLoading(true);
-        setError(null);
-        setSuccess(null);
+  const [errors, setErrors] = useState({
+    name: '',
+    startDate: '',
+    endDate: '',
+  });
 
-        try {
-            const payload = {
-                name,
-                type: 'general',
-                startDate: `${startDate}T00:00:00.000Z`, // Establece la hora por defecto para startDate
-                endDate: `${endDate}T23:59:59.999Z`,
-                year
-            };
+  const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
-            await axios.post(`${process.env.NEXT_PUBLIC_API_BASE_URL}/general-holiday-periods`, payload);
-            setSuccess('Receso general creado exitosamente');
-            setLoading(false);
-            onClose(); // Cierra el diálogo después de guardar
-            onSuccess(); // Llama a la función de actualización
-        } catch (error) {
-            console.error('Error al crear el receso general:', error);
-            setError('Hubo un problema al crear el receso.');
-            setLoading(false);
-        }
+  const validateForm = (): boolean => {
+    const newErrors = {
+      name: '',
+      startDate: '',
+      endDate: '',
     };
 
-    return (
-        <Dialog open={open} onClose={onClose}>
-            <DialogTitle>Crear Receso</DialogTitle>
-            <DialogContent>
-                <form onSubmit={handleFormSubmit}>
-                    <TextField
-                        select
-                        label="Nombre del Receso"
-                        value={name}
-                        onChange={(e) => setName(e.target.value)}
-                        fullWidth
-                        margin="normal"
-                    >
-                        <MenuItem value="INVIERNO">Invierno</MenuItem>
-                        <MenuItem value="FINDEGESTION">Fin de Gestión</MenuItem>
-                    </TextField>
+    let isValid = true;
 
-                    <TextField
-                        label="Fecha de Inicio"
-                        type="date" // Cambiado a 'date'
-                        value={startDate}
-                        onChange={(e) => setStartDate(e.target.value)}
-                        fullWidth
-                        margin="normal"
-                        InputLabelProps={{
-                            shrink: true,
-                        }}
-                    />
+    if (!newHoliday.name) {
+      newErrors.name = 'El tipo de receso es requerido';
+      isValid = false;
+    }
 
-                    <TextField
-                        label="Fecha de Fin"
-                        type="date" // Cambiado a 'date'
-                        value={endDate}
-                        onChange={(e) => setEndDate(e.target.value)}
-                        fullWidth
-                        margin="normal"
-                        InputLabelProps={{
-                            shrink: true,
-                        }}
-                    />
+    if (!newHoliday.startDate) {
+      newErrors.startDate = 'La fecha de inicio es requerida';
+      isValid = false;
+    }
 
-                    <TextField
-                        label="Año"
-                        type="number"
-                        value={year}
-                        onChange={(e) => setYear(Number(e.target.value))}
-                        fullWidth
-                        margin="normal"
-                    />
-                    {error && <Typography variant="body2" color="error" mt={2}>{error}</Typography>}
-                    {success && <Typography variant="body2" color="success" mt={2}>{success}</Typography>}
-                    <Button type="submit" variant="contained" color="primary" disabled={loading}>
-                        {loading ? 'Guardando...' : 'Guardar Receso'}
-                    </Button>
-                </form>
-            </DialogContent>
-            <DialogActions>
-                <Button onClick={onClose} color="secondary">Cancelar</Button>
-            </DialogActions>
-        </Dialog>
-    );
+    if (!newHoliday.endDate) {
+      newErrors.endDate = 'La fecha de fin es requerida';
+      isValid = false;
+    } else if (newHoliday.startDate && new Date(newHoliday.endDate) < new Date(newHoliday.startDate)) {
+      newErrors.endDate = 'La fecha de fin no puede ser anterior a la de inicio';
+      isValid = false;
+    }
+
+    setErrors(newErrors);
+    return isValid;
+  };
+
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    
+    if (!validateForm()) return;
+
+    setLoading(true);
+    setErrorMessage('');
+
+    try {
+      const payload = {
+        name: newHoliday.name,
+        startDate: `${newHoliday.startDate}T00:00:00.000Z`,
+        endDate: `${newHoliday.endDate}T23:59:59.999Z`,
+      };
+
+      await axios.post(`${process.env.NEXT_PUBLIC_API_BASE_URL}/general-holiday-periods`, payload);
+      
+      // Reset form on success
+      setNewHoliday({
+        name: 'INVIERNO',
+        startDate: new Date().toISOString().split('T')[0],
+        endDate: new Date().toISOString().split('T')[0],
+      });
+      
+      onSuccess();
+      onClose();
+    } catch (error) {
+      console.error('Error creating holiday:', error);
+      setErrorMessage(
+        axios.isAxiosError(error) 
+          ? error.response?.data?.message || 'Error al crear el receso'
+          : 'Error al crear el receso'
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleStartDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const startDate = e.target.value;
+    setNewHoliday(prev => ({ ...prev, startDate }));
+    
+    // Reset end date if it's before the new start date
+    if (newHoliday.endDate && new Date(newHoliday.endDate) < new Date(startDate)) {
+      setNewHoliday(prev => ({ ...prev, endDate: '' }));
+      setErrors(prev => ({ ...prev, endDate: 'Seleccione una fecha posterior a la de inicio' }));
+    }
+  };
+
+  const handleEndDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const endDate = e.target.value;
+    setNewHoliday(prev => ({ ...prev, endDate }));
+    
+    // Validate end date
+    if (newHoliday.startDate && new Date(endDate) < new Date(newHoliday.startDate)) {
+      setErrors(prev => ({
+        ...prev,
+        endDate: 'La fecha de fin no puede ser anterior a la de inicio'
+      }));
+    } else {
+      setErrors(prev => ({ ...prev, endDate: '' }));
+    }
+  };
+
+  return (
+    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+      <DialogTitle>Crear Nuevo Receso</DialogTitle>
+      <form onSubmit={handleSubmit}>
+        <DialogContent dividers>
+          {errorMessage && (
+            <Alert severity="error" sx={{ mb: 2 }}>
+              {errorMessage}
+            </Alert>
+          )}
+          
+          <TextField
+            label="Tipo de Receso"
+            select
+            fullWidth
+            margin="normal"
+            value={newHoliday.name || ''}
+            onChange={(e) => setNewHoliday(prev => ({ ...prev, name: e.target.value }))}
+            error={!!errors.name}
+            helperText={errors.name}
+            required
+          >
+            <MenuItem value="INVIERNO">Invierno</MenuItem>
+            <MenuItem value="FINDEGESTION">Fin de Gestión</MenuItem>
+          </TextField>
+          
+          <TextField
+            label="Fecha de Inicio"
+            type="date"
+            fullWidth
+            margin="normal"
+            value={newHoliday.startDate || ''}
+            onChange={handleStartDateChange}
+            InputLabelProps={{ shrink: true }}
+            error={!!errors.startDate}
+            helperText={errors.startDate}
+            required
+            InputProps={{
+              endAdornment: (
+                <InputAdornment position="end">
+                  <IconButton edge="end">
+                    <EventIcon />
+                  </IconButton>
+                </InputAdornment>
+              )
+            }}
+          />
+          
+          <TextField
+            label="Fecha de Fin"
+            type="date"
+            fullWidth
+            margin="normal"
+            value={newHoliday.endDate || ''}
+            onChange={handleEndDateChange}
+            InputLabelProps={{ shrink: true }}
+            error={!!errors.endDate}
+            helperText={errors.endDate}
+            disabled={!newHoliday.startDate}
+            required
+            InputProps={{
+              endAdornment: (
+                <InputAdornment position="end">
+                  <IconButton edge="end">
+                    <EventIcon />
+                  </IconButton>
+                </InputAdornment>
+              )
+            }}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={onClose} color="inherit" disabled={loading}>
+            Cancelar
+          </Button>
+          <Button 
+            type="submit"
+            color="primary" 
+            variant="contained"
+            disabled={loading}
+            startIcon={loading ? <CircularProgress size={20} /> : null}
+          >
+            {loading ? 'Creando...' : 'Crear Receso'}
+          </Button>
+        </DialogActions>
+      </form>
+    </Dialog>
+  );
 };
 
 export default GeneralHolidayForm;
