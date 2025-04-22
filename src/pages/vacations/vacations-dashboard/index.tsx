@@ -25,6 +25,7 @@ import {
     ListItemAvatar,
     ListItemIcon,
     ListItemText,
+    Paper
 } from '@mui/material';
 import {
     EventNote as EventNoteIcon,
@@ -34,30 +35,43 @@ import {
     Block as BlockIcon,
     EventBusy as EventBusyIcon,
     BeachAccess as BeachAccessIcon,
-    CheckCircleOutline as CheckCircleOutlineIcon
+    CheckCircleOutline as CheckCircleOutlineIcon,
+    AccessTime as AccessTimeIcon,
+    MonetizationOn as MonetizationOnIcon,
+    Timeline as TimelineIcon,
+    Equalizer as EqualizerIcon
 } from '@mui/icons-material';
 import axios from 'axios';
 import useUser from 'src/hooks/useUser';
 import { useRouter } from 'next/router';
 import { Gestion } from 'src/interfaces/gestion';
-import { GestionData, VacationDebt } from 'src/interfaces/vacationDebt';
+import { VacationDebt } from 'src/interfaces/vacationDebt';
 import { VacationData } from 'src/interfaces/vacationData';
-import SwipeableViews from 'react-swipeable-views';
-import { virtualize } from 'react-swipeable-views-utils';
-import { mod } from 'react-swipeable-views-core';
-import { formatDate } from '@fullcalendar/common';
 import { VacationRequest } from 'src/interfaces/vacationRequests';
 
-const VirtualizeSwipeableViews = virtualize(SwipeableViews);
+interface ResumenGeneral {
+    deudaTotal: number;
+    diasDisponiblesActuales: number;
+    gestionesConDeuda: number;
+    gestionesSinDeuda: number;
+    promedioDeudaPorGestion: number;
+    primeraGestion: Date | null;
+    ultimaGestion: Date | null;
+    totalDiasLicencia: number;
+    totalDiasVacacionUsados: number;
+}
+
 const formatedDate = (dateString: string) => {
     if (!dateString) return 'Fecha no disponible';
     const date = new Date(dateString);
     return date.toLocaleDateString('es-ES');
 };
+
 const VacationDashboard = () => {
     const [gestiones, setGestiones] = useState<Gestion[]>([]);
     const [loading, setLoading] = useState<boolean>(true);
-    const [gestionesData, setGestionesData] = useState<Record<string, GestionData>>({});
+    const [gestionesData, setGestionesData] = useState<Record<string, { data: VacationData; debt: VacationDebt }>>({});
+    const [resumenGeneral, setResumenGeneral] = useState<ResumenGeneral | null>(null);
     const [dialogOpen, setDialogOpen] = useState<boolean>(false);
     const [selectedGestion, setSelectedGestion] = useState<string>('');
 
@@ -65,7 +79,6 @@ const VacationDashboard = () => {
     const router = useRouter();
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-
 
     useEffect(() => {
         if (!user?.ci) return;
@@ -86,34 +99,34 @@ const VacationDashboard = () => {
                     setLoading(false);
                     return;
                 }
+
                 const ultimaGestion = gestionesList.reduce((a, b) =>
                     new Date(a.endDate) > new Date(b.endDate) ? a : b
                 );
-                // Obtener deuda acumulada
+
                 try {
                     const endDateFormatted = ultimaGestion.endDate.split('T')[0];
-                    const debtRes = await axios.get<{ detalles: VacationDebt[] }>(
+                    const debtRes = await axios.get<{
+                        resumenGeneral: any; detalles: VacationDebt[] 
+}>(
                         `${process.env.NEXT_PUBLIC_API_BASE_URL}/vacations/accumulated-debt`,
                         { params: { carnetIdentidad: user.ci, endDate: endDateFormatted } }
                     );
 
                     console.log('💰 Deuda acumulada recibida:', debtRes.data);
 
-                    // Procesar cada gestión
                     const promises = gestionesList.map(async (gestion: Gestion) => {
                         try {
                             const normalizeDate = (dateStr: string) => dateStr.split('T')[0];
                             const gestionStart = normalizeDate(gestion.startDate);
                             const gestionEnd = normalizeDate(gestion.endDate);
 
-                            // Buscar deuda correspondiente o crear una por defecto con todas las propiedades
                             let deudaCorrespondiente = debtRes.data.detalles.find(d => {
                                 const debtStart = normalizeDate(d.startDate);
                                 const debtEnd = normalizeDate(d.endDate);
                                 return debtStart === gestionStart && debtEnd === gestionEnd;
                             });
 
-                            // Si no encontramos deuda, creamos un objeto completo con valores por defecto
                             if (!deudaCorrespondiente) {
                                 deudaCorrespondiente = {
                                     startDate: gestion.startDate,
@@ -121,11 +134,10 @@ const VacationDashboard = () => {
                                     deuda: 0,
                                     deudaAcumulativaAnterior: 0,
                                     diasDisponibles: 0,
-                                    // Agrega aquí otras propiedades requeridas
+                                    deudaAcumulativaHastaEstaGestion: 0,
                                 };
                             }
 
-                            // Obtener datos de vacaciones
                             const vacRes = await axios.get<VacationData>(
                                 `${process.env.NEXT_PUBLIC_API_BASE_URL}/vacations`,
                                 {
@@ -136,13 +148,11 @@ const VacationDashboard = () => {
                                     },
                                 }
                             );
-
                             return {
                                 key: `${gestion.startDate}-${gestion.endDate}`,
                                 data: vacRes.data,
-                                debt: deudaCorrespondiente, // Ahora siempre es un VacationDebt completo
-                            } as GestionData;
-
+                                debt: deudaCorrespondiente,
+                            };
                         } catch (vacError) {
                             console.error(`❌ Error en vacaciones ${gestion.startDate} - ${gestion.endDate}:`, vacError);
                             return {
@@ -155,18 +165,39 @@ const VacationDashboard = () => {
                                     deudaAcumulativaAnterior: 0,
                                     diasDisponibles: 0,
                                 } as VacationDebt,
-                            } as GestionData;
+                            };
                         }
                     });
 
                     const results = await Promise.all(promises);
-                    const gestionMap: Record<string, GestionData> = {};
+                    const gestionMap: Record<string, { data: VacationData; debt: VacationDebt }> = {};
                     results.forEach((result) => {
                         gestionMap[result.key] = result;
                     });
-
                     console.log('📊 Mapa final de gestiones con deuda:', gestionMap);
                     setGestionesData(gestionMap);
+
+                    // Calcular resumen general
+                    // Usamos directamente el resumen general del endpoint
+                    const resumenBackend = debtRes.data.resumenGeneral;
+
+                    // Solo calculamos lo que no viene del backend
+                    const totalDiasLicencia = Object.values(gestionMap)
+                        .reduce((sum, item) => sum + (item.data?.licenciasAutorizadas?.totalAuthorizedDays || 0), 0);
+
+                    const totalDiasVacacionUsados = Object.values(gestionMap)
+                        .reduce((sum, item) => sum + (item.data?.solicitudesDeVacacionAutorizadas?.totalAuthorizedVacationDays || 0), 0);
+
+                    // Combinamos el resumen del backend con los cálculos adicionales
+                    setResumenGeneral({
+                        ...resumenBackend,
+                        totalDiasLicencia,
+                        totalDiasVacacionUsados,
+                        // Aseguramos que las fechas sean Date objects si es necesario
+                        primeraGestion: resumenBackend.primeraGestion ? new Date(resumenBackend.primeraGestion) : null,
+                        ultimaGestion: resumenBackend.ultimaGestion ? new Date(resumenBackend.ultimaGestion) : null
+                    });
+
                 } catch (debtErr) {
                     console.error('❌ Error al obtener deuda acumulada:', debtErr);
                 }
@@ -187,11 +218,6 @@ const VacationDashboard = () => {
 
     const handleDialogClose = () => setDialogOpen(false);
 
-    if (loading) return <CircularProgress />;
-    // Obtener los datos básicos del empleado desde la primera gestión disponible
-    const empleadoData = gestiones.length > 0 ? gestionesData[`${gestiones[0].startDate}-${gestiones[0].endDate}`]?.data : null;
-
-    // Formatear la fecha de ingreso para mostrarla mejor
     const formatFecha = (fechaISO: string) => {
         if (!fechaISO) return 'No disponible';
         const fecha = new Date(fechaISO);
@@ -202,112 +228,26 @@ const VacationDashboard = () => {
         });
     };
 
-    // Configuración del carrusel
-    const carouselSettings = {
-        enableMouseEvents: true,
-        resistance: true,
-        slideStyle: {
-            padding: isMobile ? '8px' : '16px',
-            minHeight: 200,
-            display: 'flex',
-            justifyContent: 'center',
-        },
-        containerStyle: {
-            padding: isMobile ? '8px 0' : '16px 0',
-        }
-    };
-
-    // Función para renderizar slides virtualizadas
-    const slideRenderer = ({ index, key }: { index: number; key: number }) => {
-        const gestion = gestiones[index];
-        if (!gestion) return null;
-
-        const keyGestion = `${gestion.startDate}-${gestion.endDate}`;
-        const detalle = gestionesData[keyGestion];
-        if (!detalle) return null;
-
-
-
-        return (
-            <Card
-                key={key}
-                sx={{
-                    width: isMobile ? 300 : 350,
-                    mx: 2,
-                    boxShadow: 3,
-                    borderRadius: 2,
-                    transition: 'transform 0.3s',
-                    '&:hover': {
-                        transform: 'scale(1.02)',
-                    },
-                }}
-            >
-                <CardContent>
-                    <Typography variant="h6" color="primary" gutterBottom >
-                        Gestión {new Date(gestion.startDate).getFullYear()} - {new Date(gestion.endDate).getFullYear()}
-                    </Typography>
-
-                    <Box sx={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        mb: 1
-                    }}>
-                        <Typography variant="body2">Días disponibles:</Typography>
-                        <Typography variant="body1" fontWeight="bold"
-                            color={'success'}
-                        >
-
-                            {detalle.debt.diasDisponibles}
-                        </Typography>
-                    </Box>
-
-                    <Box sx={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        mb: 1
-                    }}>
-                        <Typography variant="body2">Deuda:</Typography>
-                        <Typography variant="body1" color={detalle.debt.deuda > 0 ? 'error' : 'text.primary'} fontWeight="bold">
-                            {detalle.debt.deudaAcumulativaAnterior}
-                        </Typography>
-                    </Box>
-
-                    <Box sx={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        mb: 2
-                    }}>
-                        <Typography variant="body2">Antigüedad:</Typography>
-                        <Typography variant="body1" fontWeight="bold">
-                            {detalle.data.antiguedadEnAnios} años
-                        </Typography>
-                    </Box>
-
-                    <Button
-                        variant="contained"
-                        fullWidth
-                        onClick={() => handleDialogOpen(keyGestion)}
-                        sx={{ mt: 1 }}
-                    >
-                        Ver detalles
-                    </Button>
-                </CardContent>
-            </Card>
-        );
-    };
     const getVisibleSlides = () => {
         if (isMobile) return 1;
         if (theme.breakpoints.down('lg')) return 3;
         return 4;
     };
+
     const visibleSlides = getVisibleSlides();
     const cardWidth = `calc(${100 / visibleSlides}% - ${theme.spacing(4)})`;
+
+    if (loading) return <CircularProgress />;
+
+    const empleadoData = gestiones.length > 0 ? gestionesData[`${gestiones[0].startDate}-${gestiones[0].endDate}`]?.data : null;
+
     return (
         <Box sx={{ px: isMobile ? 2 : 4, py: 3 }}>
             <Typography variant="h4" gutterBottom>
-                Informacion General de Vacaciones
+                Información General de Vacaciones
             </Typography>
 
+            {/* Sección de Información del Empleado */}
             <Grid container spacing={2} mb={4}>
                 <Grid item xs={12} sm={4}>
                     <Typography variant="h6">Nombre: {empleadoData?.name || 'No disponible'}</Typography>
@@ -320,8 +260,109 @@ const VacationDashboard = () => {
                 </Grid>
             </Grid>
 
+            {/* Dashboard de Resumen General */}
+            {resumenGeneral && (
+                <Box sx={{ mb: 4 }}>
+                    <Typography variant="h5" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <EqualizerIcon /> Resumen General
+                    </Typography>
+
+                    <Grid container spacing={3}>
+                        {/* Tarjeta de Deuda Total */}
+                        <Grid item xs={12} sm={6} md={3}>
+                            <Card sx={{ height: '100%' }}>
+                                <CardContent>
+                                    <Box display="flex" alignItems="center" mb={2}>
+                                        <Avatar sx={{ bgcolor: theme.palette.error.light, mr: 2 }}>
+                                            <MonetizationOnIcon />
+                                        </Avatar>
+                                        <Typography variant="h6">Deuda Total</Typography>
+                                    </Box>
+                                    <Typography variant="h4" color="error">
+                                        {resumenGeneral.deudaTotal} días
+                                    </Typography>
+                                    <Typography variant="body2" color="text.secondary">
+                                        {resumenGeneral.gestionesConDeuda} gestiones con deuda
+                                    </Typography>
+                                </CardContent>
+                            </Card>
+                        </Grid>
+
+                        {/* Tarjeta de Días Disponibles */}
+                        <Grid item xs={12} sm={6} md={3}>
+                            <Card sx={{ height: '100%' }}>
+                                <CardContent>
+                                    <Box display="flex" alignItems="center" mb={2}>
+                                        <Avatar sx={{ bgcolor: theme.palette.success.light, mr: 2 }}>
+                                            <BeachAccessIcon />
+                                        </Avatar>
+                                        <Typography variant="h6">Días Disponibles</Typography>
+                                    </Box>
+                                    <Typography variant="h4" color="success.main">
+                                        {resumenGeneral.diasDisponiblesActuales} días
+                                    </Typography>
+                                    <Typography variant="body2" color="text.secondary">
+                                        {resumenGeneral.gestionesConDeuda} gestiones con deuda
+                                    </Typography>
+                                    <Typography variant="body2" color="text.secondary">
+                                        {resumenGeneral.gestionesSinDeuda} gestiones sin deuda
+                                    </Typography>
+                                </CardContent>
+                            </Card>
+                        </Grid>
+
+                        {/* Tarjeta de Historial de Vacaciones */}
+                        <Grid item xs={12} sm={6} md={3}>
+                            <Card sx={{ height: '100%' }}>
+                                <CardContent>
+                                    <Box display="flex" alignItems="center" mb={2}>
+                                        <Avatar sx={{ bgcolor: theme.palette.info.light, mr: 2 }}>
+                                            <TimelineIcon />
+                                        </Avatar>
+                                        <Typography variant="h6">Historial</Typography>
+                                    </Box>
+                                    <Typography variant="body1">
+                                        <strong>Días licencia usados:</strong> {resumenGeneral.totalDiasLicencia}
+                                    </Typography>
+                                    <Typography variant="body1">
+                                        <strong>Días de Vacacion usados:</strong> {resumenGeneral.totalDiasVacacionUsados}
+                                    </Typography>
+                                    <Typography variant="body1">
+                                        <strong>Promedio deuda:</strong> {resumenGeneral.promedioDeudaPorGestion.toFixed(1)} días/gestión
+                                    </Typography>
+                                </CardContent>
+                            </Card>
+                        </Grid>
+
+                        {/* Tarjeta de Período Cubierto */}
+                        <Grid item xs={12} sm={6} md={3}>
+                            <Card sx={{ height: '100%' }}>
+                                <CardContent>
+                                    <Box display="flex" alignItems="center" mb={2}>
+                                        <Avatar sx={{ bgcolor: theme.palette.warning.light, mr: 2 }}>
+                                            <AccessTimeIcon />
+                                        </Avatar>
+                                        <Typography variant="h6">Período Cubierto</Typography>
+                                    </Box>
+                                    <Typography variant="body1">
+                                        <strong>Primera gestión:</strong> {resumenGeneral.primeraGestion ? formatFecha(resumenGeneral.primeraGestion.toISOString()) : 'N/A'}
+                                    </Typography>
+                                    <Typography variant="body1">
+                                        <strong>Última gestión:</strong> {resumenGeneral.ultimaGestion ? formatFecha(resumenGeneral.ultimaGestion.toISOString()) : 'N/A'}
+                                    </Typography>
+                                    <Typography variant="body1">
+                                        <strong>Total gestiones:</strong> {gestiones.length}
+                                    </Typography>
+                                </CardContent>
+                            </Card>
+                        </Grid>
+                    </Grid>
+                </Box>
+            )}
+
+            {/* Sección de Gestiones (mantenida igual) */}
             <Typography variant="h5" gutterBottom sx={{ mt: 4 }}>
-                Gestiones
+                Historial por Gestión
             </Typography>
 
             <Box sx={{
@@ -377,7 +418,7 @@ const VacationDashboard = () => {
                                                 justifyContent: 'space-between',
                                                 mb: 1
                                             }}>
-                                                <Typography variant="body2"  >Días disponibles:</Typography>
+                                                <Typography variant="body2">Días disponibles:</Typography>
                                                 <Typography variant="body1" fontWeight="bold" color={detalle.debt.diasDisponibles > 0 ? 'green' : 'secondary'}>
                                                     {detalle.debt.diasDisponibles}
                                                 </Typography>
@@ -426,6 +467,7 @@ const VacationDashboard = () => {
                 </Box>
             </Box>
 
+            {/* Diálogo de Detalles (mantenido igual) */}
             <Dialog open={dialogOpen} onClose={handleDialogClose} maxWidth="md" fullWidth>
                 <DialogTitle>Detalles de Gestión</DialogTitle>
                 <DialogContent>
@@ -482,7 +524,7 @@ const VacationDashboard = () => {
                                     <EventNoteIcon /> Recesos Registrados
                                 </Typography>
 
-                                {gestionesData[selectedGestion].data.recesos.length > 0 ? (
+                                {gestionesData[selectedGestion].data.recesos?.length > 0 ? (
                                     <Grid container spacing={2}>
                                         {gestionesData[selectedGestion].data.recesos.map((r, i) => (
                                             <Grid item xs={12} sm={6} key={i}>
@@ -635,12 +677,6 @@ const VacationDashboard = () => {
                                     variant="contained"
                                     color="primary"
                                     onClick={() => {
-                                        // Verifica los parámetros antes de redirigir
-                                        console.log("Enviando parámetros a la URL:", {
-                                            startDate: gestionesData[selectedGestion].data.startDate,
-                                            endDate: gestionesData[selectedGestion].data.endDate
-                                        });
-
                                         router.push({
                                             pathname: '/vacations-form',
                                             query: {
@@ -653,7 +689,6 @@ const VacationDashboard = () => {
                                 >
                                     Solicitar Vacación
                                 </Button>
-
                             </Stack>
                         </Box>
                     )}
