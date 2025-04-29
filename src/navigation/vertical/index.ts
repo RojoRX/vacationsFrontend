@@ -102,6 +102,26 @@ const navigation = (): VerticalNavItemsType => {
       ],
     },
     {
+      title: 'Recesos',
+      icon: 'mdi:calendar-blank-outline',
+      children: [
+        {
+          title: 'Recesos Generales',
+          icon: 'mdi:calendar-multiple',
+          path: '/holidayPeriods/generalHoliday',
+          action: 'read',
+          subject: 'holiday-periods'
+        },
+        {
+          title: 'Recesos Personalizados',
+          icon: 'mdi:calendar-account',
+          path: '/recess/custom',
+          action: 'manage',
+          subject: 'custom-holidays'
+        }
+      ]
+    },
+    {
       title: 'Gestión de Usuarios',
       icon: 'mdi:account-multiple',
       children: [
