@@ -41,6 +41,8 @@ import {
     Timeline as TimelineIcon,
     Equalizer as EqualizerIcon
 } from '@mui/icons-material';
+import WorkHistoryIcon from '@mui/icons-material/WorkHistory';
+import AssignmentTurnedInIcon from '@mui/icons-material/AssignmentTurnedIn';
 import axios from 'axios';
 import useUser from 'src/hooks/useUser';
 import { useRouter } from 'next/router';
@@ -48,7 +50,8 @@ import { Gestion } from 'src/interfaces/gestion';
 import { VacationDebt } from 'src/interfaces/vacationDebt';
 import { VacationData } from 'src/interfaces/vacationData';
 import { VacationRequest } from 'src/interfaces/vacationRequests';
-
+import AcUnitIcon from '@mui/icons-material/AcUnit'; // Icono de invierno
+import HolidayVillageIcon from '@mui/icons-material/HolidayVillage'; // Icono de fin de gestión
 interface ResumenGeneral {
     deudaTotal: number;
     diasDisponiblesActuales: number;
@@ -107,8 +110,8 @@ const VacationDashboard = () => {
                 try {
                     const endDateFormatted = ultimaGestion.endDate.split('T')[0];
                     const debtRes = await axios.get<{
-                        resumenGeneral: any; detalles: VacationDebt[] 
-}>(
+                        resumenGeneral: any; detalles: VacationDebt[]
+                    }>(
                         `${process.env.NEXT_PUBLIC_API_BASE_URL}/vacations/accumulated-debt`,
                         { params: { carnetIdentidad: user.ci, endDate: endDateFormatted } }
                     );
@@ -385,80 +388,84 @@ const VacationDashboard = () => {
                     },
                 }}>
                     {gestiones.length > 0 ? (
-                        gestiones.map((gestion) => {
-                            const key = `${gestion.startDate}-${gestion.endDate}`;
-                            const detalle = gestionesData[key];
-                            if (!detalle) return null;
+                        [...gestiones]
+                            .sort((a, b) => new Date(b.endDate).getTime() - new Date(a.endDate).getTime())
+                            .map((gestion) => {
+                                const key = `${gestion.startDate}-${gestion.endDate}`;
+                                const detalle = gestionesData[key];
+                                if (!detalle) return null;
 
-                            return (
-                                <Box
-                                    key={key}
-                                    sx={{
-                                        minWidth: cardWidth,
-                                        scrollSnapAlign: 'start',
-                                        flexShrink: 0,
-                                    }}
-                                >
-                                    <Card sx={{
-                                        height: '100%',
-                                        boxShadow: 3,
-                                        transition: 'transform 0.3s, box-shadow 0.3s',
-                                        '&:hover': {
-                                            transform: 'translateY(-4px)',
-                                            boxShadow: 6,
-                                        },
-                                    }}>
-                                        <CardContent>
-                                            <Typography variant="h6" color="primary" gutterBottom textAlign='center'>
-                                                Gestión {new Date(gestion.startDate).getFullYear()} - {new Date(gestion.endDate).getFullYear()}
-                                            </Typography>
-
-                                            <Box sx={{
-                                                display: 'flex',
-                                                justifyContent: 'space-between',
-                                                mb: 1
-                                            }}>
-                                                <Typography variant="body2">Días disponibles:</Typography>
-                                                <Typography variant="body1" fontWeight="bold" color={detalle.debt.diasDisponibles > 0 ? 'green' : 'secondary'}>
-                                                    {detalle.debt.diasDisponibles}
+                                return (
+                                    <Box
+                                        key={key}
+                                        sx={{
+                                            minWidth: cardWidth,
+                                            scrollSnapAlign: 'start',
+                                            flexShrink: 0,
+                                        }}
+                                    >
+                                        <Card sx={{
+                                            height: '100%',
+                                            boxShadow: 3,
+                                            transition: 'transform 0.3s, box-shadow 0.3s',
+                                            '&:hover': {
+                                                transform: 'translateY(-4px)',
+                                                boxShadow: 6,
+                                            },
+                                        }}>
+                                            <CardContent>
+                                                <Typography variant="h6" color="primary" gutterBottom textAlign='center'>
+                                                    Gestión {new Date(gestion.startDate).getFullYear()} - {new Date(gestion.endDate).getFullYear()}
                                                 </Typography>
-                                            </Box>
 
-                                            <Box sx={{
-                                                display: 'flex',
-                                                justifyContent: 'space-between',
-                                                mb: 1
-                                            }}>
-                                                <Typography variant="body2">Deuda Acumulada:</Typography>
-                                                <Typography variant="body1" color={detalle.debt.deuda > 0 ? 'error' : 'text.primary'} fontWeight="bold">
-                                                    {detalle.debt.deuda + detalle.debt.deudaAcumulativaAnterior}
-                                                </Typography>
-                                            </Box>
+                                                {detalle.debt.diasDisponibles > 0 ? (
+                                                    <Typography variant="body2" sx={{ color: 'green', textAlign: 'center', fontWeight: 'bold', mb: 1 }}>
+                                                        Vacaciones disponibles
+                                                    </Typography>
+                                                ) : (
+                                                    <Typography variant="body2" sx={{ color: 'red', textAlign: 'center', fontWeight: 'bold', mb: 1 }}>
+                                                        No tiene vacaciones disponibles
+                                                    </Typography>
+                                                )}
 
-                                            <Box sx={{
-                                                display: 'flex',
-                                                justifyContent: 'space-between',
-                                                mb: 2
-                                            }}>
-                                                <Typography variant="body2">Antigüedad:</Typography>
-                                                <Typography variant="body1" fontWeight="bold">
-                                                    {detalle.data.antiguedadEnAnios} años
-                                                </Typography>
-                                            </Box>
+                                                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                                                    <Typography variant="body2">Días disponibles:</Typography>
+                                                    <Typography variant="body1" fontWeight="bold" color={detalle.debt.diasDisponibles > 0 ? 'green' : 'secondary'}>
+                                                        {detalle.debt.diasDisponibles}
+                                                    </Typography>
+                                                </Box>
 
-                                            <Button
-                                                variant="contained"
-                                                fullWidth
-                                                onClick={() => handleDialogOpen(key)}
-                                                sx={{ mt: 1 }}
-                                            >
-                                                Ver detalles
-                                            </Button>
-                                        </CardContent>
-                                    </Card>
-                                </Box>
-                            );
-                        })
+                                                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                                                    <Typography variant="body2">Deuda Acumulada:</Typography>
+                                                    <Typography
+                                                        variant="body1"
+                                                        color={(detalle.debt.deuda + detalle.debt.deudaAcumulativaAnterior) > 0 ? 'error' : 'text.primary'}
+                                                        fontWeight="bold"
+                                                    >
+                                                        {detalle.debt.deuda + detalle.debt.deudaAcumulativaAnterior}
+                                                    </Typography>
+                                                </Box>
+
+                                                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
+                                                    <Typography variant="body2">Antigüedad:</Typography>
+                                                    <Typography variant="body1" fontWeight="bold">
+                                                        {detalle.data.antiguedadEnAnios} años
+                                                    </Typography>
+                                                </Box>
+
+                                                <Button
+                                                    variant="contained"
+                                                    fullWidth
+                                                    onClick={() => handleDialogOpen(key)}
+                                                    sx={{ mt: 1 }}
+                                                >
+                                                    Ver detalles
+                                                </Button>
+                                            </CardContent>
+                                        </Card>
+                                    </Box>
+                                );
+                            })
                     ) : (
                         <Typography variant="body1" color="text.secondary" sx={{ py: 4, textAlign: 'center', width: '100%' }}>
                             No hay gestiones disponibles
@@ -467,50 +474,242 @@ const VacationDashboard = () => {
                 </Box>
             </Box>
 
+
             {/* Diálogo de Detalles (mantenido igual) */}
             <Dialog open={dialogOpen} onClose={handleDialogClose} maxWidth="md" fullWidth>
-                <DialogTitle>Detalles de Gestión</DialogTitle>
-                <DialogContent>
+                <DialogTitle sx={{
+                    backgroundColor: theme.palette.primary.main,
+                    color: '#ffff',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 2,
+                    py: 2,
+                    marginBottom: 5,
+                }}>
+                    <WorkHistoryIcon fontSize="large" />
+                    <Box>
+                        <Typography sx={{color: '#ffff'}} variant="h6">Resumen de Gestión</Typography>
+                        <Typography  variant="subtitle2" sx={{ opacity: 0.9, color: '#ffff' }}>
+                            Detalles de tus vacaciones y permisos
+                        </Typography>
+                    </Box>
+                </DialogTitle>
+
+                <DialogContent sx={{ py: 3 }}>
                     {selectedGestion && gestionesData[selectedGestion] && (
                         <Box>
-                            <Table>
-                                <TableBody>
-                                    <TableRow>
-                                        <TableCell>Antigüedad</TableCell>
-                                        <TableCell>
-                                            {gestionesData[selectedGestion].data?.antiguedadEnAnios || 0} años / {gestionesData[selectedGestion].data?.antiguedadEnDias || 0} días
-                                        </TableCell>
-                                    </TableRow>
-                                    <TableRow>
-                                        <TableCell>Días de Vacación</TableCell>
-                                        <TableCell>{gestionesData[selectedGestion].data?.diasDeVacacion || 0}</TableCell>
-                                    </TableRow>
-                                    <TableRow>
-                                        <TableCell>Vacaciones Tomadas</TableCell>
-                                        <TableCell>
-                                            {gestionesData[selectedGestion].data?.solicitudesDeVacacionAutorizadas?.totalAuthorizedVacationDays || 0}
-                                        </TableCell>
-                                    </TableRow>
-                                    <TableRow>
-                                        <TableCell>Licencias Tomadas</TableCell>
-                                        <TableCell>
-                                            {gestionesData[selectedGestion].data?.licenciasAutorizadas?.totalAuthorizedDays || 0}
-                                        </TableCell>
-                                    </TableRow>
-                                    <TableRow>
-                                        <TableCell>Días Disponibles</TableCell>
-                                        <TableCell>{gestionesData[selectedGestion].debt?.diasDisponibles || 0}</TableCell>
-                                    </TableRow>
-                                    <TableRow>
-                                        <TableCell>Deuda Gestión Actual</TableCell>
-                                        <TableCell>{gestionesData[selectedGestion].debt?.deuda || 0}</TableCell>
-                                    </TableRow>
-                                    <TableRow>
-                                        <TableCell>Deuda Gestion Anterior</TableCell>
-                                        <TableCell>{gestionesData[selectedGestion].debt?.deudaAcumulativaAnterior || 0}</TableCell>
-                                    </TableRow>
-                                </TableBody>
-                            </Table>
+                            {/* Resumen Principal */}
+                            <Grid container spacing={3} sx={{ mb: 3 }}>
+                                <Grid item xs={12} md={6}>
+                                    <Paper elevation={0} sx={{
+                                        p: 2,
+                                        borderLeft: '4px solid',
+                                        borderColor: theme.palette.primary.main,
+                                        bgcolor: theme.palette.primary.light + '20'
+                                    }}>
+                                        <Box display="flex" alignItems="center" mb={1}>
+                                            <AccessTimeIcon color="primary" sx={{ mr: 1 }} />
+                                            <Typography variant="subtitle1" fontWeight={600}>
+                                                Antigüedad
+                                            </Typography>
+                                        </Box>
+                                        <Typography>
+                                            {gestionesData[selectedGestion].data?.antiguedadEnAnios || 0} años y {gestionesData[selectedGestion].data?.antiguedadEnDias || 0} días de servicio
+                                        </Typography>
+                                    </Paper>
+                                </Grid>
+
+                                <Grid item xs={12} md={6}>
+                                    <Paper elevation={0} sx={{
+                                        p: 2,
+                                        borderLeft: '4px solid',
+                                        borderColor: theme.palette.success.main,
+                                        bgcolor: theme.palette.success.light + '20'
+                                    }}>
+                                        <Box display="flex" alignItems="center" mb={1}>
+                                            <BeachAccessIcon color="success" sx={{ mr: 1 }} />
+                                            <Typography variant="subtitle1" fontWeight={600}>
+                                                Días de Vacación según Antigüedad
+                                            </Typography>
+                                        </Box>
+                                        <Typography>
+                                            {gestionesData[selectedGestion].data?.diasDeVacacion || 0} días correspondientes
+                                        </Typography>
+                                    </Paper>
+                                </Grid>
+                            </Grid>
+
+                            {/* Estadísticas de Uso */}
+                            <Grid container spacing={3} sx={{ mb: 4 }}>
+                                <Grid item xs={12} md={4}>
+                                    <Paper elevation={0} sx={{
+                                        p: 2,
+                                        borderLeft: '4px solid',
+                                        borderColor: theme.palette.warning.main,
+                                        bgcolor: theme.palette.warning.light + '20'
+                                    }}>
+                                        <Box display="flex" alignItems="center" mb={1}>
+                                            <CheckCircleOutlineIcon color="warning" sx={{ mr: 1 }} />
+                                            <Typography variant="subtitle1" fontWeight={600}>
+                                                Vacaciones Usadas
+                                            </Typography>
+                                        </Box>
+                                        <Typography>
+                                            {gestionesData[selectedGestion].data?.solicitudesDeVacacionAutorizadas?.totalAuthorizedVacationDays || 0} días
+                                        </Typography>
+                                    </Paper>
+                                </Grid>
+
+                                <Grid item xs={12} md={4}>
+                                    <Paper elevation={0} sx={{
+                                        p: 2,
+                                        borderLeft: '4px solid',
+                                        borderColor: theme.palette.info.main,
+                                        bgcolor: theme.palette.info.light + '20'
+                                    }}>
+                                        <Box display="flex" alignItems="center" mb={1}>
+                                            <AssignmentTurnedInIcon color="info" sx={{ mr: 1 }} />
+                                            <Typography variant="subtitle1" fontWeight={600}>
+                                                Permisos Usados
+                                            </Typography>
+                                        </Box>
+                                        <Typography>
+                                            {gestionesData[selectedGestion].data?.licenciasAutorizadas?.totalAuthorizedDays || 0} días
+                                        </Typography>
+                                    </Paper>
+                                </Grid>
+
+                                <Grid item xs={12} md={4}>
+                                    <Paper elevation={0} sx={{
+                                        p: 2,
+                                        borderLeft: '4px solid',
+                                        borderColor: gestionesData[selectedGestion].debt?.diasDisponibles < 1
+                                            ? theme.palette.error.main
+                                            : theme.palette.success.main,
+                                        bgcolor: gestionesData[selectedGestion].debt?.diasDisponibles < 1
+                                            ? theme.palette.error.light + '20'
+                                            : theme.palette.success.light + '20'
+                                    }}>
+                                        <Box display="flex" alignItems="center" mb={1}>
+                                            <EventAvailableIcon
+                                                color={gestionesData[selectedGestion].debt?.diasDisponibles < 1 ? 'error' : 'success'}
+                                                sx={{ mr: 1 }}
+                                            />
+                                            <Typography variant="subtitle1" fontWeight={600}>
+                                                Días Disponibles (Saldo)
+                                            </Typography>
+                                        </Box>
+                                        <Typography color={gestionesData[selectedGestion].debt?.diasDisponibles < 1 ? 'error' : 'textPrimary'}>
+                                            {gestionesData[selectedGestion].debt?.diasDisponibles || 0} días restantes
+                                        </Typography>
+                                    </Paper>
+                                </Grid>
+                                <Grid item xs={12}>
+  <Paper elevation={0} sx={{
+    p: 2,
+    borderLeft: '4px solid',
+    borderColor: (gestionesData[selectedGestion].debt?.deudaAcumulativaHastaEstaGestion || 0) > 0
+      ? theme.palette.error.main
+      : theme.palette.divider,
+    bgcolor: (gestionesData[selectedGestion].debt?.deudaAcumulativaHastaEstaGestion || 0) > 0
+      ? theme.palette.error.light + '20'
+      : theme.palette.background.default
+  }}>
+    <Box display="flex" alignItems="center" mb={1}>
+      <EventAvailableIcon
+        color={(gestionesData[selectedGestion].debt?.deudaAcumulativaHastaEstaGestion || 0) > 0 ? 'error' : 'disabled'}
+        sx={{ mr: 1 }}
+      />
+      <Typography variant="subtitle1" fontWeight={600}>
+        Deuda Acumulada
+      </Typography>
+    </Box>
+    <Typography 
+      color={(gestionesData[selectedGestion].debt?.deudaAcumulativaHastaEstaGestion || 0) > 0 ? 'error' : 'textSecondary'}
+      sx={{ fontWeight: (gestionesData[selectedGestion].debt?.deudaAcumulativaHastaEstaGestion || 0) > 0 ? 600 : 'normal' }}
+    >
+      {gestionesData[selectedGestion].debt?.deudaAcumulativaHastaEstaGestion || 0} días de deuda acumulada
+    </Typography>
+  </Paper>
+</Grid>
+                            </Grid>
+                            <Grid container spacing={3} sx={{ mb: 4 }}>
+                                {/* Receso de Invierno */}
+                                <Grid item xs={12} md={6}>
+                                    <Paper elevation={0} sx={{
+                                        p: 2,
+                                        borderLeft: '4px solid',
+                                        borderColor: '#0288d1',
+                                        bgcolor: ''
+                                    }}>
+                                        <Box display="flex" alignItems="center" mb={1}>
+                                            <AcUnitIcon sx={{ color: '#0288d1', mr: 1 }} />
+                                            <Typography variant="subtitle1" fontWeight={600}>
+                                                Receso de Invierno
+                                            </Typography>
+                                        </Box>
+                                        {gestionesData[selectedGestion].data.recesos?.filter(r => r.name === 'INVIERNO').length > 0 ? (
+                                            <Box>
+                                                {gestionesData[selectedGestion].data.recesos
+                                                    .filter(r => r.name === 'INVIERNO')
+                                                    .map((r, i) => (
+                                                        <Box key={i} mb={2}>
+                                                        </Box>
+                                                    ))}
+                                                <Typography variant="body2" sx={{ mt: 1, fontWeight: 500 }}>
+                                                    Días totales: {gestionesData[selectedGestion].data.recesos
+                                                        .filter(r => r.name === 'INVIERNO')
+                                                        .reduce((sum, r) => sum + r.daysCount, 0)} días hábiles
+                                                </Typography>
+                                            </Box>
+                                        ) : (
+                                            <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic' }}>
+                                                No hay receso de invierno registrado
+                                            </Typography>
+                                        )}
+                                    </Paper>
+                                </Grid>
+
+                                {/* Receso de Fin de Gestión */}
+                                <Grid item xs={12} md={6}>
+                                    <Paper elevation={0} sx={{
+                                        p: 2,
+                                        borderLeft: '4px solid',
+                                        borderColor: '#ffff66',
+                                        bgcolor: ''
+                                    }}>
+                                        <Box display="flex" alignItems="center" mb={1}>
+                                            <HolidayVillageIcon sx={{ color: '#666600', mr: 1 }} />
+                                            <Typography variant="subtitle1" fontWeight={600}>
+                                                Receso de Fin de Gestión
+                                            </Typography>
+                                        </Box>
+                                        {gestionesData[selectedGestion].data.recesos?.filter(r => r.name === 'FINDEGESTION').length > 0 ? (
+                                            <Box>
+                                                {gestionesData[selectedGestion].data.recesos
+                                                    .filter(r => r.name === 'FINDEGESTION')
+                                                    .map((r, i) => (
+                                                        <Box key={i} mb={2}>
+                                                            <Stack spacing={0.5}>
+                                                                <Box display="flex">
+                                                                </Box>
+                                                            </Stack>
+                                                        </Box>
+                                                    ))}
+                                                <Typography variant="body2" sx={{ mt: 1, fontWeight: 500 }}>
+                                                    Días totales: {gestionesData[selectedGestion].data.recesos
+                                                        .filter(r => r.name === 'FINDEGESTION')
+                                                        .reduce((sum, r) => sum + r.daysCount, 0)} días hábiles
+                                                </Typography>
+                                            </Box>
+                                        ) : (
+                                            <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic' }}>
+                                                No hay receso de fin de gestión registrado
+                                            </Typography>
+                                        )}
+                                    </Paper>
+                                </Grid>
+                            </Grid>
 
                             <Box mt={4}>
                                 {/* Sección de Recesos Registrados */}
@@ -521,7 +720,7 @@ const VacationDashboard = () => {
                                     alignItems: 'center',
                                     gap: 1
                                 }}>
-                                    <EventNoteIcon /> Recesos Registrados
+                                    <EventNoteIcon /> Detalles Recesos Registrados
                                 </Typography>
 
                                 {gestionesData[selectedGestion].data.recesos?.length > 0 ? (
