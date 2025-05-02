@@ -488,8 +488,8 @@ const VacationDashboard = () => {
                 }}>
                     <WorkHistoryIcon fontSize="large" />
                     <Box>
-                        <Typography sx={{color: '#ffff'}} variant="h6">Resumen de Gestión</Typography>
-                        <Typography  variant="subtitle2" sx={{ opacity: 0.9, color: '#ffff' }}>
+                        <Typography sx={{ color: '#ffff' }} variant="h6">Resumen de Gestión</Typography>
+                        <Typography variant="subtitle2" sx={{ opacity: 0.9, color: '#ffff' }}>
                             Detalles de tus vacaciones y permisos
                         </Typography>
                     </Box>
@@ -578,60 +578,34 @@ const VacationDashboard = () => {
                                         </Typography>
                                     </Paper>
                                 </Grid>
-
-                                <Grid item xs={12} md={4}>
+                                <Grid item xs={4}>
                                     <Paper elevation={0} sx={{
                                         p: 2,
                                         borderLeft: '4px solid',
-                                        borderColor: gestionesData[selectedGestion].debt?.diasDisponibles < 1
+                                        borderColor: (gestionesData[selectedGestion].debt?.deudaAcumulativaHastaEstaGestion || 0) > 0
                                             ? theme.palette.error.main
-                                            : theme.palette.success.main,
-                                        bgcolor: gestionesData[selectedGestion].debt?.diasDisponibles < 1
+                                            : theme.palette.divider,
+                                        bgcolor: (gestionesData[selectedGestion].debt?.deudaAcumulativaHastaEstaGestion || 0) > 0
                                             ? theme.palette.error.light + '20'
-                                            : theme.palette.success.light + '20'
+                                            : theme.palette.background.default
                                     }}>
                                         <Box display="flex" alignItems="center" mb={1}>
                                             <EventAvailableIcon
-                                                color={gestionesData[selectedGestion].debt?.diasDisponibles < 1 ? 'error' : 'success'}
+                                                color={(gestionesData[selectedGestion].debt?.deudaAcumulativaHastaEstaGestion || 0) > 0 ? 'error' : 'disabled'}
                                                 sx={{ mr: 1 }}
                                             />
                                             <Typography variant="subtitle1" fontWeight={600}>
-                                                Días Disponibles (Saldo)
+                                                Deuda Acumulada
                                             </Typography>
                                         </Box>
-                                        <Typography color={gestionesData[selectedGestion].debt?.diasDisponibles < 1 ? 'error' : 'textPrimary'}>
-                                            {gestionesData[selectedGestion].debt?.diasDisponibles || 0} días restantes
+                                        <Typography
+                                            color={(gestionesData[selectedGestion].debt?.deudaAcumulativaHastaEstaGestion || 0) > 0 ? 'error' : 'textSecondary'}
+                                            sx={{ fontWeight: (gestionesData[selectedGestion].debt?.deudaAcumulativaHastaEstaGestion || 0) > 0 ? 600 : 'normal' }}
+                                        >
+                                            {gestionesData[selectedGestion].debt?.deudaAcumulativaHastaEstaGestion || 0} días de deuda acumulada
                                         </Typography>
                                     </Paper>
                                 </Grid>
-                                <Grid item xs={12}>
-  <Paper elevation={0} sx={{
-    p: 2,
-    borderLeft: '4px solid',
-    borderColor: (gestionesData[selectedGestion].debt?.deudaAcumulativaHastaEstaGestion || 0) > 0
-      ? theme.palette.error.main
-      : theme.palette.divider,
-    bgcolor: (gestionesData[selectedGestion].debt?.deudaAcumulativaHastaEstaGestion || 0) > 0
-      ? theme.palette.error.light + '20'
-      : theme.palette.background.default
-  }}>
-    <Box display="flex" alignItems="center" mb={1}>
-      <EventAvailableIcon
-        color={(gestionesData[selectedGestion].debt?.deudaAcumulativaHastaEstaGestion || 0) > 0 ? 'error' : 'disabled'}
-        sx={{ mr: 1 }}
-      />
-      <Typography variant="subtitle1" fontWeight={600}>
-        Deuda Acumulada
-      </Typography>
-    </Box>
-    <Typography 
-      color={(gestionesData[selectedGestion].debt?.deudaAcumulativaHastaEstaGestion || 0) > 0 ? 'error' : 'textSecondary'}
-      sx={{ fontWeight: (gestionesData[selectedGestion].debt?.deudaAcumulativaHastaEstaGestion || 0) > 0 ? 600 : 'normal' }}
-    >
-      {gestionesData[selectedGestion].debt?.deudaAcumulativaHastaEstaGestion || 0} días de deuda acumulada
-    </Typography>
-  </Paper>
-</Grid>
                             </Grid>
                             <Grid container spacing={3} sx={{ mb: 4 }}>
                                 {/* Receso de Invierno */}
@@ -710,6 +684,31 @@ const VacationDashboard = () => {
                                     </Paper>
                                 </Grid>
                             </Grid>
+                            <Grid item xs={12} md={12}>
+                                    <Paper elevation={0} sx={{
+                                        p: 2,
+                                        borderLeft: '4px solid',
+                                        borderColor: gestionesData[selectedGestion].debt?.diasDisponibles < 1
+                                            ? theme.palette.error.main
+                                            : theme.palette.success.main,
+                                        bgcolor: gestionesData[selectedGestion].debt?.diasDisponibles < 1
+                                            ? theme.palette.error.light + '20'
+                                            : theme.palette.success.light + '20'
+                                    }}>
+                                        <Box display="flex" alignItems="center" mb={1}>
+                                            <EventAvailableIcon
+                                                color={gestionesData[selectedGestion].debt?.diasDisponibles < 1 ? 'error' : 'success'}
+                                                sx={{ mr: 1 }}
+                                            />
+                                            <Typography variant="subtitle1" fontWeight={600}>
+                                                Días Disponibles de Vacaciones (Saldo)
+                                            </Typography>
+                                        </Box>
+                                        <Typography color={gestionesData[selectedGestion].debt?.diasDisponibles < 1 ? 'error' : 'textPrimary'}>
+                                            {gestionesData[selectedGestion].debt?.diasDisponibles || 0} días restantes
+                                        </Typography>
+                                    </Paper>
+                                </Grid>
 
                             <Box mt={4}>
                                 {/* Sección de Recesos Registrados */}
