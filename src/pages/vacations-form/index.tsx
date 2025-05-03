@@ -153,7 +153,7 @@ const VacationRequestSubmissionForm = () => {
         </Grid>
 
         {/* Selector de fecha de inicio */}
-        <Grid item xs={12} md={6}>
+        <Grid item xs={12} md={12}>
           <Card elevation={2}>
             <CardHeader
               title="Fecha de inicio"
@@ -204,6 +204,7 @@ const VacationRequestSubmissionForm = () => {
       </Grid>
 
       {/* Diálogo de confirmación */}
+      {/* Diálogo de confirmación */}
       <Dialog
         open={confirmDialogOpen}
         onClose={handleCloseConfirmationDialog}
@@ -217,7 +218,7 @@ const VacationRequestSubmissionForm = () => {
               ¿Desea programar sus vacaciones desde el{' '}
               <strong>{startDate.toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</strong>{' '}
               hasta el{' '}
-              <strong>{new Date(calculatedEndDate.setDate(calculatedEndDate.getDate() - 1)).toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</strong>{' '}
+              <strong>{calculatedEndDate.toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</strong>{' '}
               (<strong>{vacationDays} días hábiles</strong>)?
             </Typography>
           )}

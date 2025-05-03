@@ -23,8 +23,7 @@ import {
   Stack,
   Alert,
   IconButton,
-  Container,
-  Tooltip
+  Container
 } from '@mui/material';
 import {
   People as PeopleIcon,
@@ -35,20 +34,13 @@ import {
   Download as DownloadIcon,
   Edit as EditIcon,
   Check as CheckIcon,
-  Cancel as CancelIcon,
-  WorkHistory as WorkHistoryIcon,
-  EventAvailable as EventAvailableIcon,
-  CalendarToday as CalendarTodayIcon,
-  Today as TodayIcon,
-  BeachAccess as BeachAccessIcon,
-  AcUnit as AcUnitIcon,
-  HolidayVillage as HolidayVillageIcon
+  Cancel as CancelIcon
 } from '@mui/icons-material';
 import useUser from 'src/hooks/useUser';
 import { SelectChangeEvent } from '@mui/material/Select';
 import PostponeVacationRequestForm from '../vacations-postponed';
 import { generateVacationAuthorizationPDF } from 'src/utils/pdfGenerator';
-import { format, parseISO, getYear } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { VacationDebt } from 'src/interfaces/vacationDebt';
 import { Gestion } from 'src/interfaces/gestion';
@@ -106,14 +98,6 @@ const formatDate = (dateString: string) => {
   }
 };
 
-const formatYear = (dateString: string) => {
-  try {
-    return getYear(parseISO(dateString));
-  } catch {
-    return dateString.split('-')[0];
-  }
-};
-
 const VacationRequestDetails = () => {
   const router = useRouter();
   const { id } = router.query;
@@ -125,7 +109,6 @@ const VacationRequestDetails = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [infoMessage, setInfoMessage] = useState('');
   const [debtData, setDebtData] = useState<VacationDebt | null>(null);
-  const [downloading, setDownloading] = useState(false);
 
   const fetchRequestDetails = useCallback(async () => {
     if (!id) return;
@@ -162,18 +145,25 @@ const VacationRequestDetails = () => {
         timeout: 5000,
       });
   
+      console.log('Respuesta completa del servidor:', response.data);
+  
+      // Verificar si hay detalles en la respuesta
       if (!response.data.detalles || !Array.isArray(response.data.detalles)) {
         console.error('Formato de datos inesperado: detalles no es un array');
         throw new Error('Formato de datos inesperado');
       }
   
+      // Formatear fechas de búsqueda
       const gestionStart = new Date(startDate);
       const gestionEnd = new Date(endDate);
   
+      // Buscar la gestión que coincida con el rango de fechas
       const gestionDebt = response.data.detalles.find((detalle: any) => {
         try {
           const detalleStart = new Date(detalle.startDate);
           const detalleEnd = new Date(detalle.endDate);
+          
+          // Comparar las fechas como objetos Date directamente
           return (
             detalleStart.getTime() === gestionStart.getTime() &&
             detalleEnd.getTime() === gestionEnd.getTime()
@@ -185,6 +175,8 @@ const VacationRequestDetails = () => {
       });
   
       if (!gestionDebt) {
+        console.warn('No se encontró deuda para la gestión específica, usando el último registro');
+        // Usar el último registro si no se encuentra la gestión específica
         const lastRecord = response.data.detalles[response.data.detalles.length - 1];
         setDebtData({
           diasDisponibles: lastRecord?.diasDisponibles ?? 0,
@@ -197,6 +189,7 @@ const VacationRequestDetails = () => {
         return;
       }
   
+      console.log('Datos encontrados para la gestión:', gestionDebt);
       setDebtData(gestionDebt);
       
     } catch (err) {
@@ -283,20 +276,6 @@ const VacationRequestDetails = () => {
     return request?.recesos.find(receso => receso.name === name);
   };
 
-  const handleDownloadPDF = async () => {
-    if (!request) return;
-    
-    try {
-      setDownloading(true);
-      await generateVacationAuthorizationPDF(request);
-    } catch (error) {
-      console.error('Error al generar el PDF:', error);
-      setError('Error al generar el documento PDF');
-    } finally {
-      setDownloading(false);
-    }
-  };
-
   const renderHeader = () => (
     <Box textAlign="center" mb={4}>
       <Typography variant="h4" fontWeight="bold" gutterBottom>
@@ -310,17 +289,14 @@ const VacationRequestDetails = () => {
       </Typography>
       
       {request?.status === "AUTHORIZED" && (
-        <Tooltip title="Descargar documento de autorización en formato PDF">
-          <Button
-            variant="contained"
-            startIcon={<DownloadIcon />}
-            onClick={handleDownloadPDF}
-            sx={{ mt: 2 }}
-            disabled={downloading}
-          >
-            {downloading ? 'Generando...' : 'Descargar Autorización en PDF'}
-          </Button>
-        </Tooltip>
+        <Button
+          variant="contained"
+          startIcon={<DownloadIcon />}
+          onClick={() => generateVacationAuthorizationPDF(request)}
+          sx={{ mt: 2 }}
+        >
+          Descargar Autorización en PDF
+        </Button>
       )}
     </Box>
   );
@@ -361,7 +337,7 @@ const VacationRequestDetails = () => {
   const renderPersonalDepartmentReport = () => (
     <>
       <Typography variant="body1">
-        <strong>Vacación correspondiente a las gestión(es):</strong> {formatYear(request?.managementPeriodStart || '')} - {formatYear(request?.managementPeriodEnd || '')}
+        <strong>Vacación correspondiente a las gestión(es):</strong> {formatDate(request?.managementPeriodStart || '')} - {formatDate(request?.managementPeriodEnd || '')}
       </Typography>
       <Typography variant="body1">
         <strong>Años de Antigüedad:</strong> {request?.antiguedadEnAnios}
