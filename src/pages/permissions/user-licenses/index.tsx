@@ -25,7 +25,8 @@ import {
     PendingActions as PendingIcon
 } from '@mui/icons-material';
 import { License } from 'src/interfaces/licenseTypes';
-
+import PictureAsPdfIcon from '@mui/icons-material';
+import { generateLicensePdf } from 'src/utils/licensePdfGenerator';
 interface AclComponent extends FC {
     acl?: {
         action: string;
@@ -410,6 +411,33 @@ const UserLicenses: AclComponent = () => {
                             </Box>
                         </DialogContent>
                         <DialogActions>
+                            <Button
+                                onClick={handleCloseDetails}
+                                variant="contained"
+                                startIcon={<CloseIcon />}
+                            >
+                                Cerrar
+                            </Button>
+
+                            <Button
+                                onClick={() => {
+                                    if (selectedLicense && user) {
+                                        const pdf = generateLicensePdf(selectedLicense, {
+                                            title: 'AUTORIZACIÓN DE LICENCIA',
+                                            user: {
+                                                fullName: user.fullName,
+                                                ci: user.ci
+                                            }
+                                        });
+                                        pdf.save(`licencia-${selectedLicense.id}.pdf`);
+                                    }
+                                }}
+                                color="secondary"
+                                variant="contained"
+                               
+                            >
+                                Generar PDF
+                            </Button>
                             <Button
                                 onClick={handleCloseDetails}
                                 variant="contained"
