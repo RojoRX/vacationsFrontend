@@ -14,11 +14,11 @@ import { VacationRequest } from 'src/interfaces/vacationRequests';
 
 
 interface SuspendVacationDialogProps {
-    open: boolean;
-    onClose: () => void;
-    request: Omit<VacationRequest, 'managementPeriodStart' | 'managementPeriodEnd' | 'reviewDate'> | null;
-    onSuccess: (updatedRequest: VacationRequest) => void;
-  }
+  open: boolean;
+  onClose: () => void;
+  request: Omit<VacationRequest, 'managementPeriodStart' | 'managementPeriodEnd' | 'reviewDate'> | null;
+  onSuccess: (updatedRequest: VacationRequest) => void;
+}
 
 const SuspendVacationDialog: React.FC<SuspendVacationDialogProps> = ({
   open,
@@ -45,9 +45,11 @@ const SuspendVacationDialog: React.FC<SuspendVacationDialogProps> = ({
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
+  const [errorMessage, setErrorMessage] = useState('');
+
   const handleSubmit = async () => {
     if (!request) return;
-    
+
     try {
       const response = await axios.patch<VacationRequest>(
         `${process.env.NEXT_PUBLIC_API_BASE_URL}/vacation-requests/${request.id}/suspend`,
@@ -59,10 +61,13 @@ const SuspendVacationDialog: React.FC<SuspendVacationDialogProps> = ({
       );
       onSuccess(response.data);
       onClose();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error al suspender la solicitud:', error);
+      const message = error.response?.data?.message || 'Error inesperado.';
+      setErrorMessage(message);
     }
   };
+
 
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
@@ -92,12 +97,16 @@ const SuspendVacationDialog: React.FC<SuspendVacationDialogProps> = ({
           margin="normal"
           InputLabelProps={{ shrink: true }}
         />
+        {errorMessage && (
+          <p style={{ color: 'red', marginTop: 8 }}>{errorMessage}</p>
+        )}
+
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose}>Cancelar</Button>
-        <Button 
-          onClick={handleSubmit} 
-          color="warning" 
+        <Button
+          onClick={handleSubmit}
+          color="warning"
           variant="contained"
           startIcon={<SuspendIcon />}
         >
