@@ -117,47 +117,51 @@ const VacationRequestList: VacationRequestsComponent = () => {
         // aquí actualizas tu lista de solicitudes, por ejemplo
         console.log('Solicitud actualizada:', updatedRequest);
       };
-    useEffect(() => {
+      useEffect(() => {
         const fetchRequests = async () => {
             if (!user?.id) {
                 console.error('ID de usuario no disponible.');
                 return;
             }
-
+    
             try {
                 const response = await axios.get<VacationRequest[]>(
                     `${process.env.NEXT_PUBLIC_API_BASE_URL}/vacation-requests/user/${user.id}`
                 );
-                setRequests(response.data);
-                setFilteredRequests(response.data);
+                const sortedRequests = response.data.sort((a, b) => b.id - a.id); // Ordenar por id descendente
+                setRequests(sortedRequests);
+                setFilteredRequests(sortedRequests);
             } catch (error) {
                 console.error('Error fetching vacation requests:', error);
             }
         };
-
+    
         fetchRequests();
     }, [user]);
+    
 
     useEffect(() => {
         let result = requests;
-
+    
         if (searchTerm) {
             result = result.filter(
                 (request) =>
                     request.position.toLowerCase().includes(searchTerm.toLowerCase()) ||
                     request.status.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                    request.requestDate.includes(searchTerm));
+                    request.requestDate.includes(searchTerm)
+            );
         }
-
+    
         if (statusFilter !== 'all') {
             result = result.filter((request) => request.status === statusFilter);
         }
+    
         if (dateFilter.startDate || dateFilter.endDate) {
             result = result.filter((request) => {
                 const dateToFilter = new Date(request[dateFilter.filterType]);
                 const startDate = dateFilter.startDate ? new Date(dateFilter.startDate) : null;
                 const endDate = dateFilter.endDate ? new Date(dateFilter.endDate) : null;
-
+    
                 if (startDate && endDate) {
                     return dateToFilter >= startDate && dateToFilter <= endDate;
                 } else if (startDate) {
@@ -168,10 +172,13 @@ const VacationRequestList: VacationRequestsComponent = () => {
                 return true;
             });
         }
-
-
+    
+        // Ordenar por la fecha de solicitud (requestDate) de forma descendente
+        result = result.sort((a, b) => new Date(b.requestDate).getTime() - new Date(a.requestDate).getTime());
+    
         setFilteredRequests(result);
     }, [searchTerm, statusFilter, requests, dateFilter]);
+    
 
     const handleOpenDialog = (request: VacationRequest) => {
         setSelectedRequest(request);
