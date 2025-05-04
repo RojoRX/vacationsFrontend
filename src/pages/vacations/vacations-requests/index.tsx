@@ -23,7 +23,8 @@ import {
     Toolbar,
     useTheme,
     MenuItem,
-    TextFieldProps
+    TextFieldProps,
+    Grid
 } from '@mui/material';
 import { useRouter } from 'next/router';
 import useUser from 'src/hooks/useUser';
@@ -44,7 +45,12 @@ import AccountSupervisorIcon from '@mui/icons-material/SupervisorAccount';
 import CheckIcon from '@mui/icons-material/Check';
 import CloseIcon from '@mui/icons-material/Close';
 import ArrowRightIcon from '@mui/icons-material/ArrowForward';
-import { DatePicker } from '@mui/lab';
+import EditIcon from '@mui/icons-material/Edit';
+import SaveIcon from '@mui/icons-material/Save';
+import { DatePicker, LocalizationProvider } from '@mui/lab'; // Para v5
+import EditVacationDialog from '../vacations-edit';
+
+
 
 interface VacationRequest {
     id: number;
@@ -81,6 +87,15 @@ const VacationRequestList: VacationRequestsComponent = () => {
     const [statusFilter, setStatusFilter] = useState<string>('all');
     const router = useRouter();
     const theme = useTheme();
+    const [editDialogOpen, setEditDialogOpen] = useState(false);
+    const [editData, setEditData] = useState<Partial<{
+        startDate: string;
+        status: 'PENDING' | 'AUTHORIZED' | 'POSTPONED' | 'DENIED' | 'SUSPENDED';
+        postponedDate: string;
+        postponedReason: string;
+    }>>({});
+    const [isEditing, setIsEditing] = useState(false);
+
 
     const translateStatus = (status: string): string => {
         const statusMap: Record<string, string> = {
@@ -97,8 +112,11 @@ const VacationRequestList: VacationRequestsComponent = () => {
         startDate: null as Date | null,
         endDate: null as Date | null,
         filterType: 'requestDate' as 'requestDate' | 'startDate' | 'endDate'
-      });
-      
+    });
+    const handleUpdate = (updatedRequest: VacationRequest) => {
+        // aquí actualizas tu lista de solicitudes, por ejemplo
+        console.log('Solicitud actualizada:', updatedRequest);
+      };
     useEffect(() => {
         const fetchRequests = async () => {
             if (!user?.id) {
@@ -136,20 +154,20 @@ const VacationRequestList: VacationRequestsComponent = () => {
         }
         if (dateFilter.startDate || dateFilter.endDate) {
             result = result.filter((request) => {
-              const dateToFilter = new Date(request[dateFilter.filterType]);
-              const startDate = dateFilter.startDate ? new Date(dateFilter.startDate) : null;
-              const endDate = dateFilter.endDate ? new Date(dateFilter.endDate) : null;
-        
-              if (startDate && endDate) {
-                return dateToFilter >= startDate && dateToFilter <= endDate;
-              } else if (startDate) {
-                return dateToFilter >= startDate;
-              } else if (endDate) {
-                return dateToFilter <= endDate;
-              }
-              return true;
+                const dateToFilter = new Date(request[dateFilter.filterType]);
+                const startDate = dateFilter.startDate ? new Date(dateFilter.startDate) : null;
+                const endDate = dateFilter.endDate ? new Date(dateFilter.endDate) : null;
+
+                if (startDate && endDate) {
+                    return dateToFilter >= startDate && dateToFilter <= endDate;
+                } else if (startDate) {
+                    return dateToFilter >= startDate;
+                } else if (endDate) {
+                    return dateToFilter <= endDate;
+                }
+                return true;
             });
-          }
+        }
 
 
         setFilteredRequests(result);
@@ -184,11 +202,11 @@ const VacationRequestList: VacationRequestsComponent = () => {
         setSearchTerm('');
         setStatusFilter('all');
         setDateFilter({
-          startDate: null,
-          endDate: null,
-          filterType: 'requestDate'
+            startDate: null,
+            endDate: null,
+            filterType: 'requestDate'
         });
-      };
+    };
 
     const getStatusColor = (status: string) => {
         switch (status) {
@@ -212,7 +230,51 @@ const VacationRequestList: VacationRequestsComponent = () => {
             return dateString;
         }
     };
+    // Función para abrir el diálogo de edición
+    const handleOpenEditDialog = (request: VacationRequest) => {
+        setSelectedRequest(request);
+        setEditData({
+            startDate: request.startDate,
+            status: request.status,
+            postponedDate: request.postponedDate || '',
+            postponedReason: request.postponedReason || ''
+        });
+        setEditDialogOpen(true);
+    };
 
+    // Función para manejar cambios en los campos de edición
+    const handleEditChange = (field: keyof typeof editData, value: any) => {
+        setEditData(prev => ({
+            ...prev,
+            [field]: value
+        }));
+    };
+
+    // Función para guardar los cambios
+    const handleSaveChanges = async () => {
+        if (!selectedRequest) return;
+
+        setIsEditing(true);
+        try {
+            const response = await axios.patch(
+                `${process.env.NEXT_PUBLIC_API_BASE_URL}/vacation-requests/${selectedRequest.id}`,
+                editData
+            );
+
+            // Actualizar la lista de solicitudes
+            const updatedRequests = requests.map(req =>
+                req.id === selectedRequest.id ? response.data : req
+            );
+
+            setRequests(updatedRequests);
+            setFilteredRequests(updatedRequests);
+            setEditDialogOpen(false);
+            setIsEditing(false);
+        } catch (error) {
+            console.error('Error updating vacation request:', error);
+            setIsEditing(false);
+        }
+    };
     return (
         <Box sx={{ width: '100%' }}>
             <Paper sx={{ width: '100%', mb: 2, p: 2 }}>
@@ -231,33 +293,33 @@ const VacationRequestList: VacationRequestsComponent = () => {
                         Mis Solicitudes de Vacaciones
                     </Typography>
                     <Box sx={{ display: 'flex', gap: 2, width: { xs: '100%', sm: 'auto' }, flexWrap: 'wrap' }}>
-            <TextField
-              select
-              size="small"
-              variant="outlined"
-              value={dateFilter.filterType}
-              onChange={(e) => setDateFilter({...dateFilter, filterType: e.target.value as any})}
-              sx={{ minWidth: 180 }}
-            >
-              <MenuItem value="requestDate">Fecha de solicitud</MenuItem>
-              <MenuItem value="startDate">Fecha de inicio</MenuItem>
-              <MenuItem value="endDate">Fecha de fin</MenuItem>
-            </TextField>
+                        <TextField
+                            select
+                            size="small"
+                            variant="outlined"
+                            value={dateFilter.filterType}
+                            onChange={(e) => setDateFilter({ ...dateFilter, filterType: e.target.value as any })}
+                            sx={{ minWidth: 180 }}
+                        >
+                            <MenuItem value="requestDate">Fecha de solicitud</MenuItem>
+                            <MenuItem value="startDate">Fecha de inicio</MenuItem>
+                            <MenuItem value="endDate">Fecha de fin</MenuItem>
+                        </TextField>
 
-            <DatePicker
-              label="Desde"
-              value={dateFilter.startDate}
-              onChange={(newValue: any) => setDateFilter({...dateFilter, startDate: newValue})}
-              renderInput={(params: JSX.IntrinsicAttributes & TextFieldProps) => <TextField {...params} size="small" sx={{ width: 150 }} />}
-            />
+                        <DatePicker
+                            label="Desde"
+                            value={dateFilter.startDate}
+                            onChange={(newValue: any) => setDateFilter({ ...dateFilter, startDate: newValue })}
+                            renderInput={(params: JSX.IntrinsicAttributes & TextFieldProps) => <TextField {...params} size="small" sx={{ width: 150 }} />}
+                        />
 
-            <DatePicker
-              label="Hasta"
-              value={dateFilter.endDate}
-              onChange={(newValue: any) => setDateFilter({...dateFilter, endDate: newValue})}
-              renderInput={(params: JSX.IntrinsicAttributes & TextFieldProps) => <TextField {...params} size="small" sx={{ width: 150 }} />}
-            />
-            </Box>
+                        <DatePicker
+                            label="Hasta"
+                            value={dateFilter.endDate}
+                            onChange={(newValue: any) => setDateFilter({ ...dateFilter, endDate: newValue })}
+                            renderInput={(params: JSX.IntrinsicAttributes & TextFieldProps) => <TextField {...params} size="small" sx={{ width: 150 }} />}
+                        />
+                    </Box>
                     <Box sx={{ display: 'flex', gap: 2, width: { xs: '100%', sm: 'auto' } }}>
                         <TextField
                             size="small"
@@ -460,15 +522,33 @@ const VacationRequestList: VacationRequestsComponent = () => {
                         Cerrar
                     </Button>
                     <Button
+                        onClick={() => handleOpenEditDialog(selectedRequest!)}
+                        color="primary"
+                        variant="outlined"
+                        startIcon={<EditIcon />}
+                    >
+                        Editar
+                    </Button>
+                    <Button
                         onClick={handleViewDetails}
                         color="secondary"
                         variant="contained"
                         startIcon={<ArrowRightIcon />}
                     >
-                        Ver Informe 
+                        Ver Informe
                     </Button>
                 </DialogActions>
             </Dialog>
+            {/* Nuevo diálogo de edición */}
+            {/* Nuevo diálogo de edición */}
+            {/* Aquí usas tu componente en lugar de <Dialog> */}
+            <EditVacationDialog
+                open={editDialogOpen}
+                onClose={() => setEditDialogOpen(false)}
+                request={selectedRequest}
+                onUpdate={handleUpdate}
+            />
+
         </Box>
     );
 };
