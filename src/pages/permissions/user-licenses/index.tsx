@@ -438,13 +438,6 @@ const UserLicenses: AclComponent = () => {
                             >
                                 Generar PDF
                             </Button>
-                            <Button
-                                onClick={handleCloseDetails}
-                                variant="contained"
-                                startIcon={<CloseIcon />}
-                            >
-                                Cerrar
-                            </Button>
                         </DialogActions>
                     </Dialog>
                 )}

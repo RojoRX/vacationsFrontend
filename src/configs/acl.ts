@@ -28,6 +28,7 @@ const defineRulesFor = (role: string, subject: string) => {
     can('manage', 'departments');
     can('manage', 'all-licenses');
     can('manage', 'holiday-periods');
+    can('manage', 'create-user');
     
   } else if (role === 'client') {
     can(['read'], 'welcome-dashboard');

@@ -25,12 +25,12 @@ import {
     Tooltip,
     Badge
 } from '@mui/material';
-import { 
-    Search, 
-    CheckCircle, 
-    Cancel, 
-    Visibility, 
-    Person, 
+import {
+    Search,
+    CheckCircle,
+    Cancel,
+    Visibility,
+    Person,
     FilterAlt,
     Refresh,
     Business
@@ -62,13 +62,13 @@ const AdminLicenses: AclComponent = () => {
     const [error, setError] = useState<string | null>(null);
     const [openDialog, setOpenDialog] = useState(false);
     const [selectedLicense, setSelectedLicense] = useState<License | null>(null);
-    const [userDetails, setUserDetails] = useState<{ 
-        [key: string]: { 
-            name: string; 
-            ci: string; 
+    const [userDetails, setUserDetails] = useState<{
+        [key: string]: {
+            name: string;
+            ci: string;
             celular: string;
             department: string;
-        } 
+        }
     }>({});
     const [page, setPage] = useState(0);
     const [rowsPerPage, setRowsPerPage] = useState(10);
@@ -85,8 +85,9 @@ const AdminLicenses: AclComponent = () => {
         axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/licenses`)
             .then((response) => {
                 const licensesData = response.data;
-                setLicenses(licensesData);
-                
+                const sortedLicenses = licensesData.sort((a: License, b: License) => b.id - a.id); // orden descendente
+                setLicenses(sortedLicenses);
+
                 const userRequests = licensesData.map((license: License) =>
                     axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/users/${license.userId}`)
                         .then(userResponse => ({
@@ -101,15 +102,17 @@ const AdminLicenses: AclComponent = () => {
                 return Promise.all(userRequests);
             })
             .then(userDetailsArray => {
-                const userDetailsMap: { [key: string]: { 
-                    name: string; 
-                    ci: string; 
-                    celular: string;
-                    department: string;
-                } } = {};
+                const userDetailsMap: {
+                    [key: string]: {
+                        name: string;
+                        ci: string;
+                        celular: string;
+                        department: string;
+                    }
+                } = {};
                 userDetailsArray.forEach(user => {
-                    userDetailsMap[user.userId] = { 
-                        name: user.userName, 
+                    userDetailsMap[user.userId] = {
+                        name: user.userName,
                         ci: user.userCi,
                         celular: user.celular,
                         department: user.department
@@ -127,14 +130,14 @@ const AdminLicenses: AclComponent = () => {
     };
 
     const applyFilters = (
-        licenses: License[], 
-        details: any, 
-        term: string, 
+        licenses: License[],
+        details: any,
+        term: string,
         approvalFilter: string,
         typeFilter: string
     ) => {
         let filtered = [...licenses];
-        
+
         // Filtrar por término de búsqueda (nombre, CI o departamento)
         if (term) {
             filtered = filtered.filter(license => {
@@ -147,21 +150,21 @@ const AdminLicenses: AclComponent = () => {
                 );
             });
         }
-        
+
         // Filtrar por estado de aprobación
         if (approvalFilter === 'approved') {
             filtered = filtered.filter(license => license.personalDepartmentApproval);
         } else if (approvalFilter === 'pending') {
             filtered = filtered.filter(license => !license.personalDepartmentApproval);
         }
-        
+
         // Filtrar por tipo de aprobación
         if (typeFilter === 'supervisor') {
             filtered = filtered.filter(license => !license.immediateSupervisorApproval);
         } else if (typeFilter === 'personal') {
             filtered = filtered.filter(license => !license.personalDepartmentApproval);
         }
-        
+
         setFilteredLicenses(filtered);
         setPage(0);
     };
@@ -195,7 +198,7 @@ const AdminLicenses: AclComponent = () => {
     const handlePersonalApprove = () => {
         if (selectedLicense && user) {
             const newApprovalState = !selectedLicense.personalDepartmentApproval;
-    
+
             axios.patch(
                 `${process.env.NEXT_PUBLIC_API_BASE_URL}/licenses/${selectedLicense.id}/personal-approval`,
                 {
@@ -203,22 +206,22 @@ const AdminLicenses: AclComponent = () => {
                     userId: user.id,
                 }
             )
-            .then(() => {
-                setLicenses(prev =>
-                    prev.map(license =>
-                        license.id === selectedLicense.id
-                            ? { ...license, personalDepartmentApproval: newApprovalState }
-                            : license
-                    )
-                );
-                handleCloseDialog();
-            })
-            .catch(() => {
-                setError('Error al cambiar el estado de la licencia');
-            });
+                .then(() => {
+                    setLicenses(prev =>
+                        prev.map(license =>
+                            license.id === selectedLicense.id
+                                ? { ...license, personalDepartmentApproval: newApprovalState }
+                                : license
+                        )
+                    );
+                    handleCloseDialog();
+                })
+                .catch(() => {
+                    setError('Error al cambiar el estado de la licencia');
+                });
         }
     };
-    
+
 
     const formatDate = (dateString: string) => {
         return format(parseISO(dateString), 'PPP', { locale: es });
@@ -252,7 +255,7 @@ const AdminLicenses: AclComponent = () => {
                     <Business sx={{ mr: 1, color: 'primary.main' }} />
                     Gestión General de Permisos
                 </Typography>
-                
+
                 <Tooltip title="Recargar datos">
                     <IconButton onClick={fetchAllLicenses} color="primary">
                         <Refresh />
@@ -408,7 +411,7 @@ const AdminLicenses: AclComponent = () => {
 
             {/* Diálogo de detalles */}
             <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
-                <DialogTitle sx={{ 
+                <DialogTitle sx={{
                     backgroundColor: 'primary.main',
                     color: 'white',
                     display: 'flex',
@@ -449,8 +452,8 @@ const AdminLicenses: AclComponent = () => {
                                 </Typography>
                             </Grid>
                             <Grid item xs={12}>
-                                <Box sx={{ 
-                                    display: 'flex', 
+                                <Box sx={{
+                                    display: 'flex',
                                     justifyContent: 'space-around',
                                     mt: 2,
                                     p: 2,
@@ -483,8 +486,8 @@ const AdminLicenses: AclComponent = () => {
                     )}
                 </DialogContent>
                 <DialogActions sx={{ px: 3, py: 2 }}>
-                    <Button 
-                        onClick={handleCloseDialog} 
+                    <Button
+                        onClick={handleCloseDialog}
                         color="inherit"
                         variant="outlined"
                     >

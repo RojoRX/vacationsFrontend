@@ -116,18 +116,18 @@ const VacationRequestDetails = () => {
     try {
       setLoading(true);
       setError(null);
-      
+
       const response = await axios.get<VacationRequest>(
         `${process.env.NEXT_PUBLIC_API_BASE_URL}/vacation-requests/${id}/details`
       );
-      
+
       setRequest(response.data);
       setSelectedStatus(response.data.status);
 
       if (response.data.managementPeriodStart && response.data.managementPeriodEnd) {
         await fetchDebtData(
-          response.data.managementPeriodStart, 
-          response.data.managementPeriodEnd, 
+          response.data.managementPeriodStart,
+          response.data.managementPeriodEnd,
           response.data.ci
         );
       }
@@ -144,25 +144,25 @@ const VacationRequestDetails = () => {
         params: { carnetIdentidad: ci, endDate },
         timeout: 5000,
       });
-  
+
       console.log('Respuesta completa del servidor:', response.data);
-  
+
       // Verificar si hay detalles en la respuesta
       if (!response.data.detalles || !Array.isArray(response.data.detalles)) {
         console.error('Formato de datos inesperado: detalles no es un array');
         throw new Error('Formato de datos inesperado');
       }
-  
+
       // Formatear fechas de búsqueda
       const gestionStart = new Date(startDate);
       const gestionEnd = new Date(endDate);
-  
+
       // Buscar la gestión que coincida con el rango de fechas
       const gestionDebt = response.data.detalles.find((detalle: any) => {
         try {
           const detalleStart = new Date(detalle.startDate);
           const detalleEnd = new Date(detalle.endDate);
-          
+
           // Comparar las fechas como objetos Date directamente
           return (
             detalleStart.getTime() === gestionStart.getTime() &&
@@ -173,7 +173,7 @@ const VacationRequestDetails = () => {
           return false;
         }
       });
-  
+
       if (!gestionDebt) {
         console.warn('No se encontró deuda para la gestión específica, usando el último registro');
         // Usar el último registro si no se encuentra la gestión específica
@@ -188,14 +188,14 @@ const VacationRequestDetails = () => {
         });
         return;
       }
-  
+
       console.log('Datos encontrados para la gestión:', gestionDebt);
       setDebtData(gestionDebt);
-      
+
     } catch (err) {
       console.error('Error fetching debt data:', err);
-      setDebtData({ 
-        diasDisponibles: 0, 
+      setDebtData({
+        diasDisponibles: 0,
         deudaAcumulativaAnterior: 0,
         deuda: 0,
         startDate: '',
@@ -207,13 +207,13 @@ const VacationRequestDetails = () => {
 
   const handleFetchError = (error: unknown) => {
     let errorMessage = 'Error al obtener los detalles de la solicitud';
-    
+
     if (axios.isAxiosError(error)) {
       errorMessage = error.response?.data?.message || error.message;
     } else if (error instanceof Error) {
       errorMessage = error.message;
     }
-    
+
     console.error('Error:', error);
     setError(errorMessage);
   };
@@ -248,13 +248,13 @@ const VacationRequestDetails = () => {
 
   const handleStatusUpdateError = (error: unknown) => {
     let errorMessage = 'Error al actualizar el estado';
-    
+
     if (axios.isAxiosError(error)) {
       errorMessage = error.response?.data?.message || error.message;
     } else if (error instanceof Error) {
       errorMessage = error.message;
     }
-    
+
     console.error('Error updating status:', error);
     setError(errorMessage);
   };
@@ -287,8 +287,8 @@ const VacationRequestDetails = () => {
       <Typography variant="h5" fontWeight="bold" gutterBottom>
         Formulario de Solicitud y Concesión de Vacaciones
       </Typography>
-      
-      {request?.status === "AUTHORIZED" && (
+
+      {request?.status === "AUTHORIZED" || request?.status === "SUSPENDED" && (
         <Button
           variant="contained"
           startIcon={<DownloadIcon />}
@@ -337,8 +337,10 @@ const VacationRequestDetails = () => {
   const renderPersonalDepartmentReport = () => (
     <>
       <Typography variant="body1">
-        <strong>Vacación correspondiente a las gestión(es):</strong> {formatDate(request?.managementPeriodStart || '')} - {formatDate(request?.managementPeriodEnd || '')}
+        <strong>Vacación correspondiente a las gestión(es):</strong>{' '}
+        {new Date(request?.managementPeriodStart || '').getFullYear()} - {new Date(request?.managementPeriodEnd || '').getFullYear()}
       </Typography>
+
       <Typography variant="body1">
         <strong>Años de Antigüedad:</strong> {request?.antiguedadEnAnios}
       </Typography>
@@ -367,9 +369,9 @@ const VacationRequestDetails = () => {
     <>
       <Stack direction="row" alignItems="center" spacing={1}>
         <strong>Estado:</strong>
-        <Chip 
-          label={STATUS_OPTIONS.find(s => s.value === request?.status)?.label || request?.status} 
-          color={STATUS_OPTIONS.find(s => s.value === request?.status)?.color as any} 
+        <Chip
+          label={STATUS_OPTIONS.find(s => s.value === request?.status)?.label || request?.status}
+          color={STATUS_OPTIONS.find(s => s.value === request?.status)?.color as any}
         />
       </Stack>
       <Typography variant="body1">
@@ -390,10 +392,10 @@ const VacationRequestDetails = () => {
   const renderPersonalDepartmentDecree = () => (
     <>
       <Typography variant="body1">
-        <strong>Autorizado por Personal:</strong> 
-        <Chip 
-          label={request?.approvedByHR ? 'Sí' : 'No'} 
-          color={request?.approvedByHR ? 'success' : 'error'} 
+        <strong>Autorizado por Personal:</strong>
+        <Chip
+          label={request?.approvedByHR ? 'Sí' : 'No'}
+          color={request?.approvedByHR ? 'success' : 'error'}
           size="small"
           sx={{ ml: 1 }}
         />
