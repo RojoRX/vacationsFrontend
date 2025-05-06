@@ -65,7 +65,8 @@ const schema = yup.object().shape({
     ci: yup.string()
         .required('CI es requerido')
         .matches(/^\d+$/, 'CI debe contener solo números')
-        .min(4, 'CI debe tener al menos 4 dígitos'),
+        .min(4, 'CI debe tener al menos 4 dígitos')
+        .max(10, 'CI debe tener un maximo de 10 digitos'),
     fullName: yup.string().required('Nombre completo es requerido'),
     fecha_ingreso: yup.string()
         .required('Fecha de ingreso es requerida')
@@ -83,7 +84,15 @@ const schema = yup.object().shape({
     password: yup.string()
         .nullable()
         .transform(value => value === '' ? null : value)
-        .notRequired()
+        .notRequired(),
+
+    email: yup.string().email('Email inválido').notRequired(),
+    celular: yup.string().matches(/^\d{7,15}$/, 'Número inválido').notRequired(),
+    profesion: yup.string().min(2, 'Debe tener al menos 2 caracteres').notRequired(),
+    position: yup.string().notRequired(),
+    tipoEmpleado: yup.string().required('Tipo requerido'),
+    role: yup.string().required('Rol requerido'),
+    departmentId: yup.number().nullable().notRequired(),
 });
 
 const CreateUserForm: React.FC = () => {
@@ -164,10 +173,15 @@ const CreateUserForm: React.FC = () => {
     };
 
     const handleCloseSuccessDialog = () => {
-        setSuccess(false);
-        setCreatedUser(null);
-        router.push('/users');
+        if (createdUser?.id) {
+            setSuccess(false);
+            setCreatedUser(null);
+            router.push(`/users/${createdUser.ci}`);
+        } else {
+            console.error("No se encontró el ID del usuario creado");
+        }
     };
+    
 
     return (
         <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
@@ -202,6 +216,21 @@ const CreateUserForm: React.FC = () => {
                                     />
                                 )}
                             />
+                            <Controller
+                                name="profesion"
+                                control={control}
+                                render={({ field }) => (
+                                    <TextField
+                                        {...field}
+                                        label="Profesión"
+                                        fullWidth
+                                        margin="normal"
+                                        error={!!errors.profesion}
+                                        helperText={errors.profesion?.message}
+                                    />
+                                )}
+                            />
+
 
                             <Controller
                                 name="fullName"
@@ -231,12 +260,16 @@ const CreateUserForm: React.FC = () => {
                                         InputLabelProps={{
                                             shrink: true,
                                         }}
+                                        inputProps={{
+                                            max: new Date().toISOString().split("T")[0], // <-- fecha máxima hoy
+                                        }}
                                         error={!!errors.fecha_ingreso}
                                         helperText={errors.fecha_ingreso?.message}
                                         required
                                     />
                                 )}
                             />
+
                             <Controller
                                 name="email"
                                 control={control}
@@ -249,21 +282,6 @@ const CreateUserForm: React.FC = () => {
                                         margin="normal"
                                         error={!!errors.email}
                                         helperText={errors.email?.message}
-                                    />
-                                )}
-                            />
-
-                            <Controller
-                                name="celular"
-                                control={control}
-                                render={({ field }) => (
-                                    <TextField
-                                        {...field}
-                                        label="Celular"
-                                        fullWidth
-                                        margin="normal"
-                                        error={!!errors.celular}
-                                        helperText={errors.celular?.message}
                                     />
                                 )}
                             />
@@ -343,6 +361,20 @@ const CreateUserForm: React.FC = () => {
                                             ))}
                                         </Select>
                                     </FormControl>
+                                )}
+                            />
+                            <Controller
+                                name="celular"
+                                control={control}
+                                render={({ field }) => (
+                                    <TextField
+                                        {...field}
+                                        label="Celular"
+                                        fullWidth
+                                        margin="normal"
+                                        error={!!errors.celular}
+                                        helperText={errors.celular?.message}
+                                    />
                                 )}
                             />
                         </Grid>
