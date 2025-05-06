@@ -32,12 +32,8 @@ import * as yup from 'yup';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { useForm, Controller } from 'react-hook-form';
 import api from 'src/utils/axios';
+import Department from 'src/interfaces/departments';
 
-// Tipos e interfaces
-interface Department {
-    id: number;
-    name: string;
-}
 
 interface CreateUserForm {
     ci: string;

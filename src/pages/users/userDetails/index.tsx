@@ -20,18 +20,33 @@ import CustomHolidayForm from '../customholyday';
 import UserHolidayPeriods from '../holydayinfo';
 import { useRouter } from 'next/router';
 import useUser from 'src/hooks/useUser';
+import EditUserForm from '../edit-user';
+import { TipoEmpleadoEnum } from 'src/utils/enums/typeEmployees';
+
+interface Department {
+  id: number;
+  name: string;
+  isCareer: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
 
 interface User {
   id: number;
   ci: string;
-  fecha_ingreso: string;
-  username: string;
+  username?: string;
   fullName: string;
-  celular: string | null;
-  profesion: string | null;
-  position: string;
+  celular?: string;
+  email?: string;
+  profesion?: string;
+  fecha_ingreso: string;
+  position?: string;
+  tipoEmpleado?: TipoEmpleadoEnum;
+  department: Department; // Aquí cambiamos a un objeto de tipo Department
+  departmentId?: number; // Si necesitas el ID separado
   role: string;
 }
+
 
 interface AclComponent extends React.FC {
   acl?: {
@@ -49,6 +64,7 @@ const UserInformation: AclComponent = () => {
   const [openDialog, setOpenDialog] = useState<boolean>(false);
   const currentUser = useUser();
   const theme = useTheme();
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
 
   useEffect(() => {
     if (ci) {
@@ -121,50 +137,75 @@ const UserInformation: AclComponent = () => {
         <Grid item xs={12} md={4}>
           <Card>
             <CardContent sx={{ textAlign: 'center' }}>
-              <Avatar sx={{ 
-                width: 120, 
-                height: 120, 
+              <Avatar sx={{
+                width: 120,
+                height: 120,
                 mx: 'auto',
                 mb: 2,
                 bgcolor: theme.palette.primary.main
               }}>
                 <PersonIcon sx={{ fontSize: 60 }} />
               </Avatar>
-              
+
               <Typography variant="h5" gutterBottom>
                 {user.fullName}
               </Typography>
-              
-              <Chip 
-                label={user.role} 
+
+              <Chip
+                label={user.role}
                 color={getRoleColor(user.role)}
                 sx={{ mb: 2 }}
               />
-              
+
               <Divider sx={{ my: 2 }} />
-              
+
               <Box sx={{ textAlign: 'left' }}>
                 <Typography variant="body1" sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
                   <WorkIcon sx={{ mr: 1, color: 'text.secondary' }} />
                   <strong>Posición:</strong> {user.position}
                 </Typography>
-                
+
                 <Typography variant="body1" sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
                   <EventIcon sx={{ mr: 1, color: 'text.secondary' }} />
                   <strong>Ingreso:</strong> {new Date(user.fecha_ingreso).toLocaleDateString()}
                 </Typography>
-                
+
                 <Typography variant="body1" sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
                   <PhoneIcon sx={{ mr: 1, color: 'text.secondary' }} />
                   <strong>Celular:</strong> {user.celular || 'No registrado'}
                 </Typography>
-                
-                <Typography variant="body1" sx={{ display: 'flex', alignItems: 'center' }}>
+
+                <Typography variant="body1" sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
                   <SchoolIcon sx={{ mr: 1, color: 'text.secondary' }} />
                   <strong>Profesión:</strong> {user.profesion || 'No registrada'}
                 </Typography>
+
+                <Typography variant="body1" sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                  <SchoolIcon sx={{ mr: 1, color: 'text.secondary' }} />
+                  <strong>Departamento:</strong> {user.department.name || 'No registrada'}
+                </Typography>
+
+                <Typography variant="body1" sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                  <LockIcon sx={{ mr: 1, color: 'text.secondary' }} />
+                  <strong>Carnet de Identidad:</strong> {user.ci}
+                </Typography>
+
+                <Typography variant="body1" sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                  <LockIcon sx={{ mr: 1, color: 'text.secondary' }} />
+                  <strong>Username:</strong> {user.username || 'No registrado'}
+                </Typography>
+
+                <Typography variant="body1" sx={{ display: 'flex', alignItems: 'center' }}>
+                  <LockIcon sx={{ mr: 1, color: 'text.secondary' }} />
+                  <strong>Email:</strong> {user.email || 'No registrado'}
+                </Typography>
+
+                <Typography variant="body1" sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                  <LockIcon sx={{ mr: 1, color: 'text.secondary' }} />
+                  <strong>Tipo de Empleado:</strong> {user.tipoEmpleado}
+                </Typography>
               </Box>
-              
+
               {currentUser?.role === 'admin' && (
                 <>
                   <Divider sx={{ my: 2 }} />
@@ -183,6 +224,15 @@ const UserInformation: AclComponent = () => {
                   </FormControl>
                 </>
               )}
+              <Button
+                variant="outlined"
+                startIcon={<EditIcon />}
+                sx={{ mt: 2 }}
+                onClick={() => setEditDialogOpen(true)}
+              >
+                Editar Usuario
+              </Button>
+
             </CardContent>
           </Card>
         </Grid>
@@ -191,9 +241,9 @@ const UserInformation: AclComponent = () => {
         <Grid item xs={12} md={8}>
           <Card>
             <CardContent>
-              <Box sx={{ 
-                display: 'flex', 
-                justifyContent: 'space-between', 
+              <Box sx={{
+                display: 'flex',
+                justifyContent: 'space-between',
                 alignItems: 'center',
                 mb: 3
               }}>
@@ -206,7 +256,7 @@ const UserInformation: AclComponent = () => {
                   Crear Receso
                 </Button>
               </Box>
-              
+
               <UserHolidayPeriods userId={user.id} year={new Date().getFullYear()} />
             </CardContent>
           </Card>
@@ -219,6 +269,19 @@ const UserInformation: AclComponent = () => {
         onClose={() => setOpenDialog(false)}
         onSuccess={handleSuccess}
         userId={user.id}
+      />
+      <EditUserForm
+        open={editDialogOpen}
+        onClose={() => setEditDialogOpen(false)}
+        initialData={{
+          ...user,
+          departmentId: user.departmentId // Asegúrate de pasar el objeto department completo
+        }}
+        onSave={async () => {
+          setSnackbarMessage('Usuario actualizado exitosamente');
+          await fetchUser(user.ci);
+          setEditDialogOpen(false);
+        }}
       />
 
       {/* Snackbar para notificaciones */}
