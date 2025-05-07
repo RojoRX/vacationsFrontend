@@ -17,8 +17,10 @@ import {
   Edit as EditIcon,
   Lock as LockIcon,
   EventNote as LicenseIcon,
-  BeachAccess as HolidayIcon
+  BeachAccess as HolidayIcon,
+  Person as DebtIcon
 } from '@mui/icons-material';
+import { TextField } from '@mui/material';
 import axios from 'axios';
 import CustomHolidayForm from '../customholyday';
 import UserHolidayPeriods from '../holydayinfo';
@@ -28,6 +30,7 @@ import EditUserForm from '../edit-user';
 import { TipoEmpleadoEnum } from 'src/utils/enums/typeEmployees';
 import BulkLicenseForm from 'src/pages/permissions/bulkLicenseForm';
 import UserLicenseList from 'src/pages/permissions/userLicenseList';
+import UserVacationDebt from '../userVacationDebt';
 
 interface Department {
   id: number;
@@ -72,6 +75,9 @@ const UserInformation: AclComponent = () => {
   const theme = useTheme();
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [activeTab, setActiveTab] = useState(0);
+  const currentYear = new Date().getFullYear();
+  const [selectedYear, setSelectedYear] = useState<number>(currentYear);
+
 
   useEffect(() => {
     if (ci) {
@@ -79,11 +85,15 @@ const UserInformation: AclComponent = () => {
     }
   }, [ci]);
 
+
   const fetchUser = async (ci: string) => {
     setLoading(true);
     try {
       const response = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/users/find/${ci}`);
       setUser(response.data);
+      // Usar directamente el objeto obtenido
+      const ingresoYear = new Date(response.data.fecha_ingreso).getFullYear();
+      setSelectedYear(ingresoYear);
     } catch (error) {
       setSnackbarMessage('Error al buscar usuario. Verifique el carnet de identidad.');
       console.error('Error fetching user:', error);
@@ -126,6 +136,16 @@ const UserInformation: AclComponent = () => {
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setActiveTab(newValue);
+  };
+
+  const handleYearChange = (event: SelectChangeEvent<number>, child: React.ReactNode) => {
+    const value = Number(event.target.value);
+  
+    if (value >= 1980 && value <= currentYear) {
+      setSelectedYear(value);
+    } else {
+      setSnackbarMessage('Por favor, seleccione un año válido entre 1980 y el año actual.');
+    }
   };
 
   if (loading) {
@@ -257,8 +277,9 @@ const UserInformation: AclComponent = () => {
           <Card>
             <CardContent>
               <Tabs value={activeTab} onChange={handleTabChange} sx={{ mb: 3 }}>
-                <Tab icon={<HolidayIcon />} label="Vacaciones y Recesos" />
-                <Tab icon={<LicenseIcon />} label="Licencias y Permisos" />
+                <Tab icon={<HolidayIcon />} label="Recesos" />
+                <Tab icon={<LicenseIcon />} label="Permisos" />
+                <Tab icon={<HolidayIcon />} label="Deuda Vacacional" />
               </Tabs>
 
               {activeTab === 0 && (
@@ -300,6 +321,54 @@ const UserInformation: AclComponent = () => {
                   <UserLicenseList userId={user.id} />
                 </>
               )}
+  {activeTab === 2 && user && (
+        <>
+          {/* Selector de años disponibles */}
+          <Box sx={{ mb: 2, display: 'flex', justifyContent: 'flex-end' }}>
+            <FormControl sx={{ minWidth: 150 }}>
+              <InputLabel id="year-select-label">Desde la Gestión</InputLabel>
+              <Select
+                labelId="year-select-label"
+                value={selectedYear}
+                onChange={handleYearChange}
+                size="small"
+                label="Desde la Gestión"
+              >
+                {/* Generar los años disponibles dinámicamente */}
+                {Array.from({ length: currentYear - new Date(user.fecha_ingreso).getFullYear() + 1 }, (_, i) => {
+                  const year = new Date(user.fecha_ingreso).getFullYear() + i;
+                  return (
+                    <MenuItem key={year} value={year}>
+                      {year}
+                    </MenuItem>
+                  );
+                })}
+              </Select>
+            </FormControl>
+          </Box>
+
+          {/* Botón para disparar el fetch de la deuda vacacional */}
+          <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
+            <Button
+              variant="contained"
+              onClick={() => {
+                // Acción de disparar el fetch cuando se hace clic en el botón
+                console.log(`Obteniendo deuda vacacional para el año ${selectedYear}`);
+              }}
+            >
+              Obtener Deuda Vacacional
+            </Button>
+          </Box>
+
+          {/* Componente UserVacationDebt */}
+          <UserVacationDebt
+            ci={user.ci}
+            fechaIngreso={user.fecha_ingreso}
+            startDate={selectedYear.toString()}
+          />
+        </>
+      )}
+
             </CardContent>
           </Card>
         </Grid>
