@@ -4,7 +4,9 @@ import {
   Select, MenuItem, FormControl, InputLabel, Avatar, Card,
   CardContent, Divider, Chip, Grid, useTheme,
   Alert,
-  SelectChangeEvent
+  SelectChangeEvent,
+  Tabs,
+  Tab
 } from '@mui/material';
 import {
   Person as PersonIcon,
@@ -13,7 +15,9 @@ import {
   School as SchoolIcon,
   Event as EventIcon,
   Edit as EditIcon,
-  Lock as LockIcon
+  Lock as LockIcon,
+  EventNote as LicenseIcon,
+  BeachAccess as HolidayIcon
 } from '@mui/icons-material';
 import axios from 'axios';
 import CustomHolidayForm from '../customholyday';
@@ -22,6 +26,8 @@ import { useRouter } from 'next/router';
 import useUser from 'src/hooks/useUser';
 import EditUserForm from '../edit-user';
 import { TipoEmpleadoEnum } from 'src/utils/enums/typeEmployees';
+import BulkLicenseForm from 'src/pages/permissions/bulkLicenseForm';
+import UserLicenseList from 'src/pages/permissions/userLicenseList';
 
 interface Department {
   id: number;
@@ -42,11 +48,10 @@ interface User {
   fecha_ingreso: string;
   position?: string;
   tipoEmpleado?: TipoEmpleadoEnum;
-  department: Department; // Aquí cambiamos a un objeto de tipo Department
-  departmentId?: number; // Si necesitas el ID separado
+  department: Department;
+  departmentId?: number;
   role: string;
 }
-
 
 interface AclComponent extends React.FC {
   acl?: {
@@ -61,10 +66,12 @@ const UserInformation: AclComponent = () => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [snackbarMessage, setSnackbarMessage] = useState<string>('');
-  const [openDialog, setOpenDialog] = useState<boolean>(false);
+  const [openHolidayDialog, setOpenHolidayDialog] = useState<boolean>(false);
+  const [openLicenseDialog, setOpenLicenseDialog] = useState<boolean>(false);
   const currentUser = useUser();
   const theme = useTheme();
   const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState(0);
 
   useEffect(() => {
     if (ci) {
@@ -99,8 +106,13 @@ const UserInformation: AclComponent = () => {
     }
   };
 
-  const handleSuccess = async () => {
+  const handleHolidaySuccess = async () => {
     setSnackbarMessage('Receso personalizado creado exitosamente');
+    if (ci) await fetchUser(ci as string);
+  };
+
+  const handleLicenseSuccess = async () => {
+    setSnackbarMessage('Licencias registradas exitosamente');
     if (ci) await fetchUser(ci as string);
   };
 
@@ -110,6 +122,10 @@ const UserInformation: AclComponent = () => {
       case 'SUPERVISOR': return 'primary';
       default: return 'default';
     }
+  };
+
+  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
+    setActiveTab(newValue);
   };
 
   if (loading) {
@@ -232,50 +248,84 @@ const UserInformation: AclComponent = () => {
               >
                 Editar Usuario
               </Button>
-
             </CardContent>
           </Card>
         </Grid>
 
-        {/* Sección de vacaciones y recesos */}
+        {/* Sección de gestión */}
         <Grid item xs={12} md={8}>
           <Card>
             <CardContent>
-              <Box sx={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                mb: 3
-              }}>
-                <Typography variant="h6">Gestión de Vacaciones</Typography>
-                <Button
-                  variant="contained"
-                  startIcon={<EditIcon />}
-                  onClick={() => setOpenDialog(true)}
-                >
-                  Crear Receso
-                </Button>
-              </Box>
+              <Tabs value={activeTab} onChange={handleTabChange} sx={{ mb: 3 }}>
+                <Tab icon={<HolidayIcon />} label="Vacaciones y Recesos" />
+                <Tab icon={<LicenseIcon />} label="Licencias y Permisos" />
+              </Tabs>
 
-              <UserHolidayPeriods userId={user.id} year={new Date().getFullYear()} />
+              {activeTab === 0 && (
+                <>
+                  <Box sx={{
+                    display: 'flex',
+                    justifyContent: 'flex-end',
+                    alignItems: 'center',
+                    mb: 3
+                  }}>
+                    <Button
+                      variant="contained"
+                      startIcon={<EditIcon />}
+                      onClick={() => setOpenHolidayDialog(true)}
+                    >
+                      Crear Receso
+                    </Button>
+                  </Box>
+                  <UserHolidayPeriods userId={user.id} year={new Date().getFullYear()} />
+                </>
+              )}
+
+              {activeTab === 1 && (
+                <>
+                  <Box sx={{
+                    display: 'flex',
+                    justifyContent: 'flex-end',
+                    alignItems: 'center',
+                    mb: 3
+                  }}>
+                    <Button
+                      variant="contained"
+                      startIcon={<EventIcon />}
+                      onClick={() => setOpenLicenseDialog(true)}
+                    >
+                      Registrar Licencias
+                    </Button>
+                  </Box>
+                  <UserLicenseList userId={user.id} />
+                </>
+              )}
             </CardContent>
           </Card>
         </Grid>
       </Grid>
 
-      {/* Diálogo para crear receso personalizado */}
+      {/* Diálogos */}
       <CustomHolidayForm
-        open={openDialog}
-        onClose={() => setOpenDialog(false)}
-        onSuccess={handleSuccess}
+        open={openHolidayDialog}
+        onClose={() => setOpenHolidayDialog(false)}
+        onSuccess={handleHolidaySuccess}
         userId={user.id}
       />
+
+      <BulkLicenseForm
+        open={openLicenseDialog}
+        onClose={() => setOpenLicenseDialog(false)}
+        userId={user.id}
+        onSuccess={handleLicenseSuccess}
+      />
+
       <EditUserForm
         open={editDialogOpen}
         onClose={() => setEditDialogOpen(false)}
         initialData={{
           ...user,
-          departmentId: user.departmentId // Asegúrate de pasar el objeto department completo
+          departmentId: user.departmentId
         }}
         onSave={async () => {
           setSnackbarMessage('Usuario actualizado exitosamente');
@@ -295,7 +345,6 @@ const UserInformation: AclComponent = () => {
   );
 };
 
-// Configuración ACL para el componente
 UserInformation.acl = {
   action: 'read',
   subject: 'user-profile'

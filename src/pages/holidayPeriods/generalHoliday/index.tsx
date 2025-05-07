@@ -30,11 +30,26 @@ import {
     ChevronLeft,
     ChevronRight
 } from '@mui/icons-material';
-import { format, parseISO, getYear, getMonth, getDate, isWithinInterval, eachDayOfInterval } from 'date-fns';
+import {
+    format,
+    parseISO,
+    getYear,
+    getMonth,
+    getDate,
+    isWithinInterval,
+    eachDayOfInterval,
+    startOfMonth,
+    endOfMonth,
+    addDays,
+    getDay,
+    isSameMonth,
+    isSameDay
+} from 'date-fns';
 import { es } from 'date-fns/locale';
 import useUser from 'src/hooks/useUser';
-import SnowflakeIcon from '@mui/icons-material/AcUnit'; // Invierno
-import HolidayVillageIcon from '@mui/icons-material/HolidayVillage'; // Navidad/Fin de gestión
+import SnowflakeIcon from '@mui/icons-material/AcUnit';
+import HolidayVillageIcon from '@mui/icons-material/HolidayVillage';
+import { formatDate } from 'src/utils/dateUtils';
 
 interface HolidayPeriod {
     id: number;
@@ -50,14 +65,15 @@ interface AclComponent extends React.FC {
         subject: string;
     };
 }
+
 const getPeriodColorAndIcon = (name: string) => {
     if (name === 'FINDEGESTION') {
-        return { color: '#d32f2f', icon: <HolidayVillageIcon fontSize="small" /> }; // Rojo oscuro
+        return { color: '#d32f2f', icon: <HolidayVillageIcon fontSize="small" /> };
     }
     if (name === 'INVIERNO') {
-        return { color: '#0288d1', icon: <SnowflakeIcon fontSize="small" /> }; // Azul invierno
+        return { color: '#0288d1', icon: <SnowflakeIcon fontSize="small" /> };
     }
-    return { color: '#4caf50', icon: <Today fontSize="small" /> }; // Default
+    return { color: '#4caf50', icon: <Today fontSize="small" /> };
 };
 
 const GeneralHolidayCalendar: AclComponent = () => {
@@ -65,10 +81,10 @@ const GeneralHolidayCalendar: AclComponent = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [selectedYear, setSelectedYear] = useState<number>(getYear(new Date()));
-    const [currentMonth, setCurrentMonth] = useState<number>(getMonth(new Date())); // inicia en el mes actual
+    const [currentMonth, setCurrentMonth] = useState<number>(getMonth(new Date()));
     const [searchTerm, setSearchTerm] = useState('');
     const [filterType, setFilterType] = useState<'all' | 'FINDEGESTION' | 'INVIERNO'>('all');
-    const [userNavigated, setUserNavigated] = useState(false); // <<<<<< NUEVO: saber si el usuario ya navegó
+    const [userNavigated, setUserNavigated] = useState(false);
     const user = useUser();
 
     useEffect(() => {
@@ -79,7 +95,6 @@ const GeneralHolidayCalendar: AclComponent = () => {
         const start = parseISO(period.startDate);
         const end = parseISO(period.endDate);
 
-        // Coincide si el receso toca algún día del año seleccionado
         const periodIncludesSelectedYear =
             getYear(start) === selectedYear ||
             getYear(end) === selectedYear ||
@@ -91,9 +106,8 @@ const GeneralHolidayCalendar: AclComponent = () => {
         return periodIncludesSelectedYear && matchesSearch && matchesType;
     });
 
-
     useEffect(() => {
-        if (!userNavigated) { // <<<< SOLO SI EL USUARIO NO NAVEGÓ
+        if (!userNavigated) {
             if (holidayPeriods.length > 0) {
                 const sortedPeriods = [...holidayPeriods].sort((a, b) =>
                     new Date(a.startDate).getTime() - new Date(b.startDate).getTime()
@@ -105,19 +119,7 @@ const GeneralHolidayCalendar: AclComponent = () => {
                 }
             }
         }
-    }, [holidayPeriods, selectedYear, userNavigated]); // <<<< agregamos userNavigated como dependencia
-
-    useEffect(() => {
-        if (!userNavigated) { // <<<< SOLO SI EL USUARIO NO NAVEGÓ
-            if (filteredPeriods.length > 0) {
-                const sortedFiltered = [...filteredPeriods].sort((a, b) =>
-                    new Date(a.startDate).getTime() - new Date(b.startDate).getTime()
-                );
-                const firstFilteredMonth = getMonth(parseISO(sortedFiltered[0].startDate));
-                setCurrentMonth(firstFilteredMonth);
-            }
-        }
-    }, [filteredPeriods, userNavigated]); // <<<< agregamos userNavigated como dependencia
+    }, [holidayPeriods, selectedYear, userNavigated]);
 
     const fetchHolidayPeriods = () => {
         setLoading(true);
@@ -135,71 +137,162 @@ const GeneralHolidayCalendar: AclComponent = () => {
 
     const handleYearChange = (event: SelectChangeEvent<number>) => {
         setSelectedYear(event.target.value as number);
-        setUserNavigated(false); // <<<<< el usuario no ha navegado cuando cambia año
+        setUserNavigated(false);
     };
 
     const handleMonthChange = (newMonth: number) => {
         if (newMonth > 11) {
-            setSelectedYear(prev => prev + 1);  // Si el mes es mayor que 11, avanzamos al siguiente año
-            setCurrentMonth(0);  // Enero
+            setSelectedYear(prev => prev + 1);
+            setCurrentMonth(0);
         } else if (newMonth < 0) {
-            setSelectedYear(prev => prev - 1);  // Si el mes es menor que 0, retrocedemos al año anterior
-            setCurrentMonth(11);  // Diciembre
+            setSelectedYear(prev => prev - 1);
+            setCurrentMonth(11);
         } else {
-            setCurrentMonth(newMonth);  // Si está dentro del rango de meses, solo actualizamos el mes
+            setCurrentMonth(newMonth);
         }
-        setUserNavigated(true);  // Indicamos que el usuario ya navegó
+        setUserNavigated(true);
     };
-
-
 
     const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setSearchTerm(e.target.value);
-        setUserNavigated(false); // <<<<< el usuario no ha navegado cuando cambia la búsqueda
+        setUserNavigated(false);
     };
 
     const handleFilterType = (event: React.MouseEvent<HTMLElement>, newFilter: 'all' | 'FINDEGESTION' | 'INVIERNO') => {
         if (newFilter !== null) {
             setFilterType(newFilter);
-            setUserNavigated(false); // <<<<< el usuario no ha navegado cuando cambia el filtro
+            setUserNavigated(false);
         }
     };
 
     const handleRefresh = () => {
         fetchHolidayPeriods();
-        setUserNavigated(false); // <<<<< al refrescar tampoco
-    };
-
-    const formatDate = (dateString: string) => {
-        return format(parseISO(dateString), 'PPP', { locale: es });
+        setUserNavigated(false);
     };
 
 
 
-    const getMonthDays = (month: number, year: number) => {
-        const firstDay = new Date(year, month, 1);
-        const lastDay = new Date(year, month + 1, 0);
-        return eachDayOfInterval({ start: firstDay, end: lastDay });
+    const isWeekend = (date: Date) => {
+        const day = date.getDay();
+        return day === 0 || day === 6;
     };
 
     const isHoliday = (date: Date) => {
+        if (isWeekend(date)) return false;
+
+        const currentDateStr = format(date, 'yyyy-MM-dd'); // Formato ISO sin hora
+
         return filteredPeriods.some(period => {
-            const start = parseISO(period.startDate);
-            const end = parseISO(period.endDate);
-            return isWithinInterval(date, { start, end });
+            const startDateStr = period.startDate.split('T')[0];
+            const endDateStr = period.endDate.split('T')[0];
+
+            console.log(`[DEBUG] Comparando: ${currentDateStr} con rango ${startDateStr} a ${endDateStr}`);
+
+            return currentDateStr >= startDateStr && currentDateStr <= endDateStr;
         });
     };
+    const calculateWorkingDays = (startDate: string, endDate: string) => {
+        const start = new Date(startDate);
+        start.setHours(0, 0, 0, 0);
 
-    const getHolidayName = (date: Date) => {
-        const holiday = filteredPeriods.find(period => {
-            const start = parseISO(period.startDate);
-            const end = parseISO(period.endDate);
-            return isWithinInterval(date, { start, end });
-        });
-        return holiday ? holiday.name : '';
+        const end = new Date(endDate);
+        end.setHours(23, 59, 59, 999);
+
+        const days = eachDayOfInterval({ start, end });
+        return days.filter(day => !isWeekend(day)).length;
     };
 
-    const monthDays = getMonthDays(currentMonth, selectedYear);
+    const renderCalendarDays = () => {
+        const monthStart = startOfMonth(new Date(selectedYear, currentMonth));
+        const monthEnd = endOfMonth(monthStart);
+        
+        // CORRECCIÓN: Ajustamos para que el calendario comience en Domingo
+        // Obtenemos el día de la semana (0=Domingo, 1=Lunes, etc.)
+        const firstDayOfWeek = getDay(monthStart); 
+        // Calculamos cuántos días del mes anterior mostrar
+        const daysFromPrevMonth = firstDayOfWeek === 0 ? 0 : firstDayOfWeek;
+        
+        const startDate = addDays(monthStart, -daysFromPrevMonth);
+        const endDate = addDays(monthEnd, 6 - getDay(monthEnd));
+        
+        const days = eachDayOfInterval({ start: startDate, end: endDate });
+        const weeks = [];
+        
+        for (let i = 0; i < days.length; i += 7) {
+            weeks.push(days.slice(i, i + 7));
+        }
+    
+        // Encabezados de días (comenzando en Domingo)
+        const dayHeaders = ['D', 'L', 'M', 'X', 'J', 'V', 'S'];
+    
+        return (
+            <>
+                {/* Encabezados de días */}
+                <Box display="flex">
+                    {dayHeaders.map((day, index) => (
+                        <Typography 
+                            key={index} 
+                            align="center" 
+                            fontWeight="bold" 
+                            sx={{ flex: 1, p: 1 }}
+                        >
+                            {day}
+                        </Typography>
+                    ))}
+                </Box>
+                
+                {/* Días del calendario */}
+                {weeks.map((week, weekIndex) => (
+                    <Box key={weekIndex} display="flex">
+                        {week.map((day, dayIndex) => {
+                            const isCurrentMonth = isSameMonth(day, monthStart);
+                            const isWeekendDay = getDay(day) === 0 || getDay(day) === 6; // 0=Domingo, 6=Sábado
+                            const isHolidayDay = isCurrentMonth && !isWeekendDay && isHoliday(day);
+                            
+                            const holiday = isHolidayDay ? filteredPeriods.find(period => {
+                                const periodStart = period.startDate.split('T')[0];
+                                const periodEnd = period.endDate.split('T')[0];
+                                const dayStr = format(day, 'yyyy-MM-dd');
+                                return dayStr >= periodStart && dayStr <= periodEnd;
+                            }) : null;
+                            
+                            const { color } = getPeriodColorAndIcon(holiday?.name || '');
+    
+                            return (
+                                <Tooltip 
+                                    key={dayIndex} 
+                                    title={isHolidayDay ? `${holiday?.name} (${format(day, 'dd/MM/yyyy')})` : isWeekendDay ? 'Fin de semana' : ''} 
+                                    arrow
+                                >
+                                    <Box
+                                        sx={{
+                                            flex: 1,
+                                            p: 1,
+                                            height: '40px',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            borderRadius: 1,
+                                            bgcolor: isHolidayDay ? color : isWeekendDay ? '#f5f5f5' : 'transparent',
+                                            color: isHolidayDay ? '#fff' : 
+                                                  !isCurrentMonth ? 'text.disabled' : 
+                                                  isWeekendDay ? 'text.secondary' : 'text.primary',
+                                            border: '1px solid #e0e0e0',
+                                            fontWeight: isHolidayDay ? 'bold' : 'normal',
+                                            opacity: !isCurrentMonth ? 0.5 : 1
+                                        }}
+                                    >
+                                        {getDate(day)}
+                                    </Box>
+                                </Tooltip>
+                            );
+                        })}
+                    </Box>
+                ))}
+            </>
+        );
+    };
+
     const monthName = format(new Date(selectedYear, currentMonth, 1), 'MMMM yyyy', { locale: es });
 
     if (loading) {
@@ -222,14 +315,15 @@ const GeneralHolidayCalendar: AclComponent = () => {
             </Box>
         );
     }
+
     return (
         <Paper elevation={3} sx={{ p: 3, borderRadius: 2 }}>
+            {/* Encabezado y controles */}
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
                 <Typography variant="h5" component="h2" sx={{ display: 'flex', alignItems: 'center' }}>
                     <CalendarToday sx={{ mr: 1, color: 'primary.main' }} />
                     Calendario de Recesos Generales
                 </Typography>
-
                 <Tooltip title="Recargar datos">
                     <IconButton onClick={handleRefresh} color="primary">
                         <Refresh />
@@ -237,7 +331,7 @@ const GeneralHolidayCalendar: AclComponent = () => {
                 </Tooltip>
             </Box>
 
-            {/* Filtros y controles */}
+            {/* Filtros */}
             <Grid container spacing={2} sx={{ mb: 3 }}>
                 <Grid item xs={12} md={4}>
                     <TextField
@@ -280,7 +374,7 @@ const GeneralHolidayCalendar: AclComponent = () => {
                 </Grid>
             </Grid>
 
-            {/* Controles de navegación del mes */}
+            {/* Navegación del mes */}
             <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
                 <IconButton onClick={() => handleMonthChange(currentMonth - 1)}><ChevronLeft /></IconButton>
                 <Typography variant="h6">{monthName}</Typography>
@@ -288,95 +382,46 @@ const GeneralHolidayCalendar: AclComponent = () => {
             </Box>
 
             {/* Calendario */}
-            <Box sx={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(7, 1fr)',
-                gap: 1,
-                mb: 3
-            }}>
-                {/* Encabezados de días */}
-                {['L', 'M', 'M', 'J', 'V', 'S', 'D'].map((day, index) => (
-                    <Typography key={index} align="center" fontWeight="bold">
-                        {day}
-                    </Typography>
-                ))}
+            <Box sx={{ mb: 3 }}>
+                
+                
 
-                {/* Días del mes */}
-                {monthDays.map((day, index) => {
-                    const isHolidayDay = isHoliday(day);
-                    const holiday = filteredPeriods.find(period =>
-                        isWithinInterval(day, {
-                            start: parseISO(period.startDate),
-                            end: parseISO(period.endDate),
-                        })
-                    );
-
-                    const { color } = getPeriodColorAndIcon(holiday?.name || '');
-
-                    return (
-                        <Tooltip key={index} title={isHolidayDay ? holiday?.name : ''} arrow>
-                            <Box
-                                sx={{
-                                    p: 1,
-                                    height: '40px',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    borderRadius: 1,
-                                    bgcolor: isHolidayDay ? color : 'transparent',
-                                    color: isHolidayDay ? '#fff' : 'text.primary',
-                                    border: '1px solid #e0e0e0',
-                                    fontWeight: isHolidayDay ? 'bold' : 'normal',
-                                }}
-                            >
-                                {getDate(day)}
-                            </Box>
-                        </Tooltip>
-                    );
-                })}
+                {/* Días del calendario */}
+                {renderCalendarDays()}
             </Box>
 
-            {/* Leyenda y lista de recesos */}
+            {/* Lista de recesos */}
             <Grid container spacing={2}>
                 {filteredPeriods.map(period => {
                     const isWinter = period.name === 'INVIERNO';
-                    const isEndOfYear = period.name === 'FINDEGESTION';
-
                     const styles = {
                         backgroundColor: isWinter ? '#1976d2' : '#ef6c00',
                         borderLeft: `6px solid ${isWinter ? '#1565c0' : '#e65100'}`,
                         icon: isWinter ? '❄️' : '🎄',
-                        svgIcon: isWinter
-                            ? '/images/icons/winter.png' // Usa tus propios SVGs
-                            : '/images/icons/christmas.png',
                     };
 
                     return (
                         <Grid item xs={12} sm={6} key={period.id}>
-                            <Paper elevation={3} sx={{ p: 2, position: 'relative', overflow: 'hidden', ...styles }}>
-                                {/* Imagen decorativa superpuesta */}
-                                <Box
-                                    component="img"
-                                    src={styles.svgIcon}
-                                    alt="Decoración"
-                                    sx={{
-                                        position: 'absolute',
-                                        right: 10,
-                                        top: 10,
-                                        width: 60, // ajusta el tamaño aquí
-                                        height: 'auto',
-                                        opacity: 0.8, // opcional, si quieres un efecto tenue
-                                        zIndex: 1,
-                                    }}
-                                />
-
-                                {/* Contenido principal */}
-                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1, color: 'white', zIndex: 2, position: 'relative' }}>
+                            <Paper elevation={3} sx={{
+                                p: 2,
+                                position: 'relative',
+                                overflow: 'hidden',
+                                backgroundColor: styles.backgroundColor,
+                                borderLeft: styles.borderLeft
+                            }}>
+                                <Box sx={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: 1,
+                                    mb: 1,
+                                    color: 'white',
+                                    zIndex: 2,
+                                    position: 'relative'
+                                }}>
                                     <Box sx={{ fontSize: 20 }}>{styles.icon}</Box>
                                     <Typography variant="subtitle1" sx={{ fontWeight: 'bold', color: 'white' }}>
                                         {period.name} ({period.year})
                                     </Typography>
-
                                 </Box>
 
                                 <Typography variant="body2" sx={{ color: 'white', zIndex: 2, position: 'relative' }}>
@@ -387,20 +432,13 @@ const GeneralHolidayCalendar: AclComponent = () => {
                                 </Typography>
 
                                 <Typography variant="body2" sx={{ mt: 1, color: 'white', zIndex: 2, position: 'relative' }}>
-                                    Duración:{' '}
-                                    {Math.ceil(
-                                        (new Date(period.endDate).getTime() - new Date(period.startDate).getTime()) /
-                                        (1000 * 60 * 60 * 24) +
-                                        1
-                                    )} días
+                                    Duración: {calculateWorkingDays(period.startDate, period.endDate)} días hábiles
                                 </Typography>
                             </Paper>
                         </Grid>
                     );
                 })}
             </Grid>
-
-
         </Paper>
     );
 };
