@@ -16,6 +16,7 @@ import {
 import axios from 'axios';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { formatDate } from 'src/utils/dateUtils';
 
 interface License {
   id: number;
@@ -23,8 +24,10 @@ interface License {
   timeRequested: string;
   startDate: string;
   endDate: string;
-  status: string;
-  createdAt: string;
+  issuedDate: string;
+  immediateSupervisorApproval: boolean;
+  personalDepartmentApproval: boolean;
+  totalDays: string;
 }
 
 interface UserLicenseListProps {
@@ -56,25 +59,14 @@ const UserLicenseList: React.FC<UserLicenseListProps> = ({ userId }) => {
           setLoading(false);
         }
       };
-      
-      
 
     if (userId) {
       fetchLicenses();
     }
   }, [userId]);
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'APROBADO': return 'success';
-      case 'PENDIENTE': return 'warning';
-      case 'RECHAZADO': return 'error';
-      default: return 'default';
-    }
-  };
-
-  const formatDate = (dateString: string) => {
-    return format(new Date(dateString), 'PPP', { locale: es });
+  const getStatusColor = (approved: boolean) => {
+    return approved ? 'success' : 'error';
   };
 
   if (loading) {
@@ -101,7 +93,7 @@ const UserLicenseList: React.FC<UserLicenseListProps> = ({ userId }) => {
       </Typography>
     );
   }
-  
+
   return (
     <TableContainer component={Paper} sx={{ mt: 2 }}>
       <Table>
@@ -111,7 +103,9 @@ const UserLicenseList: React.FC<UserLicenseListProps> = ({ userId }) => {
             <TableCell>Duración</TableCell>
             <TableCell>Fecha Inicio</TableCell>
             <TableCell>Fecha Fin</TableCell>
-            <TableCell>Estado</TableCell>
+            <TableCell>Dias</TableCell>
+            <TableCell>Estado Supervisor</TableCell>
+            <TableCell>Estado Departamento</TableCell>
             <TableCell>Registrado</TableCell>
           </TableRow>
         </TableHead>
@@ -122,14 +116,22 @@ const UserLicenseList: React.FC<UserLicenseListProps> = ({ userId }) => {
               <TableCell>{license.timeRequested}</TableCell>
               <TableCell>{formatDate(license.startDate)}</TableCell>
               <TableCell>{formatDate(license.endDate)}</TableCell>
+              <TableCell>{license.totalDays}</TableCell>
               <TableCell>
                 <Chip 
-                  label={license.status} 
-                  color={getStatusColor(license.status)} 
+                  label={license.immediateSupervisorApproval ? 'Aprobado' : 'Rechazado'} 
+                  color={getStatusColor(license.immediateSupervisorApproval)} 
                   size="small" 
                 />
               </TableCell>
-              <TableCell>{formatDate(license.createdAt)}</TableCell>
+              <TableCell>
+                <Chip 
+                  label={license.personalDepartmentApproval ? 'Aprobado' : 'Rechazado'} 
+                  color={getStatusColor(license.personalDepartmentApproval)} 
+                  size="small" 
+                />
+              </TableCell>
+              <TableCell>{formatDate(license.issuedDate)}</TableCell>
             </TableRow>
           ))}
         </TableBody>
