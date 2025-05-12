@@ -1,274 +1,348 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Grid,
+  Box,
   Typography,
+  Paper,
+  Alert,
+  CircularProgress,
+  Grid,
+  useTheme,
   Button,
-  Card,
-  CardContent,
-  CardHeader,
   Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
-  IconButton,
-  Box,
-  Alert,
-  Divider
+  TextField
 } from '@mui/material';
-import DatePicker from 'react-datepicker';
-import 'react-datepicker/dist/react-datepicker.css';
-import axios, { AxiosError } from 'axios';
-import useUser from 'src/hooks/useUser';
-import Icon from 'src/@core/components/icon';
-import { registerLocale } from 'react-datepicker';
-import ApexChartWrapper from 'src/@core/styles/libs/react-apexcharts';
+import {
+  BeachAccess as VacationIcon,
+  Send as SendIcon,
+  Info as InfoIcon
+} from '@mui/icons-material';
+import axios from 'axios';
+import { format, isBefore, isAfter, parseISO, addDays } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { calculateEndDate } from 'src/utils/calculateEndDate';
+import useUser from 'src/hooks/useUser';
+import { formatDate } from 'src/utils/dateUtils';
+import { DatePicker, LocalizationProvider } from '@mui/x-date-pickers';
+import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
+import { calculateEndDate, getNextWorkDay } from 'src/utils/calculateEndDate';
+import router from 'next/router';
+import { left } from '@popperjs/core';
 
-registerLocale('es', es);
+interface VacationDebtDetail {
+  startDate: string;
+  endDate: string;
+  deuda: number;
+  diasDeVacacion: number;
+  diasDeVacacionRestantes: number;
+  deudaAcumulativaHastaEstaGestion: number;
+  deudaAcumulativaAnterior: number;
+  diasDisponibles: number;
+}
+
+interface VacationDebtResponse {
+  deudaAcumulativa: number;
+  detalles: VacationDebtDetail[];
+  resumenGeneral: {
+    deudaTotal: number;
+    diasDisponiblesActuales: number;
+    gestionesConDeuda: number;
+    gestionesSinDeuda: number;
+    promedioDeudaPorGestion: number;
+    primeraGestion: string;
+    ultimaGestion: string;
+  };
+}
 
 const VacationRequestSubmissionForm = () => {
   const user = useUser();
-  const [startDate, setStartDate] = useState<Date | null>(null);
-  const [vacationDays, setVacationDays] = useState<number>(0);
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [dialogMessage, setDialogMessage] = useState('');
-  const [dialogSuccess, setDialogSuccess] = useState(false);
-  const [confirmDialogOpen, setConfirmDialogOpen] = useState(false); // Nuevo estado para el diálogo de confirmación
-  const [calculatedEndDate, setCalculatedEndDate] = useState<Date | null>(null); // Estado para la fecha de fin calculada
-  const [managementPeriodStart, setManagementPeriodStart] = useState('');
-  const [managementPeriodEnd, setManagementPeriodEnd] = useState('');
+  const theme = useTheme();
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [data, setData] = useState<VacationDebtResponse | null>(null);
+  const [selectedPeriod, setSelectedPeriod] = useState<VacationDebtDetail | null>(null);
+  const [daysRequested, setDaysRequested] = useState<number>(1);
+  const [openDialog, setOpenDialog] = useState(false);
+  const [requestSuccess, setRequestSuccess] = useState(false);
+  const [requestError, setRequestError] = useState<string | null>(null);
+  const [selectedStartDate, setSelectedStartDate] = useState<Date | null>(null);
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const start = params.get('startDate');
-    const end = params.get('endDate');
+    const today = new Date();
+    const ingresoDate = new Date(user?.fecha_ingreso || '');
+    const endDate = new Date(today.getFullYear(), ingresoDate.getMonth(), ingresoDate.getDate());
 
-    if (start) setManagementPeriodStart(start.split('T')[0]);
-    if (end) setManagementPeriodEnd(end.split('T')[0]);
-  }, []);
-
-  useEffect(() => {
-    const fetchAvailableDays = async () => {
-      if (user?.ci && managementPeriodEnd) {
-        try {
-          const response = await axios.get(
-            `${process.env.NEXT_PUBLIC_API_BASE_URL}/vacations/accumulated-debt?carnetIdentidad=${user.ci}&endDate=${managementPeriodEnd}`
-          );
-          const detalles = response.data?.detalles;
-          if (detalles && detalles.length > 0) {
-            const lastGestion = detalles[detalles.length - 1];
-            setVacationDays(lastGestion.diasDisponibles);
-          } else {
-            setVacationDays(0);
+    const fetchVacationDebt = async () => {
+      try {
+        setLoading(true);
+        const response = await axios.get<VacationDebtResponse>(
+          `${process.env.NEXT_PUBLIC_API_BASE_URL}/vacations/accumulated-debt`,
+          {
+            params: {
+              carnetIdentidad: user?.ci,
+              endDate: endDate
+            }
           }
-        } catch (error) {
-          console.error('Error fetching accumulated vacation data:', error);
-          setDialogMessage('Error al cargar la información de vacaciones disponibles.');
-          setDialogSuccess(false);
-          setDialogOpen(true);
+        );
+        setData(response.data);
+
+        const availablePeriod = response.data.detalles.find(d => d.diasDisponibles > 0);
+        if (availablePeriod) {
+          setSelectedPeriod(availablePeriod);
+          setDaysRequested(Math.min(availablePeriod.diasDisponibles, 30));
         }
+      } catch (err) {
+        setError('Error al obtener la información de vacaciones');
+        console.error('Error fetching vacation debt:', err);
+      } finally {
+        setLoading(false);
       }
     };
 
-    fetchAvailableDays();
-  }, [user?.ci, managementPeriodEnd]);
-
-  const handleOpenConfirmationDialog = () => {
-    if (startDate && vacationDays > 0) {
-      const endDateCalculated = calculateEndDate(startDate, vacationDays);
-      setCalculatedEndDate(endDateCalculated);
-      setConfirmDialogOpen(true);
-    } else if (!startDate) {
-      setDialogMessage('Por favor, selecciona una fecha de inicio.');
-      setDialogSuccess(false);
-      setDialogOpen(true);
-    } else if (vacationDays <= 0) {
-      setDialogMessage('No tienes días de vacaciones disponibles.');
-      setDialogSuccess(false);
-      setDialogOpen(true);
+    if (user?.ci) {
+      fetchVacationDebt();
     }
-  };
+  }, [user?.ci]);
 
-  const handleCloseConfirmationDialog = () => {
-    setConfirmDialogOpen(false);
-    setCalculatedEndDate(null);
-  };
-
-  const handleVacationRequest = async () => {
-    if (!user || !startDate || !managementPeriodStart || !managementPeriodEnd) {
-      setDialogMessage('Faltan datos para enviar la solicitud.');
-      setDialogSuccess(false);
-      setDialogOpen(true);
-      return;
-    }
-
-    const data = {
-      ci: user.ci,
-      startDate: startDate.toISOString().split('T')[0],
-      position: 'Docente',
-      managementPeriod: {
-        startPeriod: managementPeriodStart,
-        endPeriod: managementPeriodEnd,
-      },
-    };
+  const handleRequestVacation = async () => {
+    if (!selectedPeriod || daysRequested <= 0 || !selectedStartDate) return;
 
     try {
-      const response = await axios.post(`${process.env.NEXT_PUBLIC_API_BASE_URL}/vacation-requests`, data);
-      setDialogMessage(`¡Solicitud de vacaciones enviada con éxito. Con ${response.data.totalWorkingDays} días hábiles de vacaciones!`);
-      setDialogSuccess(true);
-      setDialogOpen(true);
-      setConfirmDialogOpen(false); // Cerrar el diálogo de confirmación después del éxito
-    } catch (error) {
-      if (error instanceof AxiosError && error.response) {
-        setDialogMessage(error.response.data.message || 'Hubo un error al enviar la solicitud.');
+      setRequestError(null);
+      setRequestSuccess(false);
+      console.log('Datos enviados:', {
+        carnetIdentidad: user?.ci,
+        startDate: selectedStartDate.toISOString().split('T')[0],
+        managementPeriod: {
+          startPeriod: selectedPeriod.startDate.split('T')[0],
+          endPeriod: selectedPeriod.endDate.split('T')[0],
+        }
+      });
+
+      const response = await axios.post(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/vacation-requests`,
+        {
+          ci: user?.ci,
+          startDate: selectedStartDate.toISOString().split('T')[0],
+          managementPeriod: {
+            startPeriod: selectedPeriod.startDate.split('T')[0],
+            endPeriod: selectedPeriod.endDate.split('T')[0]
+          }
+        }
+      );
+
+      setRequestSuccess(true);
+      setTimeout(() => {
+        setOpenDialog(false);
+      }, 2000);
+    } catch (err: unknown) {
+      if (axios.isAxiosError(err)) {
+        setRequestError(err.response?.data?.message || 'Error al solicitar vacaciones');
       } else {
-        setDialogMessage('Hubo un error al enviar la solicitud.');
+        setRequestError('Ocurrió un error inesperado al solicitar vacaciones');
       }
-      setDialogSuccess(false);
-      setDialogOpen(true);
+      console.error('Error requesting vacation:', err);
     }
   };
 
-  const handleCloseDialog = () => setDialogOpen(false);
+  if (loading) {
+    return (
+      <Box display="flex" justifyContent="center" py={4}>
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  if (error) {
+    return (
+      <Alert severity="error" sx={{ my: 2 }}>
+        {error}
+      </Alert>
+    );
+  }
+
+  if (!data || !selectedPeriod) {
+    return (
+      <Alert severity="info" sx={{ my: 2 }}>
+        No hay períodos con días disponibles para vacaciones.
+      </Alert>
+    );
+  }
+
+  const periodStart = new Date(selectedPeriod.startDate).getFullYear();
+  const periodEnd = new Date(selectedPeriod.endDate).getFullYear();
+  const today = new Date();
+  const minSelectableDate = today;
+  const maxSelectableDate = periodEnd;
+  const endDate = calculateEndDate(selectedStartDate, selectedPeriod?.diasDisponibles || 0);
+  let endDatePlusOne: Date | null = null;
+  if (endDate) {
+    endDatePlusOne = getNextWorkDay(endDate); // Ajusta al siguiente día hábil si es fin de semana
+  }
+
+
 
   return (
-    <ApexChartWrapper>
-      <Grid container spacing={6}>
-        {/* Encabezado */}
-        <Grid item xs={12}>
-          <Card elevation={3}>
-            <CardHeader
-              title="Solicitud de Vacaciones"
-              titleTypographyProps={{ variant: 'h4', fontWeight: 600 }}
-              subheader={`Tienes ${vacationDays} días de vacaciones disponibles para la gestion seleccionada`}
-            />
-            <Divider />
-            <CardContent>
-              <Alert severity="info" icon={<Icon icon="mdi:information" />}>
-                Selecciona la fecha de inicio para tu período de vacaciones. La fecha de fin se calculará automáticamente.
-              </Alert>
-            </CardContent>
-          </Card>
-        </Grid>
+    <Paper elevation={3} sx={{ p: 3, mb: 3, borderRadius: 2 }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+        <VacationIcon sx={{ mr: 1, color: theme.palette.primary.main }} />
+        <Typography variant="h6">Solicitud de Vacaciones</Typography>
+      </Box>
 
-        {/* Selector de fecha de inicio */}
-        <Grid item xs={12} md={12}>
-          <Card elevation={2}>
-            <CardHeader
-              title="Fecha de inicio"
-              titleTypographyProps={{ variant: 'h6' }}
-              avatar={<Icon icon="mdi:calendar-start" />}
-            />
-            <CardContent>
-              <Box sx={{ display: 'flex', justifyContent: 'center' }}>
-                <DatePicker
-                  selected={startDate}
-                  onChange={setStartDate}
-                  dateFormat="dd/MM/yyyy"
-                  locale="es"
-                  placeholderText="Selecciona fecha"
-                  minDate={new Date()}
-                  className="form-control"
-                  withPortal
-                  customInput={
-                    <Button
-                      variant="outlined"
-                      fullWidth
-                      startIcon={<Icon icon="mdi:calendar" />}
-                    >
-                      {startDate ? startDate.toLocaleDateString('es-ES') : 'Seleccionar fecha'}
-                    </Button>
-                  }
-                />
-              </Box>
-            </CardContent>
-          </Card>
+      <Grid container spacing={2} sx={{ mb: 3 }}>
+        <Grid item xs={12} md={6}>
+          <Paper sx={{ p: 2, bgcolor: theme.palette.grey[100] }}>
+            <Typography variant="subtitle2" color="textSecondary">
+              Días Disponibles Totales
+            </Typography>
+            <Typography variant="h4" color="primary">
+              {data.resumenGeneral.diasDisponiblesActuales} días
+            </Typography>
+          </Paper>
         </Grid>
-
-        {/* Botón de envío (modificado para abrir el diálogo de confirmación) */}
-        <Grid item xs={12}>
-          <Button
-            variant="contained"
-            color="primary"
-            size="large"
-            startIcon={<Icon icon="mdi:send" />}
-            fullWidth
-            onClick={handleOpenConfirmationDialog} // Ahora abre el diálogo de confirmación
-            disabled={!startDate || !managementPeriodStart || !managementPeriodEnd || vacationDays <= 0}
-            sx={{ py: 2, fontSize: '1.1rem' }}
-          >
-            Solicitar Vacaciones
-          </Button>
+        <Grid item xs={12} md={6}>
+          <Paper sx={{ p: 2, bgcolor: theme.palette.grey[100] }}>
+            <Typography variant="subtitle2" color="textSecondary">
+              Días Disponibles en Gestión {periodStart} - {periodEnd}
+            </Typography>
+            <Typography variant="h4" color="secondary">
+              {selectedPeriod.diasDisponibles} días
+            </Typography>
+          </Paper>
         </Grid>
       </Grid>
 
-      {/* Diálogo de confirmación */}
-      {/* Diálogo de confirmación */}
-      <Dialog
-        open={confirmDialogOpen}
-        onClose={handleCloseConfirmationDialog}
-        maxWidth="sm"
-        fullWidth
-      >
-        <DialogTitle>Confirmar Solicitud de Vacaciones</DialogTitle>
-        <DialogContent>
-          {startDate && calculatedEndDate && (
-            <Typography variant="body1">
-              ¿Desea programar sus vacaciones desde el{' '}
-              <strong>{startDate.toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</strong>{' '}
-              hasta el{' '}
-              <strong>{calculatedEndDate.toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</strong>{' '}
-              (<strong>{vacationDays} días hábiles</strong>)?
+      <Paper sx={{ p: 3, mb: 3, borderLeft: `4px solid ${theme.palette.primary.main}` }}>
+        <Box display="flex" alignItems="center" mb={2}>
+          <InfoIcon color="primary" sx={{ mr: 1 }} />
+          <Typography variant="h6">Período de Vacaciones Disponible</Typography>
+        </Box>
+
+        <Grid container spacing={2}>
+          <Grid item xs={12} md={6}>
+            <Typography>
+              <strong>Rango del Período:</strong> {periodStart} - {periodEnd}
             </Typography>
+            <Typography>
+              <strong>Días de vacación por Antiguedad:</strong> {selectedPeriod.diasDeVacacion}
+            </Typography>
+          </Grid>
+          <Grid item xs={12} md={6}>
+            <Typography>
+              <strong>Días disponibles para solicitar:</strong> {selectedPeriod.diasDisponibles}
+            </Typography>
+            {/*<Typography>
+              <strong>Deuda acumulada:</strong> {selectedPeriod.deudaAcumulativaHastaEstaGestion}
+            </Typography>*/}
+          </Grid>
+        </Grid>
+
+        <Box mt={2} display="flex" justifyContent="space-between" alignItems="center">
+          <Button
+            variant="contained"
+            startIcon={<SendIcon />}
+            onClick={() => setOpenDialog(true)}
+            disabled={selectedPeriod.diasDisponibles <= 0}
+            color="primary"
+          >
+            Solicitar Vacaciones
+          </Button>
+
+          <Button
+            variant="outlined" // Variante distinta (bordeado)
+            startIcon={<InfoIcon />}
+            onClick={() => router.push('/vacations/vacations-dashboard/')}
+            disabled={selectedPeriod.diasDisponibles <= 0}
+            color="secondary" // Color diferente para distinción
+          >
+            Ver Detalles Gestión
+          </Button>
+        </Box>
+
+
+      </Paper>
+
+      {/* Diálogo de Solicitud */}
+      <Dialog open={openDialog} onClose={() => setOpenDialog(false)}>
+        <DialogTitle>Solicitar Vacaciones</DialogTitle>
+        <DialogContent>
+          <Typography gutterBottom>
+            <strong>Período de gestión:</strong> {periodStart} - {periodEnd}
+          </Typography>
+          <Typography gutterBottom>
+            <strong>Días disponibles:</strong> {selectedPeriod.diasDisponibles}
+          </Typography>
+          <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={es}>
+            <DatePicker
+              label="Fecha de inicio"
+              value={selectedStartDate}
+              onChange={(newDate) => setSelectedStartDate(newDate)}
+              disablePast
+              slotProps={{ textField: { fullWidth: true, margin: 'normal' } }}
+            />
+          </LocalizationProvider>
+
+          {selectedStartDate && selectedPeriod.diasDisponibles > 0 && (
+            <Alert severity="info" sx={{ mt: 2 }}>
+              <div>
+                <p>
+                  Ha seleccionado la fecha{" "}
+                  <strong>
+                    {format(selectedStartDate, "EEEE dd 'de' MMMM 'de' yyyy", { locale: es })}
+                  </strong>
+                  .
+                </p>
+
+                {endDate && (
+                  <p>
+                    Su vacación concluirá el{" "}
+                    <strong>
+                      {format(endDate, "EEEE dd 'de' MMMM 'de' yyyy", { locale: es })}
+                    </strong>
+                    .
+                  </p>
+                )}
+
+                {endDatePlusOne && (
+                  <p>
+                    Debe reincorporarse el día{" "}
+                    <strong>
+                      {format(endDatePlusOne, "EEEE dd 'de' MMMM 'de' yyyy", { locale: es })}
+                    </strong>
+                    .
+                  </p>
+                )}
+              </div>
+            </Alert>
+          )}
+          {requestSuccess && (
+            <Alert severity="success" sx={{ mt: 2 }}>
+              Solicitud de vacaciones enviada exitosamente
+            </Alert>
+          )}
+
+          {requestError && (
+            <Alert severity="error" sx={{ mt: 2 }}>
+              {requestError}
+            </Alert>
           )}
         </DialogContent>
+
         <DialogActions>
-          <Button onClick={handleCloseConfirmationDialog}>Cancelar</Button>
-          <Button onClick={handleVacationRequest} variant="contained" color="primary">
-            Confirmar y Enviar
+          <Button onClick={() => setOpenDialog(false)}>Cancelar</Button>
+          <Button
+            onClick={handleRequestVacation}
+            disabled={!selectedStartDate}
+            variant="contained"
+            color="primary"
+          >
+            Enviar Solicitud
           </Button>
         </DialogActions>
       </Dialog>
 
-      {/* Diálogo de resultado (éxito/error) */}
-      <Dialog
-        open={dialogOpen}
-        onClose={handleCloseDialog}
-        maxWidth="sm"
-        fullWidth
-      >
-        <DialogTitle sx={{ display: 'flex', alignItems: 'center' }}>
-          <Icon
-            icon={dialogSuccess ? "mdi:check-circle" : "mdi:alert-circle"}
-            color={dialogSuccess ? "success" : "error"}
-          />
-          {dialogSuccess ? 'Solicitud exitosa' : 'Error en la solicitud'}
-          <IconButton
-            aria-label="close"
-            onClick={handleCloseDialog}
-            sx={{ position: 'absolute', right: 8, top: 8 }}
-          >
-            <Icon icon="mdi:close" />
-          </IconButton>
-        </DialogTitle>
-        <DialogContent>
-          <Typography variant="body1" sx={{ mt: 2 }}>
-            {dialogMessage}
-          </Typography>
-        </DialogContent>
-        <DialogActions>
-          <Button
-            onClick={handleCloseDialog}
-            variant="contained"
-            color={dialogSuccess ? "success" : "error"}
-            startIcon={<Icon icon="mdi:check" />}
-          >
-            Entendido
-          </Button>
-        </DialogActions>
-      </Dialog>
-    </ApexChartWrapper>
+    </Paper>
   );
 };
 

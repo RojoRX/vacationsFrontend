@@ -177,7 +177,7 @@ const VacationDashboard = () => {
                     results.forEach((result) => {
                         gestionMap[result.key] = result;
                     });
-                    console.log('📊 Mapa final de gestiones con deuda:', gestionMap);
+
                     setGestionesData(gestionMap);
 
                     // Calcular resumen general
@@ -495,7 +495,7 @@ const VacationDashboard = () => {
                     </Box>
                 </DialogTitle>
 
-                <DialogContent sx={{ py: 3 }}>
+                <DialogContent sx={{ py: 3, p: 8 }}>
                     {selectedGestion && gestionesData[selectedGestion] && (
                         <Box>
                             {/* Resumen Principal */}
@@ -869,7 +869,7 @@ const VacationDashboard = () => {
                                     </Typography>
                                 )}
                             </Box>
-
+{/** 
                             <Stack direction="row" spacing={2} mt={3}>
                                 <Button
                                     variant="contained"
@@ -877,17 +877,13 @@ const VacationDashboard = () => {
                                     onClick={() => {
                                         router.push({
                                             pathname: '/vacations-form',
-                                            query: {
-                                                startDate: gestionesData[selectedGestion].debt.startDate,
-                                                endDate: gestionesData[selectedGestion].debt.endDate,
-                                            },
                                         });
                                     }}
                                     disabled={gestionesData[selectedGestion]?.debt?.diasDisponibles <= 0}
                                 >
                                     Solicitar Vacación
                                 </Button>
-                            </Stack>
+                            </Stack>*/}
                         </Box>
                     )}
                 </DialogContent>
