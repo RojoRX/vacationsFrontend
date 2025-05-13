@@ -264,7 +264,6 @@ const AdminLicenses: AclComponent = () => {
                         <Refresh />
                     </IconButton>
                 </Tooltip>
-                // Añadir este botón junto a los otros controles:
                 <Button
                     variant="contained"
                     startIcon={<Add />}
