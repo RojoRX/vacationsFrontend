@@ -67,6 +67,7 @@ const VacationRequestSubmissionForm = () => {
   const [requestSuccess, setRequestSuccess] = useState(false);
   const [requestError, setRequestError] = useState<string | null>(null);
   const [selectedStartDate, setSelectedStartDate] = useState<Date | null>(null);
+  const [requestId, setRequestId] = useState<number | null>(null);
 
   useEffect(() => {
     const today = new Date();
@@ -130,12 +131,11 @@ const VacationRequestSubmissionForm = () => {
             endPeriod: selectedPeriod.endDate.split('T')[0]
           }
         }
-      );
 
+      );
+      // Supongamos que response.data.id contiene el ID
       setRequestSuccess(true);
-      setTimeout(() => {
-        setOpenDialog(false);
-      }, 2000);
+      setRequestId(response.data.id || null); // Aquí guardamos el ID
     } catch (err: unknown) {
       if (axios.isAxiosError(err)) {
         setRequestError(err.response?.data?.message || 'Error al solicitar vacaciones');
@@ -145,7 +145,12 @@ const VacationRequestSubmissionForm = () => {
       console.error('Error requesting vacation:', err);
     }
   };
-
+  const handleDialogClose = () => {
+    setOpenDialog(false);
+    if (requestSuccess && requestId) {
+      router.push(`/vacations/vacations-requests/${requestId}/`);
+    }
+  };
   if (loading) {
     return (
       <Box display="flex" justifyContent="center" py={4}>
@@ -318,9 +323,10 @@ const VacationRequestSubmissionForm = () => {
           )}
           {requestSuccess && (
             <Alert severity="success" sx={{ mt: 2 }}>
-              Solicitud de vacaciones enviada exitosamente
+             <strong> Solicitud enviada exitosamente</strong>
             </Alert>
           )}
+
 
           {requestError && (
             <Alert severity="error" sx={{ mt: 2 }}>
@@ -330,15 +336,23 @@ const VacationRequestSubmissionForm = () => {
         </DialogContent>
 
         <DialogActions>
-          <Button onClick={() => setOpenDialog(false)}>Cancelar</Button>
-          <Button
-            onClick={handleRequestVacation}
-            disabled={!selectedStartDate}
-            variant="contained"
-            color="primary"
-          >
-            Enviar Solicitud
-          </Button>
+          {!requestSuccess && (
+            <>
+              <Button onClick={() => setOpenDialog(false)}>Cancelar</Button>
+              <Button
+                onClick={handleRequestVacation}
+                variant="contained"
+                disabled={!selectedStartDate}
+              >
+                Confirmar Solicitud
+              </Button>
+            </>
+          )}
+          {requestSuccess && (
+            <Button onClick={handleDialogClose} variant="contained">
+              Cerrar
+            </Button>
+          )}
         </DialogActions>
       </Dialog>
 

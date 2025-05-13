@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import axios, { AxiosError } from 'axios';
 import { useRouter } from 'next/router';
+import CelebrationIcon from '@mui/icons-material/Celebration';
 import {
   Typography,
   Card,
@@ -23,7 +24,18 @@ import {
   Stack,
   Alert,
   IconButton,
-  Container
+  Container,
+  Avatar,
+  Grid,
+  List,
+  ListItem,
+  ListItemIcon,
+  ListItemText,
+  Step,
+  StepContent,
+  StepLabel,
+  Stepper,
+  styled
 } from '@mui/material';
 import {
   People as PeopleIcon,
@@ -34,7 +46,21 @@ import {
   Download as DownloadIcon,
   Edit as EditIcon,
   Check as CheckIcon,
-  Cancel as CancelIcon
+  Cancel as CancelIcon,
+  DateRange as DateRangeIcon,
+  Work as WorkIcon,
+  Event as EventIcon,
+  EventAvailable as EventAvailableIcon,
+  EventBusy as EventBusyIcon,
+  Today as TodayIcon,
+  AccessTime as AccessTimeIcon,
+  Timeline as TimelineIcon,
+  HowToReg as HowToRegIcon,
+  VerifiedUser as VerifiedUserIcon,
+  PendingActions as PendingActionsIcon,
+  School as SchoolIcon,
+  Star as StarIcon,
+  Warning as WarningIcon
 } from '@mui/icons-material';
 import useUser from 'src/hooks/useUser';
 import { SelectChangeEvent } from '@mui/material/Select';
@@ -42,61 +68,60 @@ import PostponeVacationRequestForm from '../vacations-postponed';
 import { generateVacationAuthorizationPDF } from 'src/utils/pdfGenerator';
 import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { VacationDebt } from 'src/interfaces/vacationDebt';
-import { Gestion } from 'src/interfaces/gestion';
-import { Receso } from 'src/interfaces/receso';
-import { AuthorizedVacationRequest } from 'src/interfaces/authorizedVacationRequest';
+import { GestionDeuda, VacationDebt } from 'src/interfaces/vacationDebt';
+import { VacationRequest } from 'src/interfaces/vacationRequests';
+import { formatDate } from 'src/utils/dateUtils';
 
-interface VacationRequest {
-  ci: string;
-  gestion: Gestion;
-  requestId: number;
-  userName: string;
-  requestDate: string;
-  position: string;
-  department: string;
-  startDate: string;
-  endDate: string;
-  totalDays: number;
-  status: string;
-  returnDate: string;
-  reviewDate: string;
-  postponedDate: string | null;
-  postponedReason: string | null;
-  approvedByHR: boolean;
-  approvedBySupervisor: boolean;
-  managementPeriodStart: string;
-  managementPeriodEnd: string;
-  fechaIngreso: string;
-  antiguedadEnAnios: number;
-  diasDeVacacion: number;
-  diasDeVacacionRestantes: number;
-  recesos: Receso[];
-  licenciasAutorizadas: {
-    totalAuthorizedDays: number;
-    requests: any[];
-  };
-  solicitudesDeVacacionAutorizadas: {
-    totalAuthorizedVacationDays: number;
-    requests: AuthorizedVacationRequest[];
-  };
+const ColorCard = styled(Card)(({ theme }) => ({
+  borderLeft: `4px solid ${theme.palette.primary.main}`,
+  transition: 'all 0.3s ease',
+  '&:hover': {
+    transform: 'translateY(-2px)',
+    boxShadow: theme.shadows[4]
+  }
+}));
+
+interface StatusOption {
+  value: string;
+  label: string;
+  color: 'default' | 'primary' | 'secondary' | 'error' | 'info' | 'success' | 'warning';
+  icon: React.ReactNode;
 }
 
-const STATUS_OPTIONS = [
-  { value: 'PENDING', label: 'Pendiente', color: 'default' },
-  { value: 'AUTHORIZED', label: 'Autorizado', color: 'success' },
-  { value: 'POSTPONED', label: 'Postergado', color: 'warning' },
-  { value: 'DENIED', label: 'Rechazado', color: 'error' },
-  { value: 'SUSPENDED', label: 'Suspendido', color: 'info' },
+const STATUS_OPTIONS: StatusOption[] = [
+  {
+    value: 'PENDING',
+    label: 'Pendiente',
+    color: 'default',
+    icon: <PendingActionsIcon />
+  },
+  {
+    value: 'AUTHORIZED',
+    label: 'Autorizado',
+    color: 'success',
+    icon: <CheckIcon />
+  },
+  {
+    value: 'POSTPONED',
+    label: 'Postergado',
+    color: 'warning',
+    icon: <EventBusyIcon />
+  },
+  {
+    value: 'DENIED',
+    label: 'Rechazado',
+    color: 'error',
+    icon: <CancelIcon />
+  },
+  {
+    value: 'SUSPENDED',
+    label: 'Suspendido',
+    color: 'info',
+    icon: <AccessTimeIcon />
+  },
 ];
 
-const formatDate = (dateString: string) => {
-  try {
-    return format(parseISO(dateString), 'dd/MM/yyyy', { locale: es });
-  } catch {
-    return dateString.split('T')[0].split('-').reverse().join('/');
-  }
-};
+
 
 const VacationRequestDetails = () => {
   const router = useRouter();
@@ -109,6 +134,7 @@ const VacationRequestDetails = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [infoMessage, setInfoMessage] = useState('');
   const [debtData, setDebtData] = useState<VacationDebt | null>(null);
+  const [deudaData, setDeudaData] = useState<GestionDeuda | null>(null);
 
   const fetchRequestDetails = useCallback(async () => {
     if (!id) return;
@@ -128,8 +154,10 @@ const VacationRequestDetails = () => {
         await fetchDebtData(
           response.data.managementPeriodStart,
           response.data.managementPeriodEnd,
-          response.data.ci
+          response.data.ci || ""
         );
+        console.log(response.data.managementPeriodStart)
+        console.log(response.data.managementPeriodEnd)
       }
     } catch (err) {
       handleFetchError(err);
@@ -146,7 +174,8 @@ const VacationRequestDetails = () => {
       });
 
       console.log('Respuesta completa del servidor:', response.data);
-
+      setDeudaData(response.data);
+      console.log(`datos de deuda data ${deudaData?.diasDisponiblesActuales}`)
       // Verificar si hay detalles en la respuesta
       if (!response.data.detalles || !Array.isArray(response.data.detalles)) {
         console.error('Formato de datos inesperado: detalles no es un array');
@@ -273,177 +302,254 @@ const VacationRequestDetails = () => {
   };
 
   const getRecessByName = (name: string) => {
-    return request?.recesos.find(receso => receso.name === name);
+    if (!request || !request.recesos) return undefined;
+    return request.recesos.find(receso => receso.name === name);
   };
+
+  const formatDateLong = (dateString: string): string => {
+    if (!dateString) return '';
+
+    // Usa parseISO para preservar la fecha sin alterar zona horaria
+    const date = parseISO(dateString);
+
+    return format(date, "EEEE d 'de' MMMM 'del' yyyy", { locale: es });
+  };
+
 
   const renderHeader = () => (
     <Box textAlign="center" mb={4}>
-      <Typography variant="h4" fontWeight="bold" gutterBottom>
-        Universidad Autónoma Tomás Frías
+      <Typography variant="h4" fontWeight="bold" gutterBottom color="primary">
+        Detalles de Solicitud de Vacaciones
       </Typography>
-      <Typography variant="h6" gutterBottom>
-        Departamento de Personal
-      </Typography>
-      <Typography variant="h5" fontWeight="bold" gutterBottom>
-        Formulario de Solicitud y Concesión de Vacaciones
-      </Typography>
-
-      {request?.status === "AUTHORIZED" || request?.status === "SUSPENDED" && (
-        <Button
-          variant="contained"
-          startIcon={<DownloadIcon />}
-          onClick={() => generateVacationAuthorizationPDF(request)}
-          sx={{ mt: 2 }}
-        >
-          Descargar Autorización en PDF
-        </Button>
-      )}
-    </Box>
-  );
-
-  const renderSection = (title: string, children: React.ReactNode) => (
-    <Paper elevation={2} sx={{ p: 3, mb: 3 }}>
-      <Typography variant="h6" fontWeight="bold" gutterBottom>
-        {title}
-      </Typography>
-      <Divider sx={{ mb: 2 }} />
-      {children}
-    </Paper>
-  );
-
-  const renderApplicantInfo = () => (
-    <>
-      <Typography variant="body1">
-        <strong>Nombre de Usuario:</strong> {request?.userName}
-      </Typography>
-      <Typography variant="body1">
-        <strong>Fecha de Ingreso:</strong> {formatDate(request?.fechaIngreso || '')}
-      </Typography>
-      <Typography variant="body1">
-        <strong>Fecha de Solicitud:</strong> {formatDate(request?.requestDate || '')}
-      </Typography>
-      <Typography variant="body1">
-        <strong>Departamento:</strong> {request?.department || 'No especificado'}
-      </Typography>
-      <Typography variant="body1">
-        <strong>Cargo que Ocupa:</strong> {request?.position || 'No especificado'}
-      </Typography>
-      <Typography variant="body1">
-        <strong>Solicita Vacacion a partir de:</strong> {formatDate(request?.startDate || '')}
-      </Typography>
-    </>
-  );
-
-  const renderPersonalDepartmentReport = () => (
-    <>
-      <Typography variant="body1">
-        <strong>Vacación correspondiente a las gestión(es):</strong>{' '}
-        {new Date(request?.managementPeriodStart || '').getFullYear()} - {new Date(request?.managementPeriodEnd || '').getFullYear()}
-      </Typography>
-
-      <Typography variant="body1">
-        <strong>Años de Antigüedad:</strong> {request?.antiguedadEnAnios}
-      </Typography>
-      <Typography variant="body1">
-        <strong>Días de Vacación por Antigüedad:</strong> {request?.diasDeVacacion}
-      </Typography>
-      <Typography variant="body1">
-        <strong>Días de Licencia Autorizados cuenta Vacación:</strong> {request?.licenciasAutorizadas.totalAuthorizedDays ?? 'No disponibles'}
-      </Typography>
-      <Typography variant="body1">
-        <strong>Descanso pedagógico de Invierno:</strong> {getRecessByName('INVIERNO')?.daysCount || '0'} días
-      </Typography>
-      <Typography variant="body1">
-        <strong>Descanso de Fin de Año:</strong> {getRecessByName('FINDEGESTION')?.daysCount || '0'} días
-      </Typography>
-      <Typography variant="body1">
-        <strong>Días Acumulados de Deuda:</strong> {debtData?.deudaAcumulativaHastaEstaGestion ?? 0}
-      </Typography>
-      <Typography variant="body1">
-        <strong>Días de Vacación Disponibles Restantes:</strong> {debtData?.diasDisponibles ?? 0}
-      </Typography>
-    </>
-  );
-
-  const renderSupervisorAuthorization = () => (
-    <>
-      <Stack direction="row" alignItems="center" spacing={1}>
-        <strong>Estado:</strong>
+      <Box display="flex" justifyContent="center" alignItems="center" mt={2}>
         <Chip
           label={STATUS_OPTIONS.find(s => s.value === request?.status)?.label || request?.status}
           color={STATUS_OPTIONS.find(s => s.value === request?.status)?.color as any}
+          size="medium"
+          sx={{ fontSize: '1rem', padding: '8px 16px' }}
         />
-      </Stack>
-      <Typography variant="body1">
-        <strong>Fecha de Inicio:</strong> {formatDate(request?.startDate || '')}
-      </Typography>
-      <Typography variant="body1">
-        <strong>Fecha de Revisión Jefe Superior:</strong> {request?.reviewDate ? formatDate(request.reviewDate) : 'No disponible'}
-      </Typography>
-      <Typography variant="body1">
-        <strong>Postergado hasta:</strong> {request?.postponedDate ? formatDate(request.postponedDate) : 'No disponible'}
-      </Typography>
-      <Typography variant="body1">
-        <strong>Justificación de la postergación:</strong> {request?.postponedReason || 'No disponible'}
-      </Typography>
-    </>
+        {(request?.status === "AUTHORIZED" || request?.status === "SUSPENDED") && (
+          <Button
+            variant="contained"
+            startIcon={<DownloadIcon />}
+            onClick={() => generateVacationAuthorizationPDF(request)}
+            sx={{ ml: 2 }}
+          >
+            Descargar PDF
+          </Button>
+        )}
+      </Box>
+    </Box>
   );
 
-  const renderPersonalDepartmentDecree = () => (
+  const renderInfoItem = (icon: React.ReactNode, label: string, value: React.ReactNode, color?: string) => (
+    <ListItem>
+      <ListItemIcon sx={{ minWidth: 36, color }}>
+        {icon}
+      </ListItemIcon>
+      <ListItemText
+        primary={label}
+        secondary={value}
+        primaryTypographyProps={{ variant: 'subtitle2' }}
+        secondaryTypographyProps={{ variant: 'body1' }}
+      />
+    </ListItem>
+  );
+
+  const renderDateRange = (start: string, end: string) => (
+    <Box display="flex" alignItems="center" gap={1}>
+      <EventAvailableIcon fontSize="small" color="action" />
+      <Typography>{formatDate(start)}</Typography>
+      <Typography>→</Typography>
+      <EventBusyIcon fontSize="small" color="action" />
+      <Typography>{formatDate(end)}</Typography>
+    </Box>
+  );
+
+  const renderApplicantSection = () => (
+    <Card sx={{ mb: 3 }}>
+      <CardContent>
+        <Box display="flex" alignItems="center" mb={2}>
+          <Avatar sx={{ bgcolor: 'primary.main', mr: 2 }}>
+            <PeopleIcon />
+          </Avatar>
+          <Typography variant="h6" fontWeight="bold">Información del Solicitante</Typography>
+        </Box>
+        <Divider sx={{ mb: 2 }} />
+
+        <Grid container spacing={2}>
+          <Grid item xs={12} md={6}>
+            <List dense>
+              {renderInfoItem(<WorkIcon color="primary" />, "Nombre", request?.userName)}
+              {renderInfoItem(<TodayIcon color="primary" />, "Fecha de Ingreso", formatDate(request?.fechaIngreso || ''))}
+              {renderInfoItem(<EventIcon color="primary" />, "Fecha de Solicitud", formatDate(request?.requestDate || ''))}
+            </List>
+          </Grid>
+          <Grid item xs={12} md={6}>
+            <List dense>
+              {renderInfoItem(<AssignmentIcon color="primary" />, "Departamento", request?.department || 'No especificado')}
+              {renderInfoItem(<VerifiedUserIcon color="primary" />, "Cargo", request?.position || 'No especificado')}
+            </List>
+          </Grid>
+        </Grid>
+      </CardContent>
+    </Card>
+  );
+
+  const renderVacationDetailsSection = () => (
+    <Card sx={{ mb: 3 }}>
+      <CardContent>
+        <Box display="flex" alignItems="center" mb={2}>
+          <Avatar sx={{ bgcolor: 'secondary.main', mr: 2 }}>
+            <DateRangeIcon />
+          </Avatar>
+          <Typography variant="h6" fontWeight="bold">
+            Detalles de la Vacación
+          </Typography>
+        </Box>
+        <Divider sx={{ mb: 2 }} />
+
+        <Grid container spacing={2}>
+          <Grid item xs={12} md={6}>
+            <List dense>
+              {renderInfoItem(<EventAvailableIcon color="secondary" />, "Fecha de Inicio Solicitud", formatDateLong(request?.startDate || ''))}
+              {renderInfoItem(<EventBusyIcon color="secondary" />, "Fecha de Fin", formatDateLong(request?.endDate || ''))}
+              {renderInfoItem(<TodayIcon color="secondary" />, "Fecha de Regreso", formatDateLong(request?.returnDate || ''))}
+
+              {renderInfoItem(<AccessTimeIcon color="secondary" />, "Total de días solicitados", request?.totalDays)}
+              {renderInfoItem(<TodayIcon color="secondary" />, "Días Disponibles (Sin Autorizar)", debtData?.diasDisponibles ?? '')}
+
+            </List>
+          </Grid>
+          <Grid item xs={12} md={6}>
+            <List dense>
+              {renderInfoItem(<TimelineIcon color="secondary" />, "Gestión Correspondiente",
+                `${new Date(request?.managementPeriodStart || '').getFullYear()} - ${new Date(request?.managementPeriodEnd || '').getFullYear()}`)}
+              {renderInfoItem(<StarIcon color="secondary" />, "Años de Antigüedad", request?.antiguedadEnAnios)}
+              {renderInfoItem(<DateRangeIcon color="secondary" />, "Días de Vacación por Antiguedad", request?.diasDeVacacion)}
+              {renderInfoItem(<SchoolIcon color="secondary" />, "Descanso Invierno (dias hàbiles)", getRecessByName('INVIERNO')?.daysCount || '0 días')}
+              {renderInfoItem(<CelebrationIcon color="secondary" />, "Descanso Fin de Año (dias hàbiles)", getRecessByName('FINDEGESTION')?.daysCount || '0 días')}
+            </List>
+          </Grid>
+        </Grid>
+      </CardContent>
+    </Card>
+  );
+
+  const renderManagementDetailsSection = () => (
+    <Card sx={{ mb: 3 }}>
+      <CardContent>
+        <Box display="flex" alignItems="center" mb={2}>
+          <Avatar sx={{ bgcolor: 'info.main', mr: 2 }}>
+            <HowToRegIcon />
+          </Avatar>
+          <Typography variant="h6" fontWeight="bold">Estado y Autorizaciones</Typography>
+        </Box>
+        <Divider sx={{ mb: 2 }} />
+
+        <Grid container spacing={2}>
+          <Grid item xs={12} md={6}>
+            <List dense>
+              {renderInfoItem(
+                STATUS_OPTIONS.find(s => s.value === request?.status)?.icon || <PendingActionsIcon />,
+                "Estado",
+                <Chip
+                  label={STATUS_OPTIONS.find(s => s.value === request?.status)?.label || request?.status}
+                  color={STATUS_OPTIONS.find(s => s.value === request?.status)?.color as any}
+                  size="small"
+                />
+              )}
+              {renderInfoItem(<TodayIcon color="info" />, "Revisión por Jefe", request?.reviewDate ? formatDate(request.reviewDate) : 'No disponible')}
+              {request?.postponedDate && renderInfoItem(<EventBusyIcon color="warning" />, "Postergado hasta", formatDate(request.postponedDate))}
+            </List>
+          </Grid>
+          <Grid item xs={12} md={6}>
+            <List dense>
+              {renderInfoItem(
+                request?.approvedByHR ? <CheckIcon color="success" /> : <CancelIcon color="error" />,
+                "Aprobado por Departamento de Personal",
+                <Chip
+                  label={request?.approvedByHR ? 'Sí' : 'No'}
+                  color={request?.approvedByHR ? 'success' : 'error'}
+                  size="small"
+                />
+              )}
+
+              {renderInfoItem(<WarningIcon color="info" />, "Días de Deuda", debtData?.deudaAcumulativaHastaEstaGestion ?? 0)}
+            </List>
+          </Grid>
+        </Grid>
+      </CardContent>
+    </Card>
+  );
+
+
+  const renderActionSections = () => (
     <>
-      <Typography variant="body1">
-        <strong>Autorizado por Personal:</strong>
-        <Chip
-          label={request?.approvedByHR ? 'Sí' : 'No'}
-          color={request?.approvedByHR ? 'success' : 'error'}
-          size="small"
-          sx={{ ml: 1 }}
-        />
-      </Typography>
-      <Typography variant="body1">
-        <strong>Fecha Fin de la vacación:</strong> {formatDate(request?.endDate || '')}
-      </Typography>
-      <Typography variant="body1">
-        <strong>Total de días solicitados:</strong> {request?.totalDays}
-      </Typography>
-      <Typography variant="body1">
-        <strong>Regreso:</strong> {formatDate(request?.returnDate || '')}
-      </Typography>
+      {(user?.role === 'admin' || user?.role === 'supervisor') && (
+        <Card sx={{ mb: 3 }}>
+          <CardContent>
+            <Typography variant="h6" gutterBottom fontWeight="bold">
+              Actualizar Estado
+            </Typography>
+            <Divider sx={{ mb: 2 }} />
+            <FormControl fullWidth>
+              <InputLabel id="status-select-label">Estado</InputLabel>
+              <Select
+                labelId="status-select-label"
+                value={selectedStatus}
+                onChange={handleStatusChange}
+                label="Estado"
+              >
+                {STATUS_OPTIONS.map((status) => (
+                  <MenuItem key={status.value} value={status.value}>
+                    <Box display="flex" alignItems="center">
+
+                      <Box ml={1}>{status.label}</Box>
+                    </Box>
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </CardContent>
+        </Card>
+      )}
+
+      {(user?.role === 'admin' || user?.role === 'supervisor') && (
+        <Card sx={{ mb: 3 }}>
+          <CardContent>
+            <Typography variant="h6" gutterBottom fontWeight="bold">
+              Postergar Solicitud
+            </Typography>
+            <Divider sx={{ mb: 2 }} />
+            <PostponeVacationRequestForm
+              requestId={request?.requestId || 0}
+              onRequestUpdate={fetchRequestDetails}
+            />
+          </CardContent>
+        </Card>
+      )}
+
+      {user?.role === 'admin' && (
+        <Card sx={{ mb: 3 }}>
+          <CardContent>
+            <Typography variant="h6" gutterBottom fontWeight="bold">
+              Aprobación de RRHH
+            </Typography>
+            <Divider sx={{ mb: 2 }} />
+            <Button
+              variant="contained"
+              color={request?.approvedByHR ? 'error' : 'success'}
+              startIcon={request?.approvedByHR ? <CancelIcon /> : <CheckIcon />}
+              onClick={toggleApprovedByHR}
+              fullWidth
+            >
+              {request?.approvedByHR ? 'Desaprobar' : 'Aprobar'}
+            </Button>
+          </CardContent>
+        </Card>
+      )}
     </>
-  );
-
-  const renderStatusUpdateSection = () => (
-    <FormControl fullWidth sx={{ mt: 2 }}>
-      <InputLabel id="status-select-label">Estado</InputLabel>
-      <Select
-        labelId="status-select-label"
-        value={selectedStatus}
-        onChange={handleStatusChange}
-        label="Estado"
-      >
-        {STATUS_OPTIONS.map((status) => (
-          <MenuItem key={status.value} value={status.value}>
-            {status.label}
-          </MenuItem>
-        ))}
-      </Select>
-    </FormControl>
-  );
-
-  const renderHRApprovalSection = () => (
-    <Stack direction="row" spacing={2} alignItems="center" sx={{ mt: 2 }}>
-      <Typography variant="body1">
-        <strong>Aprobado por Recursos Humanos:</strong>
-      </Typography>
-      <Button
-        variant="contained"
-        color={request?.approvedByHR ? 'error' : 'success'}
-        startIcon={request?.approvedByHR ? <CancelIcon /> : <CheckIcon />}
-        onClick={toggleApprovedByHR}
-      >
-        {request?.approvedByHR ? 'Desaprobar' : 'Aprobar'}
-      </Button>
-    </Stack>
   );
 
   if (loading) {
@@ -471,30 +577,12 @@ const VacationRequestDetails = () => {
   }
 
   return (
-    <Container maxWidth="md">
+    <Container maxWidth="lg">
       {renderHeader()}
-
-      {renderSection('Datos de Solicitante', renderApplicantInfo())}
-      {renderSection('Informe del departamento de Personal', renderPersonalDepartmentReport())}
-      {renderSection('Autorización del jefe inmediato Superior', renderSupervisorAuthorization())}
-      {renderSection('Decreto del Departamento de Personal', renderPersonalDepartmentDecree())}
-
-      {(user?.role === 'admin' || user?.role === 'supervisor') && (
-        renderSection('Actualizar Estado de la Solicitud', renderStatusUpdateSection())
-      )}
-
-      {(user?.role === 'admin' || user?.role === 'supervisor') && (
-        renderSection('Postergar Solicitud', (
-          <PostponeVacationRequestForm
-            requestId={request.requestId}
-            onRequestUpdate={fetchRequestDetails}
-          />
-        ))
-      )}
-
-      {user?.role === 'admin' && (
-        renderSection('Aprobación de Recursos Humanos', renderHRApprovalSection())
-      )}
+      {renderApplicantSection()}
+      {renderVacationDetailsSection()}
+      {renderManagementDetailsSection()}
+      {renderActionSections()}
 
       <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)}>
         <DialogTitle>
