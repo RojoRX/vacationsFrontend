@@ -31,6 +31,7 @@ import { TipoEmpleadoEnum } from 'src/utils/enums/typeEmployees';
 import BulkLicenseForm from 'src/pages/permissions/bulkLicenseForm';
 import UserLicenseList from 'src/pages/permissions/userLicenseList';
 import UserVacationDebt from '../userVacationDebt';
+import UserReportModal from 'src/pages/reports/reportTypes/userReportForm';
 
 interface Department {
   id: number;
@@ -77,7 +78,9 @@ const UserInformation: AclComponent = () => {
   const [activeTab, setActiveTab] = useState(0);
   const currentYear = new Date().getFullYear();
   const [selectedYear, setSelectedYear] = useState<number>(currentYear);
-
+  const [reportModalOpen, setReportModalOpen] = useState(false);
+  const userCi = user?.ci; // Reemplaza con tu valor real
+  const fechaIngreso = user?.fecha_ingreso; // Reemplaza con tu valor real
 
   useEffect(() => {
     if (ci) {
@@ -140,7 +143,7 @@ const UserInformation: AclComponent = () => {
 
   const handleYearChange = (event: SelectChangeEvent<number>, child: React.ReactNode) => {
     const value = Number(event.target.value);
-  
+
     if (value >= 1980 && value <= currentYear) {
       setSelectedYear(value);
     } else {
@@ -268,6 +271,15 @@ const UserInformation: AclComponent = () => {
               >
                 Editar Usuario
               </Button>
+
+              <Button
+                sx={{m:2}}
+                variant="contained"
+                onClick={() => setReportModalOpen(true)}
+                
+              >
+                Generar Reporte de Usuario
+              </Button>
             </CardContent>
           </Card>
         </Grid>
@@ -321,53 +333,53 @@ const UserInformation: AclComponent = () => {
                   <UserLicenseList userId={user.id} />
                 </>
               )}
-  {activeTab === 2 && user && (
-        <>
-          {/* Selector de años disponibles */}
-          <Box sx={{ mb: 2, display: 'flex', justifyContent: 'flex-end' }}>
-            <FormControl sx={{ minWidth: 150 }}>
-              <InputLabel id="year-select-label">Desde la Gestión</InputLabel>
-              <Select
-                labelId="year-select-label"
-                value={selectedYear}
-                onChange={handleYearChange}
-                size="small"
-                label="Desde la Gestión"
-              >
-                {/* Generar los años disponibles dinámicamente */}
-                {Array.from({ length: currentYear - new Date(user.fecha_ingreso).getFullYear() + 1 }, (_, i) => {
-                  const year = new Date(user.fecha_ingreso).getFullYear() + i;
-                  return (
-                    <MenuItem key={year} value={year}>
-                      {year}
-                    </MenuItem>
-                  );
-                })}
-              </Select>
-            </FormControl>
-          </Box>
+              {activeTab === 2 && user && (
+                <>
+                  {/* Selector de años disponibles */}
+                  <Box sx={{ mb: 2, display: 'flex', justifyContent: 'flex-end' }}>
+                    <FormControl sx={{ minWidth: 150 }}>
+                      <InputLabel id="year-select-label">Desde la Gestión</InputLabel>
+                      <Select
+                        labelId="year-select-label"
+                        value={selectedYear}
+                        onChange={handleYearChange}
+                        size="small"
+                        label="Desde la Gestión"
+                      >
+                        {/* Generar los años disponibles dinámicamente */}
+                        {Array.from({ length: currentYear - new Date(user.fecha_ingreso).getFullYear() + 1 }, (_, i) => {
+                          const year = new Date(user.fecha_ingreso).getFullYear() + i;
+                          return (
+                            <MenuItem key={year} value={year}>
+                              {year}
+                            </MenuItem>
+                          );
+                        })}
+                      </Select>
+                    </FormControl>
+                  </Box>
 
-          {/* Botón para disparar el fetch de la deuda vacacional */}
-          <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
-            <Button
-              variant="contained"
-              onClick={() => {
-                // Acción de disparar el fetch cuando se hace clic en el botón
-                console.log(`Obteniendo deuda vacacional para el año ${selectedYear}`);
-              }}
-            >
-              Obtener Deuda Vacacional
-            </Button>
-          </Box>
+                  {/* Botón para disparar el fetch de la deuda vacacional */}
+                  <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
+                    <Button
+                      variant="contained"
+                      onClick={() => {
+                        // Acción de disparar el fetch cuando se hace clic en el botón
+                        console.log(`Obteniendo deuda vacacional para el año ${selectedYear}`);
+                      }}
+                    >
+                      Obtener Deuda Vacacional
+                    </Button>
+                  </Box>
 
-          {/* Componente UserVacationDebt */}
-          <UserVacationDebt
-            ci={user.ci}
-            fechaIngreso={user.fecha_ingreso}
-            startDate={selectedYear.toString()}
-          />
-        </>
-      )}
+                  {/* Componente UserVacationDebt */}
+                  <UserVacationDebt
+                    ci={user.ci}
+                    fechaIngreso={user.fecha_ingreso}
+                    startDate={selectedYear.toString()}
+                  />
+                </>
+              )}
 
             </CardContent>
           </Card>
@@ -401,6 +413,12 @@ const UserInformation: AclComponent = () => {
           await fetchUser(user.ci);
           setEditDialogOpen(false);
         }}
+      />
+      <UserReportModal
+        open={reportModalOpen}
+        onClose={() => setReportModalOpen(false)}
+        defaultCi={userCi} // Opcional: puedes pasarlo aquí o dejarlo que lo ingrese el usuario
+        fechaIngreso={fechaIngreso} // Opcional: puedes pasarlo aquí o dejarlo que lo ingrese el usuario
       />
 
       {/* Snackbar para notificaciones */}

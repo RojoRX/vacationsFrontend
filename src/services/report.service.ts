@@ -68,6 +68,35 @@ const downloadReport = async (params: {
   }
 };
 
+const downloadUserReport = async (params: {
+  ci: string;
+  year?: number;
+  month?: number;
+}) => {
+  try {
+    const queryParams = new URLSearchParams();
+    queryParams.append('ci', params.ci);
+    if (params.year) queryParams.append('year', params.year.toString());
+    if (params.month) queryParams.append('month', params.month.toString());
+
+    const response = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/reports/user-monthly?${queryParams.toString()}`, {
+      responseType: 'blob',
+    });
+
+    const url = window.URL.createObjectURL(new Blob([response.data]));
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `reporte_usuario_${params.ci}.xlsx`);
+    document.body.appendChild(link);
+    link.click();
+    link.parentNode?.removeChild(link);
+  } catch (error) {
+    console.error('Error descargando reporte:', error);
+    throw error;
+  }
+};
+
 export default {
-  downloadReport
+  downloadReport,
+  downloadUserReport
 };
