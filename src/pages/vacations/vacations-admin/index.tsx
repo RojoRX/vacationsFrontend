@@ -74,9 +74,17 @@ const AdminVacationRequests: FC = () => {
       try {
         const response = await axios.get(`${API_BASE_URL}/vacation-requests`);
         setRequests(response.data);
-      } catch (error) {
-        console.error('Error fetching vacation requests:', error);
-      } finally {
+      } catch (error: any) {
+        if (axios.isAxiosError(error) && error.response) {
+          console.error('Error response data:', error.response.data);
+          console.error('Error status:', error.response.status);
+          alert(`Error ${error.response.status}: ${JSON.stringify(error.response.data)}`);
+        } else {
+          console.error('Unexpected error:', error);
+          alert('Error inesperado al cargar las solicitudes de vacaciones.');
+        }
+      }
+      finally {
         setLoading(false);
       }
     };
@@ -112,13 +120,16 @@ const AdminVacationRequests: FC = () => {
     setSelectedRequest(null);
   };
 
-  // Añade esta función para manejar la actualización después de suspender
-  const handleSuspendSuccess = (updatedRequest: VacationRequest) => {
-    setRequests(requests.map(req =>
-      req.id === updatedRequest.id ? updatedRequest : req
-    ));
-    setOpenDetailDialog(false); // Cierra el diálogo de detalles
-  };
+const handleSuspendSuccess = async () => {
+  try {
+    const response = await axios.get(`${API_BASE_URL}/vacation-requests`);
+    setRequests(response.data);
+    setOpenDetailDialog(false);
+    setOpenSuspendDialog(false);
+  } catch (error) {
+    console.error('Error al actualizar las solicitudes:', error);
+  }
+};
 
   const getStatusColor = (status: string) => {
     switch (status) {
