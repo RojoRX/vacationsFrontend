@@ -33,13 +33,15 @@ import {
     Person,
     FilterAlt,
     Refresh,
-    Business
+    Business,
+    Add
 } from '@mui/icons-material';
 import { License } from 'src/interfaces/licenseTypes';
 import { User } from 'src/interfaces/usertypes';
 import useUser from 'src/hooks/useUser';
 import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
+import ReportDownloadModal from 'src/pages/reports/reportDownloadModal';
 
 interface AdminLicensesProps {
     licenses: License[];
@@ -75,7 +77,8 @@ const AdminLicenses: AclComponent = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [filterApproval, setFilterApproval] = useState<'all' | 'approved' | 'pending'>('all');
     const [filterType, setFilterType] = useState<'all' | 'supervisor' | 'personal'>('all');
-
+    // Dentro del componente AdminLicenses:
+    const [reportModalOpen, setReportModalOpen] = useState(false);
     useEffect(() => {
         fetchAllLicenses();
     }, []);
@@ -261,6 +264,16 @@ const AdminLicenses: AclComponent = () => {
                         <Refresh />
                     </IconButton>
                 </Tooltip>
+                // Añadir este botón junto a los otros controles:
+                <Button
+                    variant="contained"
+                    startIcon={<Add />}
+                    onClick={() => setReportModalOpen(true)}
+                    sx={{ ml: 2 }}
+                >
+                    Generar Reporte
+                </Button>
+
             </Box>
 
             {/* Filtros y búsqueda */}
@@ -503,7 +516,13 @@ const AdminLicenses: AclComponent = () => {
                     </Button>
                 </DialogActions>
             </Dialog>
+            // Y el modal al final del componente:
+            <ReportDownloadModal
+                open={reportModalOpen}
+                onClose={() => setReportModalOpen(false)}
+            />
         </Paper>
+
     );
 };
 
