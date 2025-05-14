@@ -52,6 +52,7 @@ const BulkLicenseForm: React.FC<BulkLicenseFormProps> = ({ open, onClose, userId
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [validationErrors, setValidationErrors] = useState<Record<number, string>>({});
 
   const handleAddLicense = () => {
     setLicenses([...licenses, {
@@ -65,24 +66,54 @@ const BulkLicenseForm: React.FC<BulkLicenseFormProps> = ({ open, onClose, userId
     const newLicenses = [...licenses];
     newLicenses.splice(index, 1);
     setLicenses(newLicenses);
+
+    // Limpiar error asociado si existe
+    const newErrors = { ...validationErrors };
+    delete newErrors[index];
+    setValidationErrors(newErrors);
   };
 
   const handleLicenseChange = (index: number, field: keyof LicenseFormData, value: any) => {
     const newLicenses = [...licenses];
     newLicenses[index][field] = value;
 
-    // Si es Día Completo o Medio Día, solo se usa startDate
-    if ((field === 'timeRequested') && (value === 'Día Completo' || value === 'Medio Día')) {
-      newLicenses[index].endDate = newLicenses[index].startDate;
-    }
-
-    // Si se cambia startDate y es Día Completo o Medio Día, también igualamos endDate
-    if ((field === 'startDate') &&
-      (newLicenses[index].timeRequested === 'Día Completo' || newLicenses[index].timeRequested === 'Medio Día')) {
-      newLicenses[index].endDate = value;
+    // Si es Día Completo o Medio Día, sincronizar endDate con startDate
+    if ((field === 'timeRequested' || field === 'startDate') &&
+      (newLicenses[index].timeRequested === 'Día Completo' ||
+        newLicenses[index].timeRequested === 'Medio Día')) {
+      newLicenses[index].endDate = field === 'startDate' ? value : newLicenses[index].startDate;
     }
 
     setLicenses(newLicenses);
+
+    // Limpiar error al modificar
+    if (validationErrors[index]) {
+      const newErrors = { ...validationErrors };
+      delete newErrors[index];
+      setValidationErrors(newErrors);
+    }
+  };
+
+  const validateLicenses = (): boolean => {
+    const errors: Record<number, string> = {};
+    let isValid = true;
+
+    licenses.forEach((license, index) => {
+      if (!license.startDate) {
+        errors[index] = 'Fecha de inicio requerida';
+        isValid = false;
+      } else if (license.timeRequested === 'Varios Días' && !license.endDate) {
+        errors[index] = 'Fecha de fin requerida para varios días';
+        isValid = false;
+      } else if (license.timeRequested === 'Varios Días' && license.startDate && license.endDate && license.startDate > license.endDate) {
+        errors[index] = 'La fecha de fin no puede ser anterior a la de inicio';
+        isValid = false;
+      }
+    });
+
+    setValidationErrors(errors);
+    console.log('Estado validationErrors:', errors);
+    return isValid;
   };
 
   const handleSubmit = async () => {
@@ -90,14 +121,8 @@ const BulkLicenseForm: React.FC<BulkLicenseFormProps> = ({ open, onClose, userId
       setLoading(true);
       setError(null);
 
-      const invalid = licenses.some(l =>
-        !l.startDate ||
-        (!l.endDate && l.timeRequested === 'Varios Días') ||
-        (l.timeRequested === 'Varios Días' && l.startDate! > l.endDate!)
-      );
-
-      if (invalid) {
-        throw new Error('Verifique las fechas: algunas son inválidas o incompletas.');
+      if (!validateLicenses()) {
+        return;
       }
 
       const licensesData = licenses.map(l => ({
@@ -108,15 +133,49 @@ const BulkLicenseForm: React.FC<BulkLicenseFormProps> = ({ open, onClose, userId
       }));
 
       const response = await axios.post(`${process.env.NEXT_PUBLIC_API_BASE_URL}/licenses/user/${userId}/multiple`, licensesData);
-      console.log(` a la verga`)
-      console.log(response.data)
-      
+
+      if (response.data?.details?.errors) {
+        const backendErrors = response.data.details.errors.reduce((acc: Record<number, string>, err: any) => {
+          const match = err.message.match(/Licencia (\d+):/);
+          if (match) {
+            const index = parseInt(match[1]) - 1;
+            acc[index] = err.message.replace(`Licencia ${match[1]}: `, '');
+          } else {
+            // Manejar errores que no están asociados a una licencia específica (opcional)
+            setError(err.message);
+          }
+          return acc;
+        }, {});
+        setValidationErrors(backendErrors);
+        return;
+      }
+
+
+
+
       setSuccess(true);
       onSuccess();
       onClose();
-    } catch (err) {
-      console.error(err);
-      setError(err instanceof Error ? err.message : 'Error al registrar las licencias');
+      setLicenses([{ timeRequested: 'Día Completo', startDate: null, endDate: null }]); // Reset form
+    } catch (err: any) {
+      console.error('Error al registrar licencias:', err);
+
+      if (err.response?.data?.details && Array.isArray(err.response.data.details)) {
+        const backendErrors: Record<number, string> = {};
+        err.response.data.details.forEach((detail: any) => {
+          // El backend proporciona el índice comenzando desde 1,
+          // mientras que el array 'licenses' está indexado desde 0.
+          // Ajustamos el índice restando 1.
+          backendErrors[detail.index - 1] = detail.message;
+        });
+        setValidationErrors(backendErrors);
+        setError(null); // Limpiar el error general si hay errores específicos
+        return; // Importante salir para evitar mostrar el error general
+      } else {
+        // Si la respuesta del backend no tiene la estructura esperada de 'details',
+        // mostramos un mensaje de error general.
+        setError(err.response?.data?.message || 'Error al registrar las licencias');
+      }
     } finally {
       setLoading(false);
     }
@@ -151,7 +210,9 @@ const BulkLicenseForm: React.FC<BulkLicenseFormProps> = ({ open, onClose, userId
               p: 2,
               border: `1px solid ${theme.palette.divider}`,
               borderRadius: 1,
-              position: 'relative'
+              position: 'relative',
+              // Puedes mantener el cambio de color de fondo si lo deseas
+              // backgroundColor: validationErrors[index] ? theme.palette.error.light + '20' : 'inherit'
             }}>
               {licenses.length > 1 && (
                 <IconButton
@@ -163,11 +224,18 @@ const BulkLicenseForm: React.FC<BulkLicenseFormProps> = ({ open, onClose, userId
                 </IconButton>
               )}
 
-              <Typography variant="subtitle1" sx={{ mb: 2 }}>
+              <Typography variant="subtitle1" sx={{ mb: 1 }}>
                 Licencia #{index + 1}
               </Typography>
 
+              {validationErrors[index] && (
+                <Alert severity="error" sx={{ mb: 1 }}>
+                  {validationErrors[index]}
+                </Alert>
+              )}
+
               <Grid container spacing={2}>
+                {/* ... tus campos del formulario (TextField, DatePicker, etc.) */}
                 <Grid item xs={12} sm={6}>
                   <TextField
                     select
@@ -181,7 +249,6 @@ const BulkLicenseForm: React.FC<BulkLicenseFormProps> = ({ open, onClose, userId
                     <MenuItem value="Varios Días">Varios días</MenuItem>
                   </TextField>
                 </Grid>
-
                 <Grid item xs={12} sm={6}>
                   <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={esLocale}>
                     <DatePicker
@@ -189,25 +256,36 @@ const BulkLicenseForm: React.FC<BulkLicenseFormProps> = ({ open, onClose, userId
                       value={license.startDate}
                       onChange={(date) => handleLicenseChange(index, 'startDate', date)}
                       slotProps={{
-                        textField: { fullWidth: true }
+                        textField: {
+                          fullWidth: true,
+                          error: !!validationErrors[index],
+                          helperText: '' // Ya mostramos el error con Alert
+                        }
                       }}
                     />
                   </LocalizationProvider>
                 </Grid>
-
                 <Grid item xs={12} sm={6}>
                   <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={esLocale}>
                     <DatePicker
                       label="Fecha de fin"
                       value={license.endDate}
-                      onChange={(date) => handleLicenseChange(index, 'endDate', date)}
+                      onChange={(date) => {
+                        if (license.timeRequested === 'Varios Días') {
+                          handleLicenseChange(index, 'endDate', date);
+                        }
+                      }}
                       slotProps={{
                         textField: {
                           fullWidth: true,
-                          disabled: license.timeRequested !== 'Varios Días'
+                          disabled: license.timeRequested !== 'Varios Días',
+                          error: !!validationErrors[index],
+                          helperText: license.timeRequested !== 'Varios Días' ?
+                            'Automáticamente igual a fecha de inicio' : '' // Ya mostramos el error con Alert
                         }
                       }}
                       minDate={license.startDate || undefined}
+                      disabled={license.timeRequested !== 'Varios Días'}
                     />
                   </LocalizationProvider>
                 </Grid>
@@ -223,13 +301,18 @@ const BulkLicenseForm: React.FC<BulkLicenseFormProps> = ({ open, onClose, userId
           >
             Agregar otra licencia
           </Button>
+
         </DialogContent>
 
         <DialogActions>
-          <Button onClick={onClose} color="secondary">
+          <Button onClick={onClose} color="secondary" disabled={loading}>
             Cancelar
           </Button>
-          <Button onClick={handleSubmit} variant="contained" disabled={loading}>
+          <Button
+            onClick={handleSubmit}
+            variant="contained"
+            disabled={loading}
+          >
             {loading ? 'Registrando...' : 'Registrar Licencias'}
           </Button>
         </DialogActions>
@@ -241,11 +324,12 @@ const BulkLicenseForm: React.FC<BulkLicenseFormProps> = ({ open, onClose, userId
         </Alert>
       </Snackbar>
 
-      <Snackbar open={!!error} autoHideDuration={6000} onClose={handleCloseSnackbar}>
+      <Snackbar open={!!error && Object.keys(validationErrors).length === 0} autoHideDuration={6000} onClose={handleCloseSnackbar}>
         <Alert onClose={handleCloseSnackbar} severity="error" sx={{ width: '100%' }}>
           {error}
         </Alert>
       </Snackbar>
+
     </>
   );
 };
