@@ -17,6 +17,7 @@ import {
 import axios from 'axios';
 import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
+import getBusinessDays from 'src/utils/businessDays';
 
 interface HolidayPeriod {
   id: number;
@@ -72,34 +73,37 @@ const UserHolidayPeriods: AclComponent = ({ userId, year }) => {
     setEditHoliday({
       name: holidayPeriod.name,
       startDate: holidayPeriod.startDate,
-      endDate: holidayPeriod.endDate,
-      year: holidayPeriod.year
+      endDate: holidayPeriod.endDate
     });
     setOpenDialog(true);
   };
+
 
   const handleCloseDialog = () => {
     setOpenDialog(false);
     setSelectedHolidayPeriod(null);
     setEditHoliday(null);
   };
-
   const handleUpdate = async () => {
     if (selectedHolidayPeriod && editHoliday) {
       try {
         await axios.put(
-          `${process.env.NEXT_PUBLIC_API_BASE_URL}/user-holiday-periods/${selectedHolidayPeriod.id}`, 
+          `${process.env.NEXT_PUBLIC_API_BASE_URL}/user-holiday-periods/${selectedHolidayPeriod.id}`,
           editHoliday
         );
         setSnackbarMessage('Receso actualizado exitosamente.');
         fetchHolidayPeriods();
         handleCloseDialog();
-      } catch (error) {
-        setSnackbarMessage('Error al actualizar el receso.');
+      } catch (error: any) {
+        const errorMessage =
+          error.response?.data?.message ||
+          'Error al actualizar el receso.';
+        setSnackbarMessage(errorMessage);
         console.error('Error updating holiday period:', error);
       }
     }
   };
+  ;
 
   const handleDelete = async (id: number) => {
     try {
@@ -121,17 +125,20 @@ const UserHolidayPeriods: AclComponent = ({ userId, year }) => {
     return format(parseISO(dateString), 'dd MMM yyyy', { locale: es });
   };
 
-  const filteredPeriods = holidayPeriods.filter(period => {
-    const matchesSearch = 
-      period.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      period.year.toString().includes(searchTerm);
-    
-    const matchesType = 
-      typeFilter === 'all' || 
-      period.name.toLowerCase() === typeFilter.toLowerCase();
-    
-    return matchesSearch && matchesType;
-  });
+  const filteredPeriods = [...holidayPeriods]
+    .sort((a, b) => b.id - a.id) // Ordenar por id descendente
+    .filter(period => {
+      const matchesSearch =
+        period.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        period.year.toString().includes(searchTerm);
+
+      const matchesType =
+        typeFilter === 'all' ||
+        period.name.toLowerCase() === typeFilter.toLowerCase();
+
+      return matchesSearch && matchesType;
+    });
+
 
   useEffect(() => {
     fetchHolidayPeriods();
@@ -221,15 +228,14 @@ const UserHolidayPeriods: AclComponent = ({ userId, year }) => {
                   .map((period) => {
                     const startDate = parseISO(period.startDate);
                     const endDate = parseISO(period.endDate);
-                    const duration = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
-
+                    const duration = getBusinessDays(startDate, endDate);
                     return (
                       <TableRow key={period.id} hover>
                         <TableCell>{period.year}</TableCell>
                         <TableCell>
-                          <Chip 
-                            label={period.name === 'INVIERNO' ? 'Invierno' : 'Fin de Gestión'} 
-                            color={period.name === 'INVIERNO' ? 'primary' : 'secondary'} 
+                          <Chip
+                            label={period.name === 'INVIERNO' ? 'Invierno' : 'Fin de Gestión'}
+                            color={period.name === 'INVIERNO' ? 'primary' : 'secondary'}
                           />
                         </TableCell>
                         <TableCell>
@@ -244,16 +250,16 @@ const UserHolidayPeriods: AclComponent = ({ userId, year }) => {
                             {formatDate(period.endDate)}
                           </Box>
                         </TableCell>
-                        <TableCell>{duration} días</TableCell>
+                        <TableCell>{duration} días habiles</TableCell>
                         <TableCell align="right">
-                          <IconButton 
+                          <IconButton
                             onClick={() => handleOpenDialog(period)}
                             color="primary"
                             aria-label="editar"
                           >
                             <EditIcon />
                           </IconButton>
-                          <IconButton 
+                          <IconButton
                             onClick={() => handleDelete(period.id)}
                             color="error"
                             aria-label="eliminar"
@@ -322,14 +328,7 @@ const UserHolidayPeriods: AclComponent = ({ userId, year }) => {
             onChange={(e) => setEditHoliday({ ...editHoliday!, endDate: e.target.value })}
             InputLabelProps={{ shrink: true }}
           />
-          <TextField
-            label="Año"
-            type="number"
-            fullWidth
-            margin="normal"
-            value={editHoliday?.year || ''}
-            onChange={(e) => setEditHoliday({ ...editHoliday!, year: Number(e.target.value) })}
-          />
+
         </DialogContent>
         <DialogActions>
           <Button onClick={handleCloseDialog} color="inherit">
@@ -343,10 +342,11 @@ const UserHolidayPeriods: AclComponent = ({ userId, year }) => {
 
       <Snackbar
         open={!!snackbarMessage}
-        autoHideDuration={4000}
+        autoHideDuration={6000}
         onClose={() => setSnackbarMessage('')}
         message={snackbarMessage}
       />
+
     </Box>
   );
 };
