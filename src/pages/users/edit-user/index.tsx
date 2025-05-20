@@ -19,20 +19,27 @@ export interface UpdateUserDto {
     username?: string;
     fullName: string;
     celular?: string;
-    email?: string;
-    profesion?: string;
+    email?: string | null;
     fecha_ingreso: string;
     position?: string;
     tipoEmpleado?: TipoEmpleadoEnum;
     departmentId?: number;
+    professionId?: number;
+    academicUnitId?: number;
 }
+
 
 interface Props {
     open: boolean;
     onClose: () => void;
     onSave: (data: UpdateUserDto) => void;
-    initialData: UpdateUserDto & { department?: { id: number; name: string } };
+    initialData: UpdateUserDto & {
+        department?: { id: number; name: string };
+        profession?: { id: number; name: string };
+        academicUnit?: { id: number; name: string };
+    };
 }
+
 
 const schema = yup.object().shape({
     ci: yup.string()
@@ -58,11 +65,13 @@ const schema = yup.object().shape({
         ),
     email: yup.string().email('Email inválido').notRequired().nullable(),
     celular: yup.string().matches(/^\d{7,15}$/, 'Número inválido').notRequired().nullable(),
-    profesion: yup.string().min(2, 'Debe tener al menos 2 caracteres').notRequired(),
+    professionId: yup.number().nullable().notRequired(),
+    academicUnitId: yup.number().nullable().notRequired(),
     position: yup.string().notRequired(),
     tipoEmpleado: yup.string().required('Tipo requerido'),
     departmentId: yup.number().nullable().notRequired(),
 });
+
 
 const EditUserForm: React.FC<Props> = ({ open, onClose, onSave, initialData }) => {
     const {
@@ -72,14 +81,37 @@ const EditUserForm: React.FC<Props> = ({ open, onClose, onSave, initialData }) =
     } = useForm<UpdateUserDto>({
         defaultValues: {
             ...initialData,
-            departmentId: initialData.department?.id// Inicializa con el departamento actual
-        },// Esto asegura que los datos iniciales se pasen al formulario
+            departmentId: initialData.department?.id || undefined,
+            professionId: initialData.profession?.id || undefined,
+            academicUnitId: initialData.academicUnit?.id || undefined,
+        },
+        // Esto asegura que los datos iniciales se pasen al formulario
         resolver: yupResolver(schema)
     });
 
     const [departments, setDepartments] = useState<Department[]>([]);
     const [deptLoading, setDeptLoading] = useState(true);
+    const [profesiones, setProfesiones] = useState([]);
+    const [academicUnits, setAcademicUnits] = useState([]);
+    const [submitError, setSubmitError] = useState<string | null>(null);
 
+
+    React.useEffect(() => {
+        const fetchExtraData = async () => {
+            try {
+                const [profRes, unitRes] = await Promise.all([
+                    axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/professions`),
+                    axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/academic-units`)
+                ]);
+                setProfesiones(profRes.data);
+                setAcademicUnits(unitRes.data);
+            } catch (error) {
+                console.error('Error cargando profesiones o unidades académicas', error);
+            }
+        };
+
+        fetchExtraData();
+    }, []);
     React.useEffect(() => {
         const fetchDepartments = async () => {
             try {
@@ -96,13 +128,30 @@ const EditUserForm: React.FC<Props> = ({ open, onClose, onSave, initialData }) =
 
     const handleFormSubmit = async (data: UpdateUserDto) => {
         try {
-            const response = await axios.put(`${process.env.NEXT_PUBLIC_API_BASE_URL}/users/${initialData.id}`, data);
+            setSubmitError(null); // Limpiar error previo
+            console.log('Datos que se enviarán al backend:', data);
+
+            const response = await axios.put(
+                `${process.env.NEXT_PUBLIC_API_BASE_URL}/users/${initialData.id}`,
+                data
+            );
+
+            // Si la respuesta fue exitosa y no hay error, cerrar el diálogo
             onSave(response.data);
             onClose();
-        } catch (error) {
+        } catch (error: any) {
             console.error('Error al actualizar usuario:', error);
+
+            if (axios.isAxiosError(error) && error.response) {
+                const mensaje = error.response.data?.message || 'Error desconocido en el servidor.';
+                setSubmitError(`Error al actualizar: ${mensaje}`);
+            } else {
+                setSubmitError('Ocurrió un error al intentar actualizar el usuario.');
+            }
         }
     };
+
+
 
     return (
         <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
@@ -191,19 +240,50 @@ const EditUserForm: React.FC<Props> = ({ open, onClose, onSave, initialData }) =
 
                     <Grid item xs={6}>
                         <Controller
-                            name="profesion"
+                            name="professionId"
                             control={control}
                             render={({ field }) => (
-                                <TextField
-                                    {...field}
-                                    label="Profesión"
-                                    fullWidth
-                                    error={!!errors.profesion}
-                                    helperText={errors.profesion?.message}
-                                />
+                                <FormControl fullWidth>
+                                    <InputLabel>Profesión</InputLabel>
+                                    <Select
+                                        {...field}
+                                        label="Profesión"
+                                        value={field.value || ''}
+                                    >
+                                        {profesiones.map((prof: any) => (
+                                            <MenuItem key={prof.id} value={prof.id}>
+                                                {prof.name}
+                                            </MenuItem>
+                                        ))}
+                                    </Select>
+                                </FormControl>
                             )}
                         />
                     </Grid>
+
+                    <Grid item xs={6}>
+                        <Controller
+                            name="academicUnitId"
+                            control={control}
+                            render={({ field }) => (
+                                <FormControl fullWidth>
+                                    <InputLabel>Unidad Académica</InputLabel>
+                                    <Select
+                                        {...field}
+                                        label="Unidad Académica"
+                                        value={field.value || ''}
+                                    >
+                                        {academicUnits.map((unit: any) => (
+                                            <MenuItem key={unit.id} value={unit.id}>
+                                                {unit.name}
+                                            </MenuItem>
+                                        ))}
+                                    </Select>
+                                </FormControl>
+                            )}
+                        />
+                    </Grid>
+
 
                     <Grid item xs={6}>
                         <Controller
@@ -275,6 +355,13 @@ const EditUserForm: React.FC<Props> = ({ open, onClose, onSave, initialData }) =
                         />
                     </Grid>
                 </Grid>
+                {submitError && (
+                    <div style={{ color: 'red', marginTop: '1rem' }}>
+                        {submitError}
+                    </div>
+                )}
+
+
             </DialogContent>
 
             <DialogActions>

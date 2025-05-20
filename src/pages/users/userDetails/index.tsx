@@ -32,6 +32,7 @@ import BulkLicenseForm from 'src/pages/permissions/bulkLicenseForm';
 import UserLicenseList from 'src/pages/permissions/userLicenseList';
 import UserVacationDebt from '../userVacationDebt';
 import UserReportModal from 'src/pages/reports/reportTypes/userReportForm';
+import { User } from 'src/interfaces/user.interface';
 
 interface Department {
   id: number;
@@ -39,22 +40,6 @@ interface Department {
   isCareer: boolean;
   createdAt: string;
   updatedAt: string;
-}
-
-interface User {
-  id: number;
-  ci: string;
-  username?: string;
-  fullName: string;
-  celular?: string;
-  email?: string;
-  profesion?: string;
-  fecha_ingreso: string;
-  position?: string;
-  tipoEmpleado?: TipoEmpleadoEnum;
-  department: Department;
-  departmentId?: number;
-  role: string;
 }
 
 interface AclComponent extends React.FC {
@@ -80,7 +65,10 @@ const UserInformation: AclComponent = () => {
   const [selectedYear, setSelectedYear] = useState<number>(currentYear);
   const [reportModalOpen, setReportModalOpen] = useState(false);
   const userCi = user?.ci; // Reemplaza con tu valor real
-  const fechaIngreso = user?.fecha_ingreso; // Reemplaza con tu valor real
+  const fechaIngresoStr = user?.fecha_ingreso; // '2020-05-09'
+  const fechaIngreso = fechaIngresoStr
+    ? new Date(fechaIngresoStr + 'T00:00:00')
+    : null;
 
   useEffect(() => {
     if (ci) {
@@ -206,7 +194,7 @@ const UserInformation: AclComponent = () => {
 
                 <Typography variant="body1" sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
                   <EventIcon sx={{ mr: 1, color: 'text.secondary' }} />
-                  <strong>Ingreso:</strong> {new Date(user.fecha_ingreso).toLocaleDateString()}
+                  <strong>Ingreso:</strong> {(user.fecha_ingreso)}
                 </Typography>
 
                 <Typography variant="body1" sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
@@ -216,7 +204,7 @@ const UserInformation: AclComponent = () => {
 
                 <Typography variant="body1" sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
                   <SchoolIcon sx={{ mr: 1, color: 'text.secondary' }} />
-                  <strong>Profesión:</strong> {user.profesion || 'No registrada'}
+                  <strong>Profesión:</strong> {user.profession?.name || 'No registrada'}
                 </Typography>
 
                 <Typography variant="body1" sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
@@ -272,14 +260,6 @@ const UserInformation: AclComponent = () => {
                 Editar Usuario
               </Button>
 
-              <Button
-                sx={{m:2}}
-                variant="contained"
-                onClick={() => setReportModalOpen(true)}
-                
-              >
-                Generar Reporte de Usuario
-              </Button>
             </CardContent>
           </Card>
         </Grid>
@@ -322,6 +302,14 @@ const UserInformation: AclComponent = () => {
                     alignItems: 'center',
                     mb: 3
                   }}>
+                    <Button
+                      sx={{ m: 2 }}
+                      variant="contained"
+                      onClick={() => setReportModalOpen(true)}
+
+                    >
+                      Reporte de Licencias
+                    </Button>
                     <Button
                       variant="contained"
                       startIcon={<EventIcon />}
@@ -406,7 +394,9 @@ const UserInformation: AclComponent = () => {
         onClose={() => setEditDialogOpen(false)}
         initialData={{
           ...user,
-          departmentId: user.departmentId
+          department: user.department,
+          profession: user.profession,
+          academicUnit: user.academicUnit,
         }}
         onSave={async () => {
           setSnackbarMessage('Usuario actualizado exitosamente');
@@ -414,11 +404,12 @@ const UserInformation: AclComponent = () => {
           setEditDialogOpen(false);
         }}
       />
+
       <UserReportModal
         open={reportModalOpen}
         onClose={() => setReportModalOpen(false)}
         defaultCi={userCi} // Opcional: puedes pasarlo aquí o dejarlo que lo ingrese el usuario
-        fechaIngreso={fechaIngreso} // Opcional: puedes pasarlo aquí o dejarlo que lo ingrese el usuario
+        fechaIngreso={fechaIngreso ? fechaIngreso.toISOString().split('T')[0] : undefined}// Opcional: puedes pasarlo aquí o dejarlo que lo ingrese el usuario
       />
 
       {/* Snackbar para notificaciones */}

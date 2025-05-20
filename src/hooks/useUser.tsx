@@ -1,26 +1,23 @@
-// src/hooks/useUser.js
 import { useEffect, useState } from 'react';
-
-type UserType = {
-  id: number;
-  ci: string;
-  fecha_ingreso: string;
-  username: string;
-  departmentId: number;
-  role: string;
-  fullName: string;
-  celular: string;
-  profesion: string;
-} | null; // Permitir que sea null
+import { User } from 'src/interfaces/user.interface';
 
 const useUser = () => {
-  const [user, setUser] = useState<UserType>(null);
+  const [user, setUser] = useState<User | null>(null);
 
   useEffect(() => {
     const userData = window.localStorage.getItem('userData');
 
     if (userData) {
-      setUser(JSON.parse(userData));
+      const parsed: User = JSON.parse(userData);
+
+      // Corrección de la fecha
+      if (parsed.fecha_ingreso) {
+        // Forzamos a tratar la fecha como UTC para evitar desfasajes de zona horaria
+        const date = new Date(parsed.fecha_ingreso + 'T00:00:00');
+        parsed.fecha_ingreso = date.toISOString().split('T')[0]; // yyyy-MM-dd
+      }
+
+      setUser(parsed);
     }
   }, []);
 
