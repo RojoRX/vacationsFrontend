@@ -176,6 +176,12 @@ const navigation = (): VerticalNavItemsType => {
           path: '/vacations/vacations-policy',
           action: 'manage',
         },
+        {
+          title: 'Gestión de Profesiones',
+          icon: 'mdi:briefcase-outline',
+          path: '/management/profession',
+          action: 'manage',
+        },
       ],
     },
 
