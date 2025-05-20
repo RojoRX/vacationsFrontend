@@ -1,51 +1,122 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
-    Box,
-    TextField,
-    Button,
-    Typography,
-    Container,
-    Alert,
-    CircularProgress,
-    Paper,
-    FormControl,
-    InputLabel,
-    Select,
-    MenuItem,
-    Grid,
-    InputAdornment,
-    IconButton,
+    Box, TextField, Button, Typography, Container, Alert, Paper,
+    FormControl, InputLabel, Select, MenuItem, Grid,
     Dialog,
-    DialogTitle,
+    DialogActions,
     DialogContent,
-    DialogActions
+    DialogContentText,
+    DialogTitle,
+    Slide
 } from '@mui/material';
-import {
-    PersonAdd as PersonAddIcon,
-    Visibility as VisibilityIcon,
-    VisibilityOff as VisibilityOffIcon,
-    Close as CloseIcon
-} from '@mui/icons-material';
+import { CheckCircle, PersonAdd, PersonAdd as PersonAddIcon } from '@mui/icons-material';
 import axios from 'axios';
-import { useRouter } from 'next/router';
-import * as yup from 'yup';
-import { yupResolver } from '@hookform/resolvers/yup';
 import { useForm, Controller } from 'react-hook-form';
+import { yupResolver } from '@hookform/resolvers/yup';
+import * as yup from 'yup';
+import { useRouter } from 'next/router';
 import api from 'src/utils/axios';
 import Department from 'src/interfaces/departments';
+import { Profession, AcademicUnit } from 'src/interfaces/user.interface';
+import { TransitionProps } from '@mui/material/transitions';
+import { ErrorOutline } from '@mui/icons-material';
+// Transition para el diálogo
+const Transition = React.forwardRef(function Transition(
+    props: TransitionProps & { children: React.ReactElement<any, any> },
+    ref: React.Ref<unknown>,
+) {
+    return <Slide direction="up" ref={ref} {...props} />;
+});
 
+const ResultDialog = ({
+    open,
+    success,
+    message,
+    onClose,
+    onRedirect
+}: {
+    open: boolean;
+    success: boolean;
+    message: string;
+    onClose: () => void;
+    onRedirect: () => void;
+}) => {
+    return (
+        <Dialog
+            open={open}
+            TransitionComponent={Transition}
+            keepMounted
+            onClose={onClose}
+            aria-describedby="alert-dialog-slide-description"
+            PaperProps={{
+                sx: {
+                    minWidth: '400px',
+                    textAlign: 'center',
+                    p: 3
+                }
+            }}
+        >
+            {success ? (
+                <>
+                    <CheckCircle color="success" sx={{ fontSize: 80, mb: 2 }} />
+                    <DialogTitle variant="h5" sx={{ fontWeight: 'bold' }}>
+                        ¡Registro Exitoso!
+                    </DialogTitle>
+                </>
+            ) : (
+                <>
+                    <ErrorOutline color="error" sx={{ fontSize: 80, mb: 2 }} />
+                    {/* O si prefieres: <Error color="error" sx={{ fontSize: 80, mb: 2 }} /> */}
+                    <DialogTitle variant="h5" sx={{ fontWeight: 'bold' }}>
+                        Error en el Registro
+                    </DialogTitle>
+                </>
+            )}
+
+            <DialogContent>
+                <DialogContentText id="alert-dialog-slide-description" sx={{ mb: 2 }}>
+                    {message}
+                </DialogContentText>
+            </DialogContent>
+
+            <DialogActions sx={{ justifyContent: 'center', pb: 0 }}>
+                {success ? (
+                    <Button
+                        variant="contained"
+                        color="primary"
+                        onClick={onRedirect}
+                        startIcon={<PersonAdd />}
+                        sx={{ borderRadius: 2, px: 4, py: 1 }}
+                    >
+                        Ver Usuario
+                    </Button>
+                ) : (
+                    <Button
+                        variant="outlined"
+                        color="primary"
+                        onClick={onClose}
+                        sx={{ borderRadius: 2, px: 4, py: 1 }}
+                    >
+                        Entendido
+                    </Button>
+                )}
+            </DialogActions>
+        </Dialog>
+    );
+};
 
 interface CreateUserForm {
     ci: string;
     fullName: string;
-    fecha_ingreso: string; // Añadir este campo
+    fechaIngreso: string;
     email?: string;
     celular?: string;
-    profesion?: string;
-    position: string;
+    profession?: { id: number };
+    position?: string;
     tipoEmpleado: string;
     role: string;
-    departmentId?: number;
+    department?: { id: number };
+    academicUnit?: { id: number };
     username?: string;
     password?: string;
 }
@@ -56,39 +127,25 @@ interface UserResponse extends Omit<CreateUserForm, 'password'> {
     temporaryPassword?: string;
 }
 
-// Validación con Yup
 const schema = yup.object().shape({
     ci: yup.string()
         .required('CI es requerido')
         .matches(/^\d+$/, 'CI debe contener solo números')
-        .min(4, 'CI debe tener al menos 4 dígitos')
-        .max(10, 'CI debe tener un maximo de 10 digitos'),
+        .min(6, 'CI debe tener al menos 6 dígitos')
+        .max(10, 'CI debe tener un máximo de 10 dígitos'),
     fullName: yup.string().required('Nombre completo es requerido'),
-    fecha_ingreso: yup.string()
+    fechaIngreso: yup.string()
         .required('Fecha de ingreso es requerida')
         .matches(/^\d{4}-\d{2}-\d{2}$/, 'Formato debe ser YYYY-MM-DD'),
-    // ... otros campos ...
-    username: yup.string()
-        .nullable() // Permite null
-        .transform(value => value === '' ? null : value) // Convierte string vacío a null
-        .notRequired() // No es obligatorio
-        .test(
-            'is-email-or-empty',
-            'Username debe ser un email válido o estar vacío',
-            (value) => !value || /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i.test(value)
-        ),
-    password: yup.string()
-        .nullable()
-        .transform(value => value === '' ? null : value)
-        .notRequired(),
-
     email: yup.string().email('Email inválido').notRequired(),
+
+    profession: yup.object().shape({
+        id: yup.number().required('Profesión es requerida')
+    }).required('Profesión es requerida'),
+
     celular: yup.string().matches(/^\d{7,15}$/, 'Número inválido').notRequired(),
-    profesion: yup.string().min(2, 'Debe tener al menos 2 caracteres').notRequired(),
     position: yup.string().notRequired(),
     tipoEmpleado: yup.string().required('Tipo requerido'),
-    role: yup.string().required('Rol requerido'),
-    departmentId: yup.number().nullable().notRequired(),
 });
 
 const CreateUserForm: React.FC = () => {
@@ -96,95 +153,105 @@ const CreateUserForm: React.FC = () => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState(false);
-    const [showPassword, setShowPassword] = useState(false);
-    const [showTempPassword, setShowTempPassword] = useState(false);
-    const [createdUser, setCreatedUser] = useState<UserResponse | null>(null);
     const [departments, setDepartments] = useState<Department[]>([]);
-    const [deptLoading, setDeptLoading] = useState(true);
-
+    const [professions, setProfessions] = useState<Profession[]>([]);
+    const [academicUnits, setAcademicUnits] = useState<AcademicUnit[]>([]);
+    const [dialogOpen, setDialogOpen] = useState(false);
+    const [result, setResult] = useState<{ success: boolean; message: string }>({
+        success: false,
+        message: ''
+    });
+    const [createdUser, setCreatedUser] = useState<UserResponse | null>(null);
     const { control, handleSubmit, formState: { errors }, reset } = useForm<CreateUserForm>({
         resolver: yupResolver(schema),
         defaultValues: {
-            role: 'USER',
-            tipoEmpleado: 'ADMINISTRATIVO',
-            fecha_ingreso: new Date().toISOString().split('T')[0] // Fecha actual como valor por defecto
-        }
+            tipoEmpleado: 'DOCENTE',
+            fechaIngreso: new Date().toISOString().split('T')[0],
+            profession: { id: undefined },
+        },
     });
 
-    // Cargar departamentos al montar el componente
-    React.useEffect(() => {
-        const fetchDepartments = async () => {
+    useEffect(() => {
+        const fetchInitialData = async () => {
             try {
-                const response = await axios.get<Department[]>(`${process.env.NEXT_PUBLIC_API_BASE_URL}/departments`);
-                setDepartments(response.data);
+                const [profRes, unitRes, deptRes] = await Promise.all([
+                    axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/professions`),
+                    axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/academic-units`),
+                    axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/departments`),
+                ]);
+                setProfessions(profRes.data);
+                setAcademicUnits(unitRes.data);
+                setDepartments(deptRes.data);
             } catch (err) {
-                console.error('Error al cargar departamentos:', err);
-            } finally {
-                setDeptLoading(false);
+                console.error('Error cargando datos:', err);
             }
         };
-        fetchDepartments();
+        fetchInitialData();
     }, []);
-
+    const [submitting, setSubmitting] = useState(false);
     const onSubmit = async (data: CreateUserForm) => {
-        setLoading(true);
-        setError(null);
+        setSubmitting(true);
         try {
-            // Preparar datos para el envío
             const payload = {
-                ...data,
-                username: data.username || undefined,
-                password: data.password || undefined
+                ci: data.ci,
+                fullName: data.fullName,
+                fecha_ingreso: data.fechaIngreso,
+                email: data.email || null,
+                celular: data.celular || null,
+                professionId: data.profession?.id,
+                academicUnitId: data.academicUnit?.id,
+                departmentId: data.department?.id,
+                position: data.position,
+                tipoEmpleado: data.tipoEmpleado,
             };
 
-            console.log('Datos enviados al servidor:', payload); // <-- Añade esto
+            const response = await api.post(`${process.env.NEXT_PUBLIC_API_BASE_URL}/users`, payload);
+            const createdUser = response.data;
 
-            const response = await api.post<UserResponse>(
-                `${process.env.NEXT_PUBLIC_API_BASE_URL}/users`,
-                payload,
-                {
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${localStorage.getItem('token')}`
-                    }
-                }
-            );
+            // Guardamos el usuario creado en el estado
+            setCreatedUser(createdUser);
 
-            console.log('Respuesta del servidor:', response.data); // <-- Añade esto
-
-            setCreatedUser(response.data);
-            setSuccess(true);
+            setResult({
+                success: true,
+                message: 'El usuario ha sido registrado exitosamente.'
+            });
+            setDialogOpen(true);
             reset();
+
+            // REMOVEMOS la redirección automática de aquí
+            // router.push(`/users/${createdUser.ci}`);
+
         } catch (err: any) {
-            console.error('Error completo:', err); // <-- Muestra el error completo
-            console.error('Respuesta de error:', err.response?.data); // <-- Detalles del error
-
-            const errorMessage = err.response?.data?.message ||
-                err.response?.data?.error ||
-                'Error al crear el usuario';
-            setError(errorMessage);
+            setResult({
+                success: false,
+                message: err.response?.data?.message || 'Ocurrió un error al registrar el usuario.'
+            });
+            setDialogOpen(true);
         } finally {
-            setLoading(false);
+            setSubmitting(false);
         }
     };
 
-    const handleCloseSuccessDialog = () => {
-        if (createdUser?.id) {
-            setSuccess(false);
-            setCreatedUser(null);
+    const handleRedirect = () => {
+        if (createdUser) {
             router.push(`/users/${createdUser.ci}`);
-        } else {
-            console.error("No se encontró el ID del usuario creado");
         }
     };
-    
-
     return (
-        <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-            <Paper sx={{ p: 3 }}>
-                <Typography variant="h4" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <PersonAddIcon color="primary" />
-                    Crear Nuevo Usuario
+        <Container maxWidth="md" sx={{ mt: 4, mb: 4 }}>
+            <Paper sx={{
+                p: 4,
+                borderRadius: 2,
+                boxShadow: 3
+            }}>
+                <Typography variant="h4" gutterBottom sx={{
+                    mb: 4,
+                    display: 'flex',
+                    alignItems: 'center',
+                    color: 'primary.main'
+                }}>
+                    <PersonAddIcon sx={{ mr: 2, fontSize: '2rem' }} />
+                    Registrar Personal
                 </Typography>
 
                 {error && (
@@ -192,303 +259,279 @@ const CreateUserForm: React.FC = () => {
                         {error}
                     </Alert>
                 )}
+                {success && (
+                    <Alert severity="success" sx={{ mb: 3 }}>
+                        Usuario creado exitosamente. Redirigiendo...
+                    </Alert>
+                )}
 
                 <Box component="form" onSubmit={handleSubmit(onSubmit)}>
                     <Grid container spacing={3}>
                         {/* Columna izquierda */}
                         <Grid item xs={12} md={6}>
-                            <Controller
-                                name="ci"
-                                control={control}
-                                render={({ field }) => (
-                                    <TextField
-                                        {...field}
-                                        label="CI"
-                                        fullWidth
-                                        margin="normal"
-                                        error={!!errors.ci}
-                                        helperText={errors.ci?.message}
-                                        required
-                                    />
-                                )}
-                            />
-                            <Controller
-                                name="profesion"
-                                control={control}
-                                render={({ field }) => (
-                                    <TextField
-                                        {...field}
-                                        label="Profesión"
-                                        fullWidth
-                                        margin="normal"
-                                        error={!!errors.profesion}
-                                        helperText={errors.profesion?.message}
-                                    />
-                                )}
-                            />
+                            <Box sx={{ mb: 3 }}>
+                                <Controller
+                                    name="ci"
+                                    control={control}
+                                    render={({ field }) => (
+                                        <TextField
+                                            {...field}
+                                            label="CI"
+                                            fullWidth
+                                            variant="outlined"
+                                            size="small"
+                                            error={!!errors.ci}
+                                            helperText={errors.ci?.message}
+                                            sx={{ mb: 2 }}
+                                        />
+                                    )}
+                                />
+                            </Box>
 
+                            <Box sx={{ mb: 3 }}>
+                                <Controller
+                                    name="fullName"
+                                    control={control}
+                                    render={({ field }) => (
+                                        <TextField
+                                            {...field}
+                                            label="Nombre Completo"
+                                            fullWidth
+                                            variant="outlined"
+                                            size="small"
+                                            error={!!errors.fullName}
+                                            helperText={errors.fullName?.message}
+                                            sx={{ mb: 2 }}
+                                        />
+                                    )}
+                                />
+                            </Box>
 
-                            <Controller
-                                name="fullName"
-                                control={control}
-                                render={({ field }) => (
-                                    <TextField
-                                        {...field}
-                                        label="Nombre Completo"
-                                        fullWidth
-                                        margin="normal"
-                                        error={!!errors.fullName}
-                                        helperText={errors.fullName?.message}
-                                        required
-                                    />
-                                )}
-                            />
-                            <Controller
-                                name="fecha_ingreso"
-                                control={control}
-                                render={({ field }) => (
-                                    <TextField
-                                        {...field}
-                                        label="Fecha de Ingreso"
-                                        fullWidth
-                                        margin="normal"
-                                        type="date"
-                                        InputLabelProps={{
-                                            shrink: true,
-                                        }}
-                                        inputProps={{
-                                            max: new Date().toISOString().split("T")[0], // <-- fecha máxima hoy
-                                        }}
-                                        error={!!errors.fecha_ingreso}
-                                        helperText={errors.fecha_ingreso?.message}
-                                        required
-                                    />
-                                )}
-                            />
+                            <Box sx={{ mb: 3 }}>
+                                <Controller
+                                    name="fechaIngreso"
+                                    control={control}
+                                    render={({ field }) => (
+                                        <TextField
+                                            {...field}
+                                            type="date"
+                                            label="Fecha de Ingreso"
+                                            fullWidth
+                                            variant="outlined"
+                                            size="small"
+                                            InputLabelProps={{ shrink: true }}
+                                            error={!!errors.fechaIngreso}
+                                            helperText={errors.fechaIngreso?.message}
+                                            sx={{ mb: 2 }}
+                                        />
+                                    )}
+                                />
+                            </Box>
 
-                            <Controller
-                                name="email"
-                                control={control}
-                                render={({ field }) => (
-                                    <TextField
-                                        {...field}
-                                        label="Email"
-                                        type="email"
-                                        fullWidth
-                                        margin="normal"
-                                        error={!!errors.email}
-                                        helperText={errors.email?.message}
-                                    />
-                                )}
-                            />
+                            <Box sx={{ mb: 3 }}>
+                                <Controller
+                                    name="email"
+                                    control={control}
+                                    render={({ field }) => (
+                                        <TextField
+                                            {...field}
+                                            type="email"
+                                            label="Email"
+                                            fullWidth
+                                            variant="outlined"
+                                            size="small"
+                                            error={!!errors.email}
+                                            helperText={errors.email?.message}
+                                            sx={{ mb: 2 }}
+                                        />
+                                    )}
+                                />
+                            </Box>
+
+                            <Box sx={{ mb: 3 }}>
+                                <Controller
+                                    name="celular"
+                                    control={control}
+                                    render={({ field }) => (
+                                        <TextField
+                                            {...field}
+                                            label="Celular"
+                                            fullWidth
+                                            variant="outlined"
+                                            size="small"
+                                            error={!!errors.celular}
+                                            helperText={errors.celular?.message}
+                                            sx={{ mb: 2 }}
+                                        />
+                                    )}
+                                />
+                            </Box>
                         </Grid>
 
                         {/* Columna derecha */}
                         <Grid item xs={12} md={6}>
-                            <Controller
-                                name="position"
-                                control={control}
-                                render={({ field }) => (
-                                    <TextField
-                                        {...field}
-                                        label="Cargo"
-                                        fullWidth
-                                        margin="normal"
-                                        error={!!errors.position}
-                                        helperText={errors.position?.message}
-                                        required
-                                    />
-                                )}
-                            />
-
-                            <Controller
-                                name="tipoEmpleado"
-                                control={control}
-                                render={({ field }) => (
-                                    <FormControl fullWidth margin="normal" required>
-                                        <InputLabel>Tipo de Empleado</InputLabel>
-                                        <Select
-                                            {...field}
-                                            label="Tipo de Empleado"
-                                            error={!!errors.tipoEmpleado}
-                                        >
-                                            <MenuItem value="ADMINISTRATIVO">Administrativo</MenuItem>
-                                            <MenuItem value="DOCENTE">Docente</MenuItem>
-                                            <MenuItem value="AUXILIAR">Auxiliar</MenuItem>
-                                        </Select>
-                                    </FormControl>
-                                )}
-                            />
-
-                            <Controller
-                                name="role"
-                                control={control}
-                                render={({ field }) => (
-                                    <FormControl fullWidth margin="normal" required>
-                                        <InputLabel>Rol</InputLabel>
-                                        <Select
-                                            {...field}
-                                            label="Rol"
-                                            error={!!errors.role}
-                                        >
-                                            <MenuItem value="USER">Usuario Normal</MenuItem>
-                                            <MenuItem value="ADMIN">Administrador</MenuItem>
-                                            <MenuItem value="MANAGER">Gestor</MenuItem>
-                                        </Select>
-                                    </FormControl>
-                                )}
-                            />
-
-                            <Controller
-                                name="departmentId"
-                                control={control}
-                                render={({ field }) => (
-                                    <FormControl fullWidth margin="normal">
-                                        <InputLabel>Departamento</InputLabel>
-                                        <Select
-                                            {...field}
-                                            label="Departamento"
-                                            disabled={deptLoading}
-                                        >
-                                            {departments.map((dept) => (
-                                                <MenuItem key={dept.id} value={dept.id}>
-                                                    {dept.name}
+                            <Box sx={{ mb: 3 }}>
+                                <Controller
+                                    name="profession"
+                                    control={control}
+                                    rules={{ required: true }}
+                                    render={({ field, fieldState }) => (
+                                        <FormControl fullWidth size="small" error={!!fieldState.error}>
+                                            <InputLabel>Profesión *</InputLabel>
+                                            <Select
+                                                {...field}
+                                                label="Profesión *"
+                                                variant="outlined"
+                                                onChange={(e) => field.onChange({ id: e.target.value })}
+                                                value={field.value?.id || ''}
+                                            >
+                                                <MenuItem value="" disabled>
+                                                    Seleccione una profesión
                                                 </MenuItem>
-                                            ))}
-                                        </Select>
-                                    </FormControl>
-                                )}
-                            />
-                            <Controller
-                                name="celular"
-                                control={control}
-                                render={({ field }) => (
-                                    <TextField
-                                        {...field}
-                                        label="Celular"
-                                        fullWidth
-                                        margin="normal"
-                                        error={!!errors.celular}
-                                        helperText={errors.celular?.message}
-                                    />
-                                )}
-                            />
-                        </Grid>
+                                                {professions.map(p => (
+                                                    <MenuItem key={p.id} value={p.id}>
+                                                        {p.name}
+                                                    </MenuItem>
+                                                ))}
+                                            </Select>
+                                            {fieldState.error && (
+                                                <Typography variant="caption" color="error">
+                                                    {fieldState.error.message}
+                                                </Typography>
+                                            )}
+                                        </FormControl>
+                                    )}
+                                />
+                            </Box>
 
-                        {/* Campos opcionales avanzados */}
-                        <Grid item xs={12}>
-                            <Typography variant="subtitle1" gutterBottom>
-                                Credenciales (opcional)
-                            </Typography>
-                            <Grid container spacing={2}>
-                                <Grid item xs={12} md={6}>
-                                    <Controller
-                                        name="username"
-                                        control={control}
-                                        render={({ field }) => (
-                                            <TextField
+                            <Box sx={{ mb: 3 }}>
+                                <Controller
+                                    name="academicUnit"
+                                    control={control}
+                                    render={({ field }) => (
+                                        <FormControl fullWidth size="small">
+                                            <InputLabel>Unidad Académica</InputLabel>
+                                            <Select
                                                 {...field}
-                                                value={field.value || ''} // Maneja null/undefined como string vacío
-                                                label="Nombre de usuario"
-                                                fullWidth
-                                                margin="normal"
-                                                helperText="Dejar en blanco para generar automáticamente"
-                                                error={!!errors.username}
-                                            />
-                                        )}
-                                    />
-                                </Grid>
-                                <Grid item xs={12} md={6}>
-                                    <Controller
-                                        name="password"
-                                        control={control}
-                                        render={({ field }) => (
-                                            <TextField
+                                                label="Unidad Académica"
+                                                variant="outlined"
+                                                onChange={(e) => field.onChange({ id: e.target.value })}
+                                                value={field.value?.id || ''}
+                                                sx={{ mb: 2 }}
+                                            >
+                                                {academicUnits.map(u => (
+                                                    <MenuItem key={u.id} value={u.id}>{u.name}</MenuItem>
+                                                ))}
+                                            </Select>
+                                        </FormControl>
+                                    )}
+                                />
+                            </Box>
+
+                            <Box sx={{ mb: 3 }}>
+                                <Controller
+                                    name="department"
+                                    control={control}
+                                    render={({ field }) => (
+                                        <FormControl fullWidth size="small">
+                                            <InputLabel>Departamento</InputLabel>
+                                            <Select
                                                 {...field}
-                                                value={field.value || ''}
-                                                label="Contraseña"
-                                                type={showPassword ? 'text' : 'password'}
-                                                fullWidth
-                                                margin="normal"
-                                                helperText="Dejar en blanco para generar automáticamente"
-                                                error={!!errors.password}
-                                                InputProps={{
-                                                    endAdornment: (
-                                                        <InputAdornment position="end">
-                                                            <IconButton
-                                                                onClick={() => setShowPassword(!showPassword)}
-                                                                edge="end"
-                                                            >
-                                                                {showPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
-                                                            </IconButton>
-                                                        </InputAdornment>
-                                                    ),
-                                                }}
-                                            />
-                                        )}
-                                    />
-                                </Grid>
-                            </Grid>
+                                                label="Departamento"
+                                                variant="outlined"
+                                                onChange={(e) => field.onChange({ id: e.target.value })}
+                                                value={field.value?.id || ''}
+                                                sx={{ mb: 2 }}
+                                            >
+                                                {departments.map(d => (
+                                                    <MenuItem key={d.id} value={d.id}>{d.name}</MenuItem>
+                                                ))}
+                                            </Select>
+                                        </FormControl>
+                                    )}
+                                />
+                            </Box>
+
+                            <Box sx={{ mb: 3 }}>
+                                <Controller
+                                    name="position"
+                                    control={control}
+                                    render={({ field }) => (
+                                        <TextField
+                                            {...field}
+                                            label="Cargo"
+                                            fullWidth
+                                            variant="outlined"
+                                            size="small"
+                                            sx={{ mb: 2 }}
+                                        />
+                                    )}
+                                />
+                            </Box>
+
+                            <Box sx={{ mb: 3 }}>
+                                <Controller
+                                    name="tipoEmpleado"
+                                    control={control}
+                                    render={({ field }) => (
+                                        <FormControl fullWidth size="small">
+                                            <InputLabel>Tipo de Empleado</InputLabel>
+                                            <Select
+                                                {...field}
+                                                label="Tipo de Empleado"
+                                                variant="outlined"
+                                                error={!!errors.tipoEmpleado}
+                                                sx={{ mb: 2 }}
+                                            >
+                                                <MenuItem value="ADMINISTRATIVO">Administrativo</MenuItem>
+                                                <MenuItem value="DOCENTE">Docente</MenuItem>
+                                            </Select>
+                                            {errors.tipoEmpleado && (
+                                                <Typography variant="caption" color="error">
+                                                    {errors.tipoEmpleado.message}
+                                                </Typography>
+                                            )}
+                                        </FormControl>
+                                    )}
+                                />
+                            </Box>
                         </Grid>
                     </Grid>
 
-                    <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 3, gap: 2 }}>
-                        <Button
-                            variant="outlined"
-                            onClick={() => router.push('/users')}
-                            startIcon={<CloseIcon />}
-                        >
-                            Cancelar
-                        </Button>
+                    <Box mt={4} display="flex" justifyContent="flex-end">
                         <Button
                             type="submit"
                             variant="contained"
+                            color="primary"
                             disabled={loading}
-                            startIcon={loading ? <CircularProgress size={20} /> : <PersonAddIcon />}
+                            startIcon={<PersonAddIcon />}
+                            sx={{
+                                px: 4,
+                                py: 1,
+                                fontSize: '1rem',
+                                textTransform: 'none',
+                                borderRadius: 1
+                            }}
                         >
                             {loading ? 'Creando...' : 'Crear Usuario'}
                         </Button>
+                        {/* Diálogo de resultados */}
+                        <ResultDialog
+                            open={dialogOpen}
+                            success={result.success}
+                            message={result.message}
+                            onClose={() => setDialogOpen(false)}
+                            onRedirect={handleRedirect}
+                        />
                     </Box>
                 </Box>
             </Paper>
-
-            {/* Diálogo de éxito */}
-            <Dialog open={success} onClose={handleCloseSuccessDialog}>
-                <DialogTitle>Usuario creado exitosamente</DialogTitle>
-                <DialogContent>
-                    {createdUser?.temporaryPassword && (
-                        <Alert severity="info" sx={{ mb: 2 }}>
-                            <Typography variant="subtitle2">Contraseña temporal generada</Typography>
-                            <Box sx={{ display: 'flex', alignItems: 'center', mt: 1 }}>
-                                <Typography variant="body1" component="span" sx={{ mr: 1 }}>
-                                    {showTempPassword ? createdUser.temporaryPassword : '••••••••••••'}
-                                </Typography>
-                                <IconButton
-                                    size="small"
-                                    onClick={() => setShowTempPassword(!showTempPassword)}
-                                >
-                                    {showTempPassword ? <VisibilityOffIcon fontSize="small" /> : <VisibilityIcon fontSize="small" />}
-                                </IconButton>
-                            </Box>
-                            <Typography variant="caption" color="error">
-                                ¡Guarde esta contraseña! No se mostrará nuevamente.
-                            </Typography>
-                        </Alert>
-                    )}
-                    <Typography>Usuario {createdUser?.fullName} ha sido registrado correctamente.</Typography>
-                </DialogContent>
-                <DialogActions>
-                    <Button onClick={handleCloseSuccessDialog} color="primary">
-                        Aceptar
-                    </Button>
-                </DialogActions>
-            </Dialog>
         </Container>
     );
 };
-// Asignar las propiedades ACL
 CreateUserForm.acl = {
-    action: 'create',  // Mejor usar 'create' en lugar de 'read' para este formulario
-    subject: 'create-user'    // Usar 'user' en lugar de 'createUserForm' para consistencia
+    action: 'create',
+    subject: 'create-user'
 };
+
 export default CreateUserForm;

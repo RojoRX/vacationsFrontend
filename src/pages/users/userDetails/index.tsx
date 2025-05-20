@@ -209,7 +209,7 @@ const UserInformation: AclComponent = () => {
 
                 <Typography variant="body1" sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
                   <SchoolIcon sx={{ mr: 1, color: 'text.secondary' }} />
-                  <strong>Departamento:</strong> {user.department.name || 'No registrada'}
+                  <strong>Departamento:</strong> {user.department?.name || 'No registrado'}
                 </Typography>
 
                 <Typography variant="body1" sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
