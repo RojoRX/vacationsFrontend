@@ -159,6 +159,12 @@ const navigation = (): VerticalNavItemsType => {
           action: 'manage',
         },
         {
+          title: 'Gestión de Unidades Académicas',
+          icon: 'mdi:school-outline',
+          path: '/management/academicUnits',
+          action: 'manage',
+        },
+        {
           title: 'Gestión de dias no habiles',
           icon: 'mdi:office-building',
           path: '/nonholidays',
@@ -497,7 +503,7 @@ const navigation = (): VerticalNavItemsType => {
     //   icon: 'mdi:google-circles-extended'
     // },
     // {
-      
+
     //   title: 'Cards',
     //   icon: 'mdi:credit-card-outline',
     //   children: [
