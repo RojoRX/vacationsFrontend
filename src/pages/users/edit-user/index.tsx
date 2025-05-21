@@ -12,6 +12,7 @@ import * as yup from 'yup';
 import { TipoEmpleadoEnum } from 'src/utils/enums/typeEmployees';
 import Department from 'src/interfaces/departments';
 import axios from 'axios';
+import { useRouter } from 'next/router';
 
 export interface UpdateUserDto {
     id: number;
@@ -51,23 +52,11 @@ const schema = yup.object().shape({
     fecha_ingreso: yup.string()
         .required('Fecha de ingreso es requerida')
         .matches(/^\d{4}-\d{2}-\d{2}$/, 'Formato debe ser YYYY-MM-DD'),
-    username: yup.string()
-        .nullable()
-        .transform(value => value === '' ? null : value)
-        .notRequired()
-        .test(
-            'is-valid-username',
-            'El nombre de usuario debe ser válido y tener al menos 3 caracteres',
-            (value) => {
-                if (!value) return true;
-                return value.length >= 3;
-            }
-        ),
     email: yup.string().email('Email inválido').notRequired().nullable(),
     celular: yup.string().matches(/^\d{7,15}$/, 'Número inválido').notRequired().nullable(),
     professionId: yup.number().nullable().notRequired(),
     academicUnitId: yup.number().nullable().notRequired(),
-    position: yup.string().notRequired(),
+    position: yup.string().notRequired().nullable(),
     tipoEmpleado: yup.string().required('Tipo requerido'),
     departmentId: yup.number().nullable().notRequired(),
 });
@@ -77,6 +66,7 @@ const EditUserForm: React.FC<Props> = ({ open, onClose, onSave, initialData }) =
     const {
         control,
         handleSubmit,
+        getValues,
         formState: { errors }
     } = useForm<UpdateUserDto>({
         defaultValues: {
@@ -85,16 +75,15 @@ const EditUserForm: React.FC<Props> = ({ open, onClose, onSave, initialData }) =
             professionId: initialData.profession?.id || undefined,
             academicUnitId: initialData.academicUnit?.id || undefined,
         },
-        // Esto asegura que los datos iniciales se pasen al formulario
         resolver: yupResolver(schema)
     });
 
+
     const [departments, setDepartments] = useState<Department[]>([]);
-    const [deptLoading, setDeptLoading] = useState(true);
     const [profesiones, setProfesiones] = useState([]);
     const [academicUnits, setAcademicUnits] = useState([]);
     const [submitError, setSubmitError] = useState<string | null>(null);
-
+    const router = useRouter();
 
     React.useEffect(() => {
         const fetchExtraData = async () => {
@@ -109,9 +98,9 @@ const EditUserForm: React.FC<Props> = ({ open, onClose, onSave, initialData }) =
                 console.error('Error cargando profesiones o unidades académicas', error);
             }
         };
-
         fetchExtraData();
     }, []);
+
     React.useEffect(() => {
         const fetchDepartments = async () => {
             try {
@@ -119,8 +108,6 @@ const EditUserForm: React.FC<Props> = ({ open, onClose, onSave, initialData }) =
                 setDepartments(response.data);
             } catch (err) {
                 console.error('Error al cargar departamentos:', err);
-            } finally {
-                setDeptLoading(false);
             }
         };
         fetchDepartments();
@@ -128,20 +115,26 @@ const EditUserForm: React.FC<Props> = ({ open, onClose, onSave, initialData }) =
 
     const handleFormSubmit = async (data: UpdateUserDto) => {
         try {
-            setSubmitError(null); // Limpiar error previo
-            console.log('Datos que se enviarán al backend:', data);
+            setSubmitError(null);
 
             const response = await axios.put(
                 `${process.env.NEXT_PUBLIC_API_BASE_URL}/users/${initialData.id}`,
                 data
             );
 
-            // Si la respuesta fue exitosa y no hay error, cerrar el diálogo
+            const updatedCI = data.ci;
+            const previousCI = initialData.ci;
+
             onSave(response.data);
             onClose();
+
+            if (updatedCI !== previousCI) {
+                router.push(`/users/${updatedCI}`);
+
+            }
+
         } catch (error: any) {
             console.error('Error al actualizar usuario:', error);
-
             if (axios.isAxiosError(error) && error.response) {
                 const mensaje = error.response.data?.message || 'Error desconocido en el servidor.';
                 setSubmitError(`Error al actualizar: ${mensaje}`);
@@ -150,6 +143,7 @@ const EditUserForm: React.FC<Props> = ({ open, onClose, onSave, initialData }) =
             }
         }
     };
+
 
 
 
@@ -175,18 +169,11 @@ const EditUserForm: React.FC<Props> = ({ open, onClose, onSave, initialData }) =
                     </Grid>
 
                     <Grid item xs={6}>
-                        <Controller
-                            name="username"
-                            control={control}
-                            render={({ field }) => (
-                                <TextField
-                                    {...field}
-                                    label="Usuario"
-                                    fullWidth
-                                    error={!!errors.username} // Mostramos si hay error
-                                    helperText={errors.username?.message} // Mostramos el mensaje de error
-                                />
-                            )}
+                        <TextField
+                            label="Usuario"
+                            value={initialData.username || ''}
+                            fullWidth
+                            disabled
                         />
                     </Grid>
 

@@ -34,6 +34,7 @@ import UserVacationDebt from '../userVacationDebt';
 import UserReportModal from 'src/pages/reports/reportTypes/userReportForm';
 import { User } from 'src/interfaces/user.interface';
 import { CreateCredentialsDialog } from 'src/pages/credentials/userCredentials';
+import { ChangePasswordDialog } from 'src/pages/management/passwordChangeAdmin';
 
 interface Department {
   id: number;
@@ -70,7 +71,8 @@ const UserInformation: AclComponent = () => {
   const fechaIngreso = fechaIngresoStr
     ? new Date(fechaIngresoStr + 'T00:00:00')
     : null;
-  const [open, setOpen] = useState(false);
+  const [openCreate, setOpenCreate] = useState(false);
+  const [openChangePassword, setOpenChangePassword] = useState(false);
 
   useEffect(() => {
     if (ci) {
@@ -88,7 +90,7 @@ const UserInformation: AclComponent = () => {
       const ingresoYear = new Date(response.data.fecha_ingreso).getFullYear();
       setSelectedYear(ingresoYear);
     } catch (error) {
-      setSnackbarMessage('Error al buscar usuario. Verifique el carnet de identidad.');
+      //setSnackbarMessage('Error al buscar usuario. Verifique el carnet de identidad.');
       console.error('Error fetching user:', error);
     } finally {
       setLoading(false);
@@ -261,12 +263,16 @@ const UserInformation: AclComponent = () => {
               >
                 Editar Usuario
               </Button>
-              {user.username === null && (
-                <Button variant="contained" color="primary" onClick={() => setOpen(true)}>
-                  Crear credenciales 
+              {user.username === null ? (
+                <Button variant="contained" color="primary" onClick={() => setOpenCreate(true)}>
+                  Crear credenciales
+                </Button>
+              ) : (
+                <Button variant="outlined" color="secondary" onClick={() => setOpenChangePassword(true)}>
+                  Cambiar contraseña
                 </Button>
               )}
-              <CreateCredentialsDialog open={open} onClose={() => setOpen(false)} ci={user.ci} />
+              <CreateCredentialsDialog open={openCreate} onClose={() => setOpenCreate(false)} ci={user.ci} />
 
             </CardContent>
           </Card>
@@ -418,6 +424,11 @@ const UserInformation: AclComponent = () => {
         onClose={() => setReportModalOpen(false)}
         defaultCi={userCi} // Opcional: puedes pasarlo aquí o dejarlo que lo ingrese el usuario
         fechaIngreso={fechaIngreso ? fechaIngreso.toISOString().split('T')[0] : undefined}// Opcional: puedes pasarlo aquí o dejarlo que lo ingrese el usuario
+      />
+ <ChangePasswordDialog
+        open={openChangePassword}
+        onClose={() => setOpenChangePassword(false)}
+        ci={user.ci}
       />
 
       {/* Snackbar para notificaciones */}
