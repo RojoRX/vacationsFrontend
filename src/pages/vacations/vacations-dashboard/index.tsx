@@ -439,10 +439,10 @@ const VacationDashboard = () => {
                                                     <Typography variant="body2">Deuda Acumulada:</Typography>
                                                     <Typography
                                                         variant="body1"
-                                                        color={(detalle.debt.deuda + detalle.debt.deudaAcumulativaAnterior) > 0 ? 'error' : 'text.primary'}
+                                                        color={(detalle.debt.deudaAcumulativaHastaEstaGestion) > 0 ? 'error' : 'text.primary'}
                                                         fontWeight="bold"
                                                     >
-                                                        {detalle.debt.deuda + detalle.debt.deudaAcumulativaAnterior}
+                                                        {detalle.debt.deudaAcumulativaHastaEstaGestion}
                                                     </Typography>
                                                 </Box>
 
