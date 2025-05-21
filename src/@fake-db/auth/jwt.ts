@@ -35,18 +35,18 @@ const users: UserDataType[] = [
     celular: '', // Cell phone left empty
     profesion: ''
   },
-  /*{
-    id: 5,
-    ci: '12349876',
-    fecha_ingreso: '2019-05-12',
-    username: 'juanSupervisor',
-    password: 'supervisorpassword', // Simplified password for mock
-    departmentId: 3,
+  {
+    id: 11,
+    ci: '90909090',
+    fecha_ingreso: '2017-04-10',
+    username: 'cesar.leonel090',
+    password: 'password', // Simplified password for mock
+    departmentId: 1,
     role: 'client',
-    fullName: 'Fernando Martinez Lopez',
-    celular: '69001122', // Added cell phone number
-    profesion: 'Ingeniero de Sistemas'
-  },*/
+    fullName: 'Cesar Leonel Mamani Choque',
+    celular: '', // Added cell phone number
+    profesion: ''
+  },
   {
     id: 6,
     ci: '56781234',
