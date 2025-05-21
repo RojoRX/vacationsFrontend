@@ -20,91 +20,8 @@ import Department from 'src/interfaces/departments';
 import { Profession, AcademicUnit } from 'src/interfaces/user.interface';
 import { TransitionProps } from '@mui/material/transitions';
 import { ErrorOutline } from '@mui/icons-material';
+import { CreateCredentialsDialog } from 'src/pages/credentials/userCredentials';
 // Transition para el diálogo
-const Transition = React.forwardRef(function Transition(
-    props: TransitionProps & { children: React.ReactElement<any, any> },
-    ref: React.Ref<unknown>,
-) {
-    return <Slide direction="up" ref={ref} {...props} />;
-});
-
-const ResultDialog = ({
-    open,
-    success,
-    message,
-    onClose,
-    onRedirect
-}: {
-    open: boolean;
-    success: boolean;
-    message: string;
-    onClose: () => void;
-    onRedirect: () => void;
-}) => {
-    return (
-        <Dialog
-            open={open}
-            TransitionComponent={Transition}
-            keepMounted
-            onClose={onClose}
-            aria-describedby="alert-dialog-slide-description"
-            PaperProps={{
-                sx: {
-                    minWidth: '400px',
-                    textAlign: 'center',
-                    p: 3
-                }
-            }}
-        >
-            {success ? (
-                <>
-                    <CheckCircle color="success" sx={{ fontSize: 80, mb: 2 }} />
-                    <DialogTitle variant="h5" sx={{ fontWeight: 'bold' }}>
-                        ¡Registro Exitoso!
-                    </DialogTitle>
-                </>
-            ) : (
-                <>
-                    <ErrorOutline color="error" sx={{ fontSize: 80, mb: 2 }} />
-                    {/* O si prefieres: <Error color="error" sx={{ fontSize: 80, mb: 2 }} /> */}
-                    <DialogTitle variant="h5" sx={{ fontWeight: 'bold' }}>
-                        Error en el Registro
-                    </DialogTitle>
-                </>
-            )}
-
-            <DialogContent>
-                <DialogContentText id="alert-dialog-slide-description" sx={{ mb: 2 }}>
-                    {message}
-                </DialogContentText>
-            </DialogContent>
-
-            <DialogActions sx={{ justifyContent: 'center', pb: 0 }}>
-                {success ? (
-                    <Button
-                        variant="contained"
-                        color="primary"
-                        onClick={onRedirect}
-                        startIcon={<PersonAdd />}
-                        sx={{ borderRadius: 2, px: 4, py: 1 }}
-                    >
-                        Ver Usuario
-                    </Button>
-                ) : (
-                    <Button
-                        variant="outlined"
-                        color="primary"
-                        onClick={onClose}
-                        sx={{ borderRadius: 2, px: 4, py: 1 }}
-                    >
-                        Entendido
-                    </Button>
-                )}
-            </DialogActions>
-        </Dialog>
-    );
-};
-
 interface CreateUserForm {
     ci: string;
     fullName: string;
@@ -147,7 +64,6 @@ const schema = yup.object().shape({
     position: yup.string().notRequired(),
     tipoEmpleado: yup.string().required('Tipo requerido'),
 });
-
 const CreateUserForm: React.FC = () => {
     const router = useRouter();
     const [loading, setLoading] = useState(false);
@@ -161,6 +77,8 @@ const CreateUserForm: React.FC = () => {
         success: false,
         message: ''
     });
+    const [credentialsDialogOpen, setCredentialsDialogOpen] = useState(false);
+
     const [createdUser, setCreatedUser] = useState<UserResponse | null>(null);
     const { control, handleSubmit, formState: { errors }, reset } = useForm<CreateUserForm>({
         resolver: yupResolver(schema),
@@ -210,16 +128,13 @@ const CreateUserForm: React.FC = () => {
 
             // Guardamos el usuario creado en el estado
             setCreatedUser(createdUser);
-
             setResult({
                 success: true,
                 message: 'El usuario ha sido registrado exitosamente.'
             });
+
             setDialogOpen(true);
             reset();
-
-            // REMOVEMOS la redirección automática de aquí
-            // router.push(`/users/${createdUser.ci}`);
 
         } catch (err: any) {
             setResult({
@@ -237,6 +152,109 @@ const CreateUserForm: React.FC = () => {
             router.push(`/users/${createdUser.ci}`);
         }
     };
+    const handleCloseDialogsAndRedirect = () => {
+        setDialogOpen(false);
+        setCredentialsDialogOpen(false);
+        handleRedirect(); // Navega al perfil del usuario
+    };
+    const Transition = React.forwardRef(function Transition(
+        props: TransitionProps & { children: React.ReactElement<any, any> },
+        ref: React.Ref<unknown>,
+    ) {
+        return <Slide direction="up" ref={ref} {...props} />;
+    });
+
+    const ResultDialog = ({
+        open,
+        success,
+        message,
+        onClose,
+        onRedirect
+    }: {
+        open: boolean;
+        success: boolean;
+        message: string;
+        onClose: () => void;
+        onRedirect: () => void;
+    }) => {
+        return (
+            <Dialog
+                open={open}
+                TransitionComponent={Transition}
+                keepMounted
+                onClose={onClose}
+                aria-describedby="alert-dialog-slide-description"
+                PaperProps={{
+                    sx: {
+                        minWidth: '400px',
+                        textAlign: 'center',
+                        p: 3
+                    }
+                }}
+            >
+                {success ? (
+                    <>
+                        <CheckCircle color="success" sx={{ fontSize: 80, mb: 2 }} />
+                        <DialogTitle variant="h5" sx={{ fontWeight: 'bold' }}>
+                            ¡Registro Exitoso!
+                        </DialogTitle>
+                    </>
+                ) : (
+                    <>
+                        <ErrorOutline color="error" sx={{ fontSize: 80, mb: 2 }} />
+                        {/* O si prefieres: <Error color="error" sx={{ fontSize: 80, mb: 2 }} /> */}
+                        <DialogTitle variant="h5" sx={{ fontWeight: 'bold' }}>
+                            Error en el Registro
+                        </DialogTitle>
+                    </>
+                )}
+
+                <DialogContent>
+                    <DialogContentText id="alert-dialog-slide-description" sx={{ mb: 2 }}>
+                        {message}
+                    </DialogContentText>
+                </DialogContent>
+
+                <DialogActions sx={{ justifyContent: 'center', gap: 2, pb: 0 }}>
+                    {success ? (
+                        <>
+                            <Button
+                                variant="outlined"
+                                color="primary"
+                                onClick={() => {
+                                    onClose(); // Oculta este diálogo
+                                    setCredentialsDialogOpen(true); // Abre el diálogo de credenciales
+                                }}
+                                sx={{ borderRadius: 2, px: 3 }}
+                            >
+                                Crear Credenciales
+                            </Button>
+                            <Button
+                                variant="contained"
+                                color="primary"
+                                onClick={onRedirect}
+                                startIcon={<PersonAdd />}
+                                sx={{ borderRadius: 2, px: 3 }}
+                            >
+                                Ver Usuario
+                            </Button>
+                        </>
+                    ) : (
+                        <Button
+                            variant="outlined"
+                            color="primary"
+                            onClick={onClose}
+                            sx={{ borderRadius: 2, px: 4, py: 1 }}
+                        >
+                            Entendido
+                        </Button>
+                    )}
+                </DialogActions>
+
+            </Dialog>
+        );
+    };
+
     return (
         <Container maxWidth="md" sx={{ mt: 4, mb: 4 }}>
             <Paper sx={{
@@ -523,6 +541,15 @@ const CreateUserForm: React.FC = () => {
                             onClose={() => setDialogOpen(false)}
                             onRedirect={handleRedirect}
                         />
+
+                        {createdUser && (
+                            <CreateCredentialsDialog
+                                open={credentialsDialogOpen}
+                                onClose={handleCloseDialogsAndRedirect}
+                                ci={createdUser.ci}
+                            />
+                        )}
+
                     </Box>
                 </Box>
             </Paper>

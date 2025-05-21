@@ -33,6 +33,7 @@ import UserLicenseList from 'src/pages/permissions/userLicenseList';
 import UserVacationDebt from '../userVacationDebt';
 import UserReportModal from 'src/pages/reports/reportTypes/userReportForm';
 import { User } from 'src/interfaces/user.interface';
+import { CreateCredentialsDialog } from 'src/pages/credentials/userCredentials';
 
 interface Department {
   id: number;
@@ -69,6 +70,7 @@ const UserInformation: AclComponent = () => {
   const fechaIngreso = fechaIngresoStr
     ? new Date(fechaIngresoStr + 'T00:00:00')
     : null;
+  const [open, setOpen] = useState(false);
 
   useEffect(() => {
     if (ci) {
@@ -259,6 +261,12 @@ const UserInformation: AclComponent = () => {
               >
                 Editar Usuario
               </Button>
+              {user.username === null && (
+                <Button variant="contained" color="primary" onClick={() => setOpen(true)}>
+                  Crear credenciales 
+                </Button>
+              )}
+              <CreateCredentialsDialog open={open} onClose={() => setOpen(false)} ci={user.ci} />
 
             </CardContent>
           </Card>
