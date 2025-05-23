@@ -36,6 +36,7 @@ import { User } from 'src/interfaces/user.interface';
 import { CreateCredentialsDialog } from 'src/pages/credentials/userCredentials';
 import { ChangePasswordDialog } from 'src/pages/management/passwordChangeAdmin';
 import CombinedHolidayPeriods from '../combined-recess';
+import { CalendarIcon } from '@mui/x-date-pickers';
 
 interface Department {
   id: number;
@@ -283,13 +284,48 @@ const UserInformation: AclComponent = () => {
         <Grid item xs={12} md={8}>
           <Card>
             <CardContent>
-              <Tabs value={activeTab} onChange={handleTabChange} sx={{ mb: 3 }}>
-                <Tab icon={<HolidayIcon />} label="Recesos Personalizados" />
-                <Tab icon={<LicenseIcon />} label="Permisos" />
-                <Tab icon={<HolidayIcon />} label="Deuda Vacacional" />
-                <Tab icon={<HolidayIcon />} label="Recesos Generales" />
+              <Tabs
+                value={activeTab}
+                onChange={handleTabChange}
+                variant="scrollable"
+                scrollButtons="auto"
+                allowScrollButtonsMobile
+                sx={{
+                  mb: 3,
+                  maxWidth: '100%',
+                  '& .MuiTab-root': {
+                    minHeight: 64, // Más espacio para icono + texto
+                    padding: '6px 12px',
+                  }
+                }}
+              >
+                <Tab
+                  icon={<HolidayIcon color="primary" />}
+                  label="Recesos Personalizados"
+                  iconPosition="start"
+                  sx={{
+                    '& .MuiTab-iconWrapper': {
+                      marginRight: 1,
+                    }
+                  }}
+                />
+                <Tab
+                  icon={<WorkIcon color="secondary" />}
+                  label="Permisos"
+                  iconPosition="start"
+                />
+                <Tab
+                  icon={<DebtIcon color="warning" />}
+                  label="Deuda Vacacional"
+                  iconPosition="start"
+                />
+                <Tab
+                  icon={<CalendarIcon color="success" />}
+                  label="Recesos Generales"
+                  iconPosition="start"
+                />
+                {/* Más tabs aquí si es necesario */}
               </Tabs>
-
               {activeTab === 0 && (
                 <>
                   <Box sx={{
@@ -384,9 +420,9 @@ const UserInformation: AclComponent = () => {
                   />
                 </>
               )}
-               {activeTab === 3 && (
+              {activeTab === 3 && (
                 <>
-                  <CombinedHolidayPeriods userId={user.id} joinDate={user.fecha_ingreso}/>
+                  <CombinedHolidayPeriods userId={user.id} joinDate={user.fecha_ingreso} />
                 </>
               )}
 
@@ -432,7 +468,7 @@ const UserInformation: AclComponent = () => {
         defaultCi={userCi} // Opcional: puedes pasarlo aquí o dejarlo que lo ingrese el usuario
         fechaIngreso={fechaIngreso ? fechaIngreso.toISOString().split('T')[0] : undefined}// Opcional: puedes pasarlo aquí o dejarlo que lo ingrese el usuario
       />
- <ChangePasswordDialog
+      <ChangePasswordDialog
         open={openChangePassword}
         onClose={() => setOpenChangePassword(false)}
         ci={user.ci}

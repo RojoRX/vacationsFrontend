@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     Box,
     Button,
@@ -11,6 +11,7 @@ import {
     MenuItem,
 } from '@mui/material';
 import axios from 'axios';
+import getBusinessDays from 'src/utils/businessDays';
 
 interface CustomHolidayFormProps {
     open: boolean;
@@ -23,9 +24,20 @@ const CustomHolidayForm: React.FC<CustomHolidayFormProps> = ({ open, onClose, on
     const [name, setName] = useState<string>('');
     const [startDate, setStartDate] = useState<string>(new Date().toISOString().slice(0, 10));
     const [endDate, setEndDate] = useState<string>(new Date().toISOString().slice(0, 10));
+    const [businessDays, setBusinessDays] = useState<number>(0);
     const [loading, setLoading] = useState<boolean>(false);
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState<string | null>(null);
+
+    // Calcular días hábiles cuando cambian las fechas
+    useEffect(() => {
+        if (startDate && endDate) {
+            const start = new Date(startDate);
+            const end = new Date(endDate);
+            const days = getBusinessDays(start, end);
+            setBusinessDays(days);
+        }
+    }, [startDate, endDate]);
 
     const handleFormSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
@@ -47,25 +59,18 @@ const CustomHolidayForm: React.FC<CustomHolidayFormProps> = ({ open, onClose, on
             onSuccess();
         } catch (err: any) {
             console.error('Error al crear el receso personalizado:', err);
-
             const message =
                 err?.response?.data?.message ||
                 err?.message ||
                 'Hubo un problema al crear el receso.';
-
-            // Si el mensaje es un array (como suele pasar en NestJS con validaciones)
-            if (Array.isArray(message)) {
-                setError(message.join(' '));
-            } else {
-                setError(message);
-            }
+            setError(Array.isArray(message) ? message.join(' ') : message);
+        } finally {
+            setLoading(false);
         }
-
-        setLoading(false);
     };
 
     return (
-        <Dialog open={open} onClose={onClose}>
+        <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
             <DialogTitle>Crear Receso Personalizado</DialogTitle>
             <DialogContent>
                 <form onSubmit={handleFormSubmit}>
@@ -77,6 +82,7 @@ const CustomHolidayForm: React.FC<CustomHolidayFormProps> = ({ open, onClose, on
                         fullWidth
                         margin="normal"
                         required
+                        sx={{ mt: 2 }}
                     >
                         <MenuItem value="INVIERNO">Invierno</MenuItem>
                         <MenuItem value="FINDEGESTION">Fin de Gestión</MenuItem>
@@ -104,25 +110,32 @@ const CustomHolidayForm: React.FC<CustomHolidayFormProps> = ({ open, onClose, on
                         InputLabelProps={{ shrink: true }}
                     />
 
+                    {/* Leyenda con días hábiles */}
+                    <Typography variant="body2" color="text.secondary" sx={{ mt: 1, mb: 2 }}>
+                        Período seleccionado: {businessDays} día{businessDays !== 1 ? 's' : ''} hábil{businessDays !== 1 ? 'es' : ''}
+                    </Typography>
+
                     {error && (
-                        <Typography variant="body2" color="error" mt={2}>
+                        <Typography variant="body2" color="error" sx={{ mt: 1, mb: 1 }}>
                             {error}
                         </Typography>
                     )}
                     {success && (
-                        <Typography variant="body2" color="success.main" mt={2}>
+                        <Typography variant="body2" color="success.main" sx={{ mt: 1, mb: 1 }}>
                             {success}
                         </Typography>
                     )}
 
-                    <Button type="submit" variant="contained" color="primary" disabled={loading} fullWidth>
-                        {loading ? 'Guardando...' : 'Guardar Receso'}
-                    </Button>
+                    <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2 }}>
+                        <Button onClick={onClose} color="secondary" sx={{ mr: 1 }}>
+                            Cancelar
+                        </Button>
+                        <Button type="submit" variant="contained" color="primary" disabled={loading}>
+                            {loading ? 'Guardando...' : 'Guardar Receso'}
+                        </Button>
+                    </Box>
                 </form>
             </DialogContent>
-            <DialogActions>
-                <Button onClick={onClose} color="secondary">Cancelar</Button>
-            </DialogActions>
         </Dialog>
     );
 };

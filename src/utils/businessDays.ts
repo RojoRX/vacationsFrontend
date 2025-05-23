@@ -1,20 +1,29 @@
 export default function getBusinessDays(startDate: Date, endDate: Date): number {
-  let count = 0;
-  const currentDate = new Date(startDate);
+  const normalizeUTC = (date: Date): Date => {
+    const normalized = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
+    console.log("Normalizando fecha:", date.toString(), "→", normalized.toUTCString());
+    return normalized;
+  };
 
-  // Nos aseguramos de no modificar el objeto original
-  currentDate.setHours(0, 0, 0, 0);
-  endDate.setHours(0, 0, 0, 0);
+  const start = normalizeUTC(startDate);
+  const end = normalizeUTC(endDate);
 
-  while (currentDate <= endDate) {
-    const dayOfWeek = currentDate.getDay();
-    // 1 a 5 son de lunes a viernes
-    if (dayOfWeek >= 1 && dayOfWeek <= 5) {
-      count++;
-    }
-    // Avanza al siguiente día
-    currentDate.setDate(currentDate.getDate() + 1);
+  if (start > end) {
+    console.log("Fecha de inicio mayor a la final. Retornando 0.");
+    return 0;
   }
 
+  let count = 0;
+  const current = new Date(start);
+
+  while (current <= end) {
+    const day = current.getUTCDay(); // getUTCDay para día de la semana sin zona local
+    const isBusinessDay = day !== 0 && day !== 6;
+    console.log(`Revisando: ${current.toUTCString()} (día ${day}) → ${isBusinessDay ? "Día hábil" : "Fin de semana"}`);
+    if (isBusinessDay) count++;
+    current.setUTCDate(current.getUTCDate() + 1); // avanzar un día en UTC
+  }
+
+  console.log("Total de días hábiles:", count);
   return count;
 }
