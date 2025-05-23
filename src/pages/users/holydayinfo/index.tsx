@@ -50,7 +50,9 @@ const UserHolidayPeriods: AclComponent = ({ userId, year }) => {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(5);
   const [searchTerm, setSearchTerm] = useState('');
+  // Cambiar el estado inicial del typeFilter para que coincida con los valores del MenuItem
   const [typeFilter, setTypeFilter] = useState<string>('all');
+
 
   const fetchHolidayPeriods = async () => {
     setLoading(true);
@@ -125,19 +127,30 @@ const UserHolidayPeriods: AclComponent = ({ userId, year }) => {
     return format(parseISO(dateString), 'dd MMM yyyy', { locale: es });
   };
 
-  const filteredPeriods = [...holidayPeriods]
-    .sort((a, b) => b.id - a.id) // Ordenar por id descendente
+
+  const filteredPeriods = holidayPeriods
     .filter(period => {
       const matchesSearch =
+        searchTerm === '' ||
         period.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         period.year.toString().includes(searchTerm);
 
       const matchesType =
         typeFilter === 'all' ||
-        period.name.toLowerCase() === typeFilter.toLowerCase();
+        period.name === typeFilter;
 
       return matchesSearch && matchesType;
+    })
+    .sort((a, b) => {
+      // Ordenar por año descendente y luego por nombre
+      if (b.year !== a.year) return b.year - a.year;
+      return a.name.localeCompare(b.name);
     });
+
+  // Resetear la página cuando cambian los filtros
+  useEffect(() => {
+    setPage(0);
+  }, [searchTerm, typeFilter]);
 
 
   useEffect(() => {
@@ -182,7 +195,7 @@ const UserHolidayPeriods: AclComponent = ({ userId, year }) => {
               <InputLabel>Tipo</InputLabel>
               <Select
                 value={typeFilter}
-                onChange={(e) => setTypeFilter(e.target.value)}
+                onChange={(e) => setTypeFilter(e.target.value as string)}
                 label="Tipo"
               >
                 <MenuItem value="all">Todos</MenuItem>
@@ -284,12 +297,8 @@ const UserHolidayPeriods: AclComponent = ({ userId, year }) => {
           onPageChange={(_, newPage) => setPage(newPage)}
           onRowsPerPageChange={(e) => {
             setRowsPerPage(parseInt(e.target.value, 10));
-            setPage(0);
+            setPage(0); // Resetear a la primera página al cambiar el tamaño
           }}
-          labelRowsPerPage="Filas por página:"
-          labelDisplayedRows={({ from, to, count }) =>
-            `${from}-${to} de ${count !== -1 ? count : `más de ${to}`}`
-          }
         />
       </Paper>
 

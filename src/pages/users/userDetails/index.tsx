@@ -35,6 +35,7 @@ import UserReportModal from 'src/pages/reports/reportTypes/userReportForm';
 import { User } from 'src/interfaces/user.interface';
 import { CreateCredentialsDialog } from 'src/pages/credentials/userCredentials';
 import { ChangePasswordDialog } from 'src/pages/management/passwordChangeAdmin';
+import CombinedHolidayPeriods from '../combined-recess';
 
 interface Department {
   id: number;
@@ -283,9 +284,10 @@ const UserInformation: AclComponent = () => {
           <Card>
             <CardContent>
               <Tabs value={activeTab} onChange={handleTabChange} sx={{ mb: 3 }}>
-                <Tab icon={<HolidayIcon />} label="Recesos" />
+                <Tab icon={<HolidayIcon />} label="Recesos Personalizados" />
                 <Tab icon={<LicenseIcon />} label="Permisos" />
                 <Tab icon={<HolidayIcon />} label="Deuda Vacacional" />
+                <Tab icon={<HolidayIcon />} label="Recesos Generales" />
               </Tabs>
 
               {activeTab === 0 && (
@@ -380,6 +382,11 @@ const UserInformation: AclComponent = () => {
                     fechaIngreso={user.fecha_ingreso}
                     startDate={selectedYear.toString()}
                   />
+                </>
+              )}
+               {activeTab === 3 && (
+                <>
+                  <CombinedHolidayPeriods userId={user.id} joinDate={user.fecha_ingreso}/>
                 </>
               )}
 
