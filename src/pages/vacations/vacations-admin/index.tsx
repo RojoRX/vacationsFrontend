@@ -317,7 +317,7 @@ const handleSuspendSuccess = async () => {
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                 <HumanResourcesIcon color="action" />
                 <Typography variant="body1">
-                  <strong>Aprobado por RRHH:</strong>{' '}
+                  <strong>Aprobado por Dpto. Personal:</strong>{' '}
                   {selectedRequest.approvedByHR ? (
                     <CheckIcon color="success" fontSize="small" />
                   ) : (
@@ -329,7 +329,7 @@ const handleSuspendSuccess = async () => {
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                 <AccountSupervisorIcon color="action" />
                 <Typography variant="body1">
-                  <strong>Aprobado por Supervisor:</strong>{' '}
+                  <strong>Aprobado por Jefe Superior:</strong>{' '}
                   {selectedRequest.approvedBySupervisor ? (
                     <CheckIcon color="success" fontSize="small" />
                   ) : (

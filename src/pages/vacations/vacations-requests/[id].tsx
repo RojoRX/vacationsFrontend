@@ -135,7 +135,7 @@ const VacationRequestDetails = () => {
   const [infoMessage, setInfoMessage] = useState('');
   const [debtData, setDebtData] = useState<VacationDebt | null>(null);
   const [deudaData, setDeudaData] = useState<GestionDeuda | null>(null);
-
+  let requestId: number | undefined = undefined;
   const fetchRequestDetails = useCallback(async () => {
     if (!id) return;
 
@@ -148,6 +148,7 @@ const VacationRequestDetails = () => {
       );
 
       setRequest(response.data);
+      requestId=response.data.id;
       setSelectedStatus(response.data.status);
 
       if (response.data.managementPeriodStart && response.data.managementPeriodEnd) {
@@ -321,7 +322,7 @@ const VacationRequestDetails = () => {
       <Typography variant="h4" fontWeight="bold" gutterBottom color="primary">
         Detalles de Solicitud de Vacaciones
       </Typography>
-      <Box display="flex" justifyContent="center" alignItems="center" mt={2}>
+      <Box display="flex" justifyContent="center" alignItems="center" mt={2} >
         <Chip
           label={STATUS_OPTIONS.find(s => s.value === request?.status)?.label || request?.status}
           color={STATUS_OPTIONS.find(s => s.value === request?.status)?.color as any}
@@ -335,7 +336,7 @@ const VacationRequestDetails = () => {
             onClick={() => generateVacationAuthorizationPDF(request)}
             sx={{ ml: 2 }}
           >
-            Descargar PDF
+            Descargar Autorizacion
           </Button>
         )}
       </Box>
@@ -374,6 +375,14 @@ const VacationRequestDetails = () => {
             <PeopleIcon />
           </Avatar>
           <Typography variant="h6" fontWeight="bold">Información del Solicitante</Typography>
+          <Button
+            variant="outlined"
+            startIcon={<DownloadIcon />}
+            onClick={() => router.push(`/vacations/vacations-inform/${request?.requestId}`)}
+            sx={{ ml: 2, }}
+          >
+            Ver Informe
+          </Button>
         </Box>
         <Divider sx={{ mb: 2 }} />
 
@@ -486,7 +495,7 @@ const VacationRequestDetails = () => {
 
   const renderActionSections = () => (
     <>
-      {(user?.role === 'admin' || user?.role === 'supervisor') && (
+      {(user?.role === 'supervisor') && (
         <Card sx={{ mb: 3 }}>
           <CardContent>
             <Typography variant="h6" gutterBottom fontWeight="bold">
@@ -514,7 +523,7 @@ const VacationRequestDetails = () => {
           </CardContent>
         </Card>
       )}
-
+      {/** 
       {(user?.role === 'admin' || user?.role === 'supervisor') && (
         <Card sx={{ mb: 3 }}>
           <CardContent>
@@ -529,12 +538,12 @@ const VacationRequestDetails = () => {
           </CardContent>
         </Card>
       )}
-
+*/}
       {user?.role === 'admin' && (
         <Card sx={{ mb: 3 }}>
           <CardContent>
             <Typography variant="h6" gutterBottom fontWeight="bold">
-              Aprobación de RRHH
+              Aprobación de Departamento de Personal
             </Typography>
             <Divider sx={{ mb: 2 }} />
             <Button
@@ -543,6 +552,7 @@ const VacationRequestDetails = () => {
               startIcon={request?.approvedByHR ? <CancelIcon /> : <CheckIcon />}
               onClick={toggleApprovedByHR}
               fullWidth
+              disabled={request?.approvedByHR === true} // 
             >
               {request?.approvedByHR ? 'Desaprobar' : 'Aprobar'}
             </Button>

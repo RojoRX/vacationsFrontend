@@ -50,7 +50,7 @@
         "i18next-http-backend": "2.0.0",
         "jsonwebtoken": "8.5.1",
         "jspdf": "^2.5.2",
-        "jspdf-autotable": "^3.8.4",
+        "jspdf-autotable": "^5.0.2",
         "keen-slider": "6.8.3",
         "next": "13.0.0",
         "nprogress": "0.2.0",
