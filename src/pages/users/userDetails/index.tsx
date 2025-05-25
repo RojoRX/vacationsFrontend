@@ -301,7 +301,7 @@ const UserInformation: AclComponent = () => {
               >
                 <Tab
                   icon={<HolidayIcon color="primary" />}
-                  label="Recesos Personalizados"
+                  label="Recesos"
                   iconPosition="start"
                   sx={{
                     '& .MuiTab-iconWrapper': {
@@ -319,11 +319,12 @@ const UserInformation: AclComponent = () => {
                   label="Deuda Vacacional"
                   iconPosition="start"
                 />
+                {/** 
                 <Tab
                   icon={<CalendarIcon color="success" />}
                   label="Recesos Generales"
                   iconPosition="start"
-                />
+                />*/}
                 {/* Más tabs aquí si es necesario */}
               </Tabs>
               {activeTab === 0 && (
@@ -339,10 +340,11 @@ const UserInformation: AclComponent = () => {
                       startIcon={<EditIcon />}
                       onClick={() => setOpenHolidayDialog(true)}
                     >
-                      Crear Receso
+                      Crear Recesos
                     </Button>
+                    
                   </Box>
-                  <UserHolidayPeriods userId={user.id} year={new Date().getFullYear()} />
+                   <CombinedHolidayPeriods userId={user.id} joinDate={user.fecha_ingreso} />
                 </>
               )}
 
@@ -422,7 +424,8 @@ const UserInformation: AclComponent = () => {
               )}
               {activeTab === 3 && (
                 <>
-                  <CombinedHolidayPeriods userId={user.id} joinDate={user.fecha_ingreso} />
+                 
+                  <UserHolidayPeriods userId={user.id} year={new Date().getFullYear()} />
                 </>
               )}
 

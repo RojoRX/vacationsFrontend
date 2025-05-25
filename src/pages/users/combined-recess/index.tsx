@@ -3,10 +3,18 @@ import {
     Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
     Paper, Typography, TextField, TablePagination, CircularProgress, Box,
     MenuItem, Select, FormControl, InputLabel,
-    Chip
+    Chip, IconButton,
+    DialogContent,
+    Button,
+    Dialog,
+    DialogActions,
+    DialogTitle,
+    Snackbar
 } from '@mui/material';
+import { Edit, Delete, Launch } from '@mui/icons-material';
 import axios from 'axios';
 import getBusinessDays from 'src/utils/businessDays';
+import router from 'next/router';
 
 interface HolidayPeriod {
     id: number;
@@ -22,7 +30,7 @@ interface CombinedHolidayPeriodsProps {
     joinDate: string;
 }
 
-const CombinedHolidayPeriods: React.FC<CombinedHolidayPeriodsProps> = ({ userId, joinDate  }) => {
+const CombinedHolidayPeriods: React.FC<CombinedHolidayPeriodsProps> = ({ userId, joinDate }) => {
     const [combinedPeriods, setCombinedPeriods] = useState<HolidayPeriod[]>([]);
     const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
@@ -31,60 +39,118 @@ const CombinedHolidayPeriods: React.FC<CombinedHolidayPeriodsProps> = ({ userId,
     const [yearFilter, setYearFilter] = useState<string>('');
     const [nameFilter, setNameFilter] = useState<string>('');
     const [typeFilter, setTypeFilter] = useState<string>('');
+    const [selectedHolidayPeriod, setSelectedHolidayPeriod] = useState<HolidayPeriod | null>(null);
+    const [editHoliday, setEditHoliday] = useState<Partial<HolidayPeriod> | null>(null);
+    const [snackbarMessage, setSnackbarMessage] = useState<string>('');
+    const [openDialog, setOpenDialog] = useState<boolean>(false);
 
-    useEffect(() => {
-        const fetchHolidayPeriods = async () => {
-            try {
-                setLoading(true);
+// 1. Define fetchHolidayPeriods como una función fuera del useEffect
+const fetchHolidayPeriods = async () => {
+    try {
+        setLoading(true);
 
-                const [generalResponse, personalizedResponse] = await Promise.all([
-                    axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/general-holiday-periods`),
-                    axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/user-holiday-periods/${userId}`)
-                ]);
+        const [generalResponse, personalizedResponse] = await Promise.all([
+            axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/general-holiday-periods`),
+            axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/user-holiday-periods/${userId}`)
+        ]);
 
-                const generalPeriods: HolidayPeriod[] = generalResponse.data.map((p: any) => ({
-                    ...p,
-                    isPersonalized: false
-                }));
+        const generalPeriods: HolidayPeriod[] = generalResponse.data.map((p: any) => ({
+            ...p,
+            isPersonalized: false
+        }));
 
-                const personalizedPeriods: HolidayPeriod[] = personalizedResponse.data.map((p: any) => ({
-                    ...p,
-                    isPersonalized: true
-                }));
+        const personalizedPeriods: HolidayPeriod[] = personalizedResponse.data.map((p: any) => ({
+            ...p,
+            isPersonalized: true
+        }));
 
-                const combined = [...generalPeriods];
-                personalizedPeriods.forEach(personalized => {
-                    const index = combined.findIndex(
-                        g => g.name === personalized.name && g.year === personalized.year
-                    );
-                    if (index !== -1) {
-                        combined[index] = personalized;
-                    } else {
-                        combined.push(personalized);
-                    }
-                });
-
-                combined.sort((a, b) => {
-                    if (b.year !== a.year) return b.year - a.year;
-                    return a.name.localeCompare(b.name);
-                });
-
-                setCombinedPeriods(combined);
-                setLoading(false);
-            } catch (err) {
-                setError('Error al cargar los recesos. Por favor intente nuevamente.');
-                setLoading(false);
-                console.error('Error fetching holiday periods:', err);
+        const combined = [...generalPeriods];
+        personalizedPeriods.forEach(personalized => {
+            const index = combined.findIndex(
+                g => g.name === personalized.name && g.year === personalized.year
+            );
+            if (index !== -1) {
+                combined[index] = personalized;
+            } else {
+                combined.push(personalized);
             }
-        };
+        });
 
-        fetchHolidayPeriods();
-    }, [userId]);
+        combined.sort((a, b) => {
+            if (b.year !== a.year) return b.year - a.year;
+            return a.name.localeCompare(b.name);
+        });
+
+        setCombinedPeriods(combined);
+        setLoading(false);
+    } catch (err) {
+        setError('Error al cargar los recesos. Por favor intente nuevamente.');
+        setLoading(false);
+        console.error('Error fetching holiday periods:', err);
+    }
+};
+
+// 2. Llama a fetchHolidayPeriods dentro del useEffect
+useEffect(() => {
+    fetchHolidayPeriods();
+}, [userId]);
+
 
     const handleChangePage = (event: unknown, newPage: number) => setPage(newPage);
     const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLInputElement>) => {
         setRowsPerPage(parseInt(event.target.value, 10));
         setPage(0);
+    };
+
+    const handleDelete = async (id: number) => {
+        try {
+            await axios.delete(`${process.env.NEXT_PUBLIC_API_BASE_URL}/user-holiday-periods/${id}`);
+            setCombinedPeriods(prev => prev.filter(p => p.id !== id));
+        } catch (error) {
+            console.error('Error eliminando receso personalizado:', error);
+        }
+    };
+
+// 3. Llama también a fetchHolidayPeriods dentro de handleEdit
+const handleEdit = async () => {
+    if (selectedHolidayPeriod && editHoliday) {
+        try {
+            await axios.put(
+                `${process.env.NEXT_PUBLIC_API_BASE_URL}/user-holiday-periods/${selectedHolidayPeriod.id}`,
+                editHoliday
+            );
+            setSnackbarMessage('Receso actualizado exitosamente.');
+
+            await fetchHolidayPeriods(); // ✅ Actualiza los datos
+            handleCloseDialog();
+        } catch (error: any) {
+            const errorMessage =
+                error.response?.data?.message ||
+                'Error al actualizar el receso.';
+            setSnackbarMessage(errorMessage);
+            console.error('Error updating holiday period:', error);
+        }
+    }
+}
+    const handleOpenDialog = (holidayPeriod: HolidayPeriod) => {
+        setSelectedHolidayPeriod(holidayPeriod);
+        setEditHoliday({
+            name: holidayPeriod.name,
+            startDate: holidayPeriod.startDate,
+            endDate: holidayPeriod.endDate
+        });
+        setOpenDialog(true);
+    };
+
+    const handleCloseDialog = () => {
+        setOpenDialog(false);
+        setSelectedHolidayPeriod(null);
+        setEditHoliday(null);
+    };
+
+    const handleGeneralRedirect = () => {
+        // Aquí rediriges o abres una ruta para administrar recesos generales
+        router.push("/recesos/management/")
     };
 
     const formatShortDate = (dateString: string) => {
@@ -105,7 +171,7 @@ const CombinedHolidayPeriods: React.FC<CombinedHolidayPeriodsProps> = ({ userId,
             ? (typeFilter === 'Personalizado' ? period.isPersonalized : !period.isPersonalized)
             : true;
 
-        return matchesYear && matchesName && matchesType && isValidGeneral ;
+        return matchesYear && matchesName && matchesType && isValidGeneral;
     });
 
     const uniqueNames = [...new Set(combinedPeriods.map(p => p.name))];
@@ -121,7 +187,7 @@ const CombinedHolidayPeriods: React.FC<CombinedHolidayPeriodsProps> = ({ userId,
 
     return (
         <Box sx={{ padding: 3 }}>
-            <Typography variant="h4" gutterBottom>Recesos Combinados</Typography>
+            <Typography variant="h4" gutterBottom>Recesos Personalizados Y Generales</Typography>
 
             <Box sx={{ mb: 3, display: 'flex', gap: 2, flexWrap: 'wrap' }}>
                 <TextField
@@ -168,8 +234,9 @@ const CombinedHolidayPeriods: React.FC<CombinedHolidayPeriodsProps> = ({ userId,
                             <TableCell>Nombre</TableCell>
                             <TableCell>Fecha Inicio</TableCell>
                             <TableCell>Fecha Fin</TableCell>
-                            <TableCell>Duración </TableCell>
+                            <TableCell>Duración</TableCell>
                             <TableCell>Tipo</TableCell>
+                            <TableCell>Acciones</TableCell>
                         </TableRow>
                     </TableHead>
                     <TableBody>
@@ -180,9 +247,7 @@ const CombinedHolidayPeriods: React.FC<CombinedHolidayPeriodsProps> = ({ userId,
                                     <Chip
                                         label={period.name === 'INVIERNO' ? 'Invierno' : 'Fin de Gestión'}
                                         color={period.name === 'INVIERNO' ? 'primary' : 'secondary'}
-
                                     />
-
                                 </TableCell>
                                 <TableCell>{formatShortDate(period.startDate)}</TableCell>
                                 <TableCell>{formatShortDate(period.endDate)}</TableCell>
@@ -191,8 +256,33 @@ const CombinedHolidayPeriods: React.FC<CombinedHolidayPeriodsProps> = ({ userId,
                                     <Chip
                                         label={period.isPersonalized ? 'Personalizado' : 'General'}
                                         color={period.isPersonalized ? 'warning' : 'info'}
-
                                     />
+                                </TableCell>
+                                <TableCell>
+                                    {period.isPersonalized ? (
+                                        <>
+
+                                            <IconButton
+                                                onClick={() => handleOpenDialog(period)}
+                                                color="primary"
+                                                aria-label="editar"
+                                            >
+                                                <Edit />
+                                            </IconButton>
+                                            <IconButton
+                                                onClick={() => handleDelete(period.id)}
+                                                color="error"
+                                                aria-label="eliminar"
+                                            >
+                                                <Delete />
+                                            </IconButton>
+
+                                        </>
+                                    ) : (
+                                        <IconButton onClick={handleGeneralRedirect}>
+                                            <Launch fontSize="small" />
+                                        </IconButton>
+                                    )}
                                 </TableCell>
                             </TableRow>
                         ))}
@@ -210,6 +300,59 @@ const CombinedHolidayPeriods: React.FC<CombinedHolidayPeriodsProps> = ({ userId,
                 onRowsPerPageChange={handleChangeRowsPerPage}
                 labelRowsPerPage="Filas por página:"
                 labelDisplayedRows={({ from, to, count }) => `${from}-${to} de ${count}`}
+            />
+            {/* Diálogo de edición */}
+            <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
+                <DialogTitle>
+                    {selectedHolidayPeriod ? 'Editar Receso' : 'Nuevo Receso'}
+                </DialogTitle>
+                <DialogContent dividers>
+                    <TextField
+                        label="Tipo de Receso"
+                        select
+                        fullWidth
+                        margin="normal"
+                        value={editHoliday?.name || ''}
+                        onChange={(e) => setEditHoliday({ ...editHoliday!, name: e.target.value })}
+                    >
+                        <MenuItem value="INVIERNO">Invierno</MenuItem>
+                        <MenuItem value="FINDEGESTION">Fin de Gestión</MenuItem>
+                    </TextField>
+                    <TextField
+                        label="Fecha de Inicio"
+                        type="date"
+                        fullWidth
+                        margin="normal"
+                        value={editHoliday?.startDate?.split('T')[0] || ''}
+                        onChange={(e) => setEditHoliday({ ...editHoliday!, startDate: e.target.value })}
+                        InputLabelProps={{ shrink: true }}
+                    />
+                    <TextField
+                        label="Fecha de Fin"
+                        type="date"
+                        fullWidth
+                        margin="normal"
+                        value={editHoliday?.endDate?.split('T')[0] || ''}
+                        onChange={(e) => setEditHoliday({ ...editHoliday!, endDate: e.target.value })}
+                        InputLabelProps={{ shrink: true }}
+                    />
+
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={handleCloseDialog} color="inherit">
+                        Cancelar
+                    </Button>
+                    <Button onClick={handleEdit} color="primary" variant="contained">
+                        Guardar Cambios
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
+            <Snackbar
+                open={!!snackbarMessage}
+                autoHideDuration={6000}
+                onClose={() => setSnackbarMessage('')}
+                message={snackbarMessage}
             />
         </Box>
     );
