@@ -17,6 +17,7 @@ import {
 import { SelectChangeEvent } from '@mui/material';
 import useUser from 'src/hooks/useUser';
 import { VacationData } from 'src/interfaces/vacationData';
+import getBusinessDays from 'src/utils/businessDays';
 
 interface FormData {
   licenseType: string;
@@ -51,6 +52,12 @@ const RequestPermissionDialog: AclComponent = ({ open, onClose, onSuccess }) => 
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [daysCount, setDaysCount] = useState<number>(0);
+  const [licenseInfo, setLicenseInfo] = useState<{
+    startDate: string;
+    endDate: string;
+    totalDays: number;
+    holidays: { year: number; date: string; description: string }[];
+  } | null>(null);
 
   useEffect(() => {
     const fetchVacationData = async () => {
@@ -124,21 +131,30 @@ const RequestPermissionDialog: AclComponent = ({ open, onClose, onSuccess }) => 
     setDaysCount(totalDays);
 
     try {
-      await axios.post(`${process.env.NEXT_PUBLIC_API_BASE_URL}/licenses/${user?.id}`, {
+      const response = await axios.post(`${process.env.NEXT_PUBLIC_API_BASE_URL}/licenses/${user?.id}`, {
         licenseType: formData.licenseType,
         timeRequested: formData.timeRequested,
         startDate: formData.startDate,
         endDate: formData.endDate || formData.startDate
       });
+
+      setLicenseInfo({
+        startDate: response.data.startDate,
+        endDate: response.data.endDate,
+        totalDays: response.data.totalDays,
+        holidays: response.data.holidaysApplied || [] // ✅ corregido
+      });
+
       setSuccess(true);
       onSuccess?.();
     } catch (err) {
-      setError(axios.isAxiosError(err) 
+      setError(axios.isAxiosError(err)
         ? err.response?.data?.message || 'Error al enviar la solicitud'
         : 'Error inesperado');
     } finally {
       setLoading(false);
     }
+
   };
 
   const resetForm = () => {
@@ -158,8 +174,8 @@ const RequestPermissionDialog: AclComponent = ({ open, onClose, onSuccess }) => 
   };
 
   return (
-    <Dialog 
-      open={open} 
+    <Dialog
+      open={open}
       onClose={handleClose}
       maxWidth="sm"
       fullWidth
@@ -167,11 +183,11 @@ const RequestPermissionDialog: AclComponent = ({ open, onClose, onSuccess }) => 
       <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
         Solicitud de Permiso
       </DialogTitle>
-      
+
       <DialogContent dividers>
         {vacationData && (
           <Box mb={2}>
-            <Chip 
+            <Chip
               label={`Días disponibles: ${vacationData.diasDeVacacionRestantes}`}
               color="info"
               variant="outlined"
@@ -192,11 +208,30 @@ const RequestPermissionDialog: AclComponent = ({ open, onClose, onSuccess }) => 
             <Typography variant="h6" mt={2}>
               Solicitud enviada con éxito
             </Typography>
-            <Typography variant="body2" color="text.secondary" mt={1}>
-              {formData.timeRequested === 'Medio Día' 
-                ? 'Medio día solicitado'
-                : `${daysCount} día${daysCount > 1 ? 's' : ''} solicitado${daysCount > 1 ? 's' : ''}`}
-            </Typography>
+
+            {licenseInfo && (
+              <>
+                <Typography variant="body2" mt={1}>
+                  Del <strong>{licenseInfo.startDate}</strong> al <strong>{licenseInfo.endDate}</strong>
+                </Typography>
+                <Typography variant="body2" mt={1}>
+                  Total de días hábiles contados: <strong>{licenseInfo.totalDays}</strong>
+                </Typography>
+
+                {licenseInfo.holidays.length > 0 && (
+                  <Box mt={2} textAlign="left">
+                    <Divider sx={{ my: 2 }} />
+                    <Typography variant="subtitle2">Feriados omitidos en el conteo:</Typography>
+                    {licenseInfo.holidays.map((h, idx) => (
+                      <Typography key={idx} variant="body2">
+                        • {h.date} ({h.year}) - {h.description}
+                      </Typography>
+                    ))}
+                  </Box>
+                )}
+
+              </>
+            )}
           </Box>
         ) : (
           <form onSubmit={handleSubmit}>
@@ -273,17 +308,18 @@ const RequestPermissionDialog: AclComponent = ({ open, onClose, onSuccess }) => 
 
             {formData.startDate && formData.endDate && formData.timeRequested === 'Varios Días' && (
               <Typography variant="body2" color="text.secondary" mt={1}>
-                Total de días: {calculateTotalDays()}
+                Total de días hábiles: {getBusinessDays(new Date(formData.startDate), new Date(formData.endDate))}
               </Typography>
             )}
+
           </form>
         )}
       </DialogContent>
 
       <DialogActions>
         {success ? (
-          <Button 
-            onClick={handleClose} 
+          <Button
+            onClick={handleClose}
             color="primary"
             variant="contained"
             startIcon={<CloseIcon />}
@@ -292,16 +328,16 @@ const RequestPermissionDialog: AclComponent = ({ open, onClose, onSuccess }) => 
           </Button>
         ) : (
           <>
-            <Button 
-              onClick={handleClose} 
+            <Button
+              onClick={handleClose}
               color="inherit"
               disabled={loading}
             >
               Cancelar
             </Button>
-            <Button 
-              type="submit" 
-              variant="contained" 
+            <Button
+              type="submit"
+              variant="contained"
               color="primary"
               onClick={handleSubmit}
               disabled={loading}
@@ -317,7 +353,7 @@ const RequestPermissionDialog: AclComponent = ({ open, onClose, onSuccess }) => 
 };
 // Configurar ACL para dar acceso a empleados
 RequestPermissionDialog.acl = {
-    action: 'read',
-    subject: 'request-permission'
+  action: 'read',
+  subject: 'request-permission'
 };
 export default RequestPermissionDialog;
