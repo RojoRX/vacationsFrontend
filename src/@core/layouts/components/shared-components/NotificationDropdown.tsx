@@ -116,7 +116,7 @@ const NotificationDropdown = ({ settings }: Props) => {
           const url = `${process.env.NEXT_PUBLIC_API_BASE_URL}/notifications/${user.id}/unread`;
 
           const response = await axios.get(url);
-          console.log('Notificaciones recibidas:', response.data, 'para el usuario:', user); // <-- agrega esta línea aquí
+          //console.log('Notificaciones recibidas:', response.data, 'para el usuario:', user); // <-- agrega esta línea aquí
           setNotificationsData(response.data);
 
           setNotificationsData(response.data);

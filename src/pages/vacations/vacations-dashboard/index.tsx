@@ -109,11 +109,17 @@ const VacationDashboard = () => {
 
                 try {
                     const endDateFormatted = ultimaGestion.endDate.split('T')[0];
+                    // Opción 1: Codificar manualmente el parámetro
+                    const params = new URLSearchParams();
+                    params.append('carnetIdentidad', user.ci);
+                    params.append('endDate', endDateFormatted);
+
                     const debtRes = await axios.get<{
-                        resumenGeneral: any; detalles: VacationDebt[]
+                        resumenGeneral: any;
+                        detalles: VacationDebt[];
                     }>(
                         `${process.env.NEXT_PUBLIC_API_BASE_URL}/vacations/accumulated-debt`,
-                        { params: { carnetIdentidad: user.ci, endDate: endDateFormatted } }
+                        { params }
                     );
 
                     console.log('💰 Deuda acumulada recibida:', debtRes.data);
@@ -223,12 +229,8 @@ const VacationDashboard = () => {
 
     const formatFecha = (fechaISO: string) => {
         if (!fechaISO) return 'No disponible';
-        const fecha = new Date(fechaISO);
-        return fecha.toLocaleDateString('es-ES', {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric'
-        });
+        const fecha = new Date(fechaISO).toISOString();
+        return fecha.split('T')[0];
     };
 
     const getVisibleSlides = () => {
@@ -685,30 +687,30 @@ const VacationDashboard = () => {
                                 </Grid>
                             </Grid>
                             <Grid item xs={12} md={12}>
-                                    <Paper elevation={0} sx={{
-                                        p: 2,
-                                        borderLeft: '4px solid',
-                                        borderColor: gestionesData[selectedGestion].debt?.diasDisponibles < 1
-                                            ? theme.palette.error.main
-                                            : theme.palette.success.main,
-                                        bgcolor: gestionesData[selectedGestion].debt?.diasDisponibles < 1
-                                            ? theme.palette.error.light + '20'
-                                            : theme.palette.success.light + '20'
-                                    }}>
-                                        <Box display="flex" alignItems="center" mb={1}>
-                                            <EventAvailableIcon
-                                                color={gestionesData[selectedGestion].debt?.diasDisponibles < 1 ? 'error' : 'success'}
-                                                sx={{ mr: 1 }}
-                                            />
-                                            <Typography variant="subtitle1" fontWeight={600}>
-                                                Días Disponibles de Vacaciones (Saldo)
-                                            </Typography>
-                                        </Box>
-                                        <Typography color={gestionesData[selectedGestion].debt?.diasDisponibles < 1 ? 'error' : 'textPrimary'}>
-                                            {gestionesData[selectedGestion].debt?.diasDisponibles || 0} días restantes
+                                <Paper elevation={0} sx={{
+                                    p: 2,
+                                    borderLeft: '4px solid',
+                                    borderColor: gestionesData[selectedGestion].debt?.diasDisponibles < 1
+                                        ? theme.palette.error.main
+                                        : theme.palette.success.main,
+                                    bgcolor: gestionesData[selectedGestion].debt?.diasDisponibles < 1
+                                        ? theme.palette.error.light + '20'
+                                        : theme.palette.success.light + '20'
+                                }}>
+                                    <Box display="flex" alignItems="center" mb={1}>
+                                        <EventAvailableIcon
+                                            color={gestionesData[selectedGestion].debt?.diasDisponibles < 1 ? 'error' : 'success'}
+                                            sx={{ mr: 1 }}
+                                        />
+                                        <Typography variant="subtitle1" fontWeight={600}>
+                                            Días Disponibles de Vacaciones (Saldo)
                                         </Typography>
-                                    </Paper>
-                                </Grid>
+                                    </Box>
+                                    <Typography color={gestionesData[selectedGestion].debt?.diasDisponibles < 1 ? 'error' : 'textPrimary'}>
+                                        {gestionesData[selectedGestion].debt?.diasDisponibles || 0} días restantes
+                                    </Typography>
+                                </Paper>
+                            </Grid>
 
                             <Box mt={4}>
                                 {/* Sección de Recesos Registrados */}
@@ -869,7 +871,7 @@ const VacationDashboard = () => {
                                     </Typography>
                                 )}
                             </Box>
-{/** 
+                            {/** 
                             <Stack direction="row" spacing={2} mt={3}>
                                 <Button
                                     variant="contained"

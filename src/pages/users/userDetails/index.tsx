@@ -37,6 +37,7 @@ import { CreateCredentialsDialog } from 'src/pages/credentials/userCredentials';
 import { ChangePasswordDialog } from 'src/pages/management/passwordChangeAdmin';
 import CombinedHolidayPeriods from '../combined-recess';
 import { CalendarIcon } from '@mui/x-date-pickers';
+import VacationRequestsTable from '../vacations-user';
 
 interface Department {
   id: number;
@@ -319,6 +320,11 @@ const UserInformation: AclComponent = () => {
                   label="Deuda Vacacional"
                   iconPosition="start"
                 />
+                <Tab
+                  icon={<CalendarIcon color="success" />}
+                  label="Vacaciones"
+                  iconPosition="start"
+                />
                 {/** 
                 <Tab
                   icon={<CalendarIcon color="success" />}
@@ -342,9 +348,9 @@ const UserInformation: AclComponent = () => {
                     >
                       Crear Recesos
                     </Button>
-                    
+
                   </Box>
-                   <CombinedHolidayPeriods userId={user.id} joinDate={user.fecha_ingreso} />
+                  <CombinedHolidayPeriods userId={user.id} joinDate={user.fecha_ingreso} />
                 </>
               )}
 
@@ -424,8 +430,8 @@ const UserInformation: AclComponent = () => {
               )}
               {activeTab === 3 && (
                 <>
-                 
-                  <UserHolidayPeriods userId={user.id} year={new Date().getFullYear()} />
+                  <VacationRequestsTable userId={user.id} />
+                  {/**  <UserHolidayPeriods userId={user.id} year={new Date().getFullYear()} />*/}
                 </>
               )}
 

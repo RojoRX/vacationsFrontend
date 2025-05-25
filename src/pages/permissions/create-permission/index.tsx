@@ -207,7 +207,7 @@ const RequestPermissionDialog: AclComponent = ({ open, onClose, onSuccess }) => 
                 name="licenseType"
                 value={formData.licenseType}
                 onChange={handleSelectChange}
-                disabled={loading}
+                disabled
               >
                 <MenuItem value="VACACION">Vacación</MenuItem>
               </Select>

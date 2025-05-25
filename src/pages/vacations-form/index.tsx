@@ -69,10 +69,39 @@ const VacationRequestSubmissionForm = () => {
   const [selectedStartDate, setSelectedStartDate] = useState<Date | null>(null);
   const [requestId, setRequestId] = useState<number | null>(null);
 
+function getMostRecentAnniversary(ingresoDateStr: string, today: Date = new Date()): string {
+  // Parsear la fecha de ingreso
+  const [ingresoYear, ingresoMonth, ingresoDay] = ingresoDateStr.split('-').map(Number);
+  
+  // Obtener componentes de la fecha actual
+  const currentYear = today.getFullYear();
+  const currentMonth = today.getMonth() + 1; // Los meses en Date son 0-indexados
+  const currentDay = today.getDate();
+
+  // Calcular año tentativo (mismo año que el actual)
+  let anniversaryYear = currentYear;
+
+  // Verificar si la fecha de aniversario ya pasó este año
+  const hasAnniversaryPassed = 
+    (ingresoMonth < currentMonth) || 
+    (ingresoMonth === currentMonth && ingresoDay <= currentDay);
+
+  // Ajustar el año si el aniversario aún no ha llegado
+  if (!hasAnniversaryPassed) {
+    anniversaryYear = currentYear - 1;
+  }
+
+  // Formatear la fecha resultante
+  const formattedMonth = String(ingresoMonth).padStart(2, '0');
+  const formattedDay = String(ingresoDay).padStart(2, '0');
+
+  return `${anniversaryYear}-${formattedMonth}-${formattedDay}`;
+}
+
   useEffect(() => {
     const today = new Date();
-    const ingresoDate = new Date(user?.fecha_ingreso || '');
-    const endDate = new Date(today.getFullYear(), ingresoDate.getMonth(), ingresoDate.getDate());
+    const ingresoDate = (user?.fecha_ingreso || '');
+    const endDate = getMostRecentAnniversary(ingresoDate, today);
 
     const fetchVacationDebt = async () => {
       try {
@@ -87,7 +116,7 @@ const VacationRequestSubmissionForm = () => {
           }
         );
         setData(response.data);
-
+        console.log(data)
         const availablePeriod = response.data.detalles.find(d => d.diasDisponibles > 0);
         if (availablePeriod) {
           setSelectedPeriod(availablePeriod);

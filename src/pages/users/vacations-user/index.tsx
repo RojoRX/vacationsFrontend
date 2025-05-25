@@ -1,0 +1,380 @@
+import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/router';
+import axios from 'axios';
+import {
+    Box,
+    Button,
+    Chip,
+    Dialog,
+    DialogTitle,
+    DialogContent,
+    IconButton,
+    Paper,
+    Table,
+    TableBody,
+    TableCell,
+    TableContainer,
+    TableHead,
+    TableRow,
+    TablePagination,
+    Typography,
+    useTheme
+} from '@mui/material';
+import {
+    Info as InfoIcon,
+    Visibility as VisibilityIcon,
+    Edit as EditIcon,
+    Check as CheckIcon,
+    Close as CloseIcon,
+    CalendarToday as CalendarIcon,
+    AccountCircle as AccountIcon,
+    Work as WorkIcon,
+    EventAvailable as EventAvailableIcon,
+    EventBusy as EventBusyIcon,
+    Today as TodayIcon,
+    DateRange as DateRangeIcon,
+    HowToReg as ApprovedIcon,
+    SupervisorAccount as SupervisorIcon
+} from '@mui/icons-material';
+import SuspendVacationDialog from 'src/pages/vacations/vacations-suspend';
+
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || '';
+
+interface VacationRequest {
+    id: number;
+    position: string | null;
+    requestDate: string;
+    startDate: string;
+    endDate: string;
+    totalDays: number;
+    status: string;
+    postponedDate: string | null;
+    postponedReason: string | null;
+    returnDate: string;
+    approvedByHR: boolean;
+    approvedBySupervisor: boolean;
+    managementPeriodStart: string;
+    managementPeriodEnd: string;
+    reviewDate: string | null;
+    ci: string;
+}
+
+const statusMap = {
+    AUTHORIZED: { label: 'Autorizado', color: 'success' },
+    SUSPENDED: { label: 'Suspendido', color: 'warning' },
+    PENDING: { label: 'Pendiente', color: 'info' },
+    REJECTED: { label: 'Rechazado', color: 'error' },
+    CANCELLED: { label: 'Cancelado', color: 'default' }
+};
+
+const formatDate = (dateString: string) => {
+    if (!dateString) return 'N/A';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('es-ES', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+    });
+};
+
+const getStatusColor = (status: string) => {
+    return statusMap[status as keyof typeof statusMap]?.color || 'default';
+};
+
+interface VacationRequestsTableProps {
+    userId: number;
+}
+
+const VacationRequestsTable: React.FC<VacationRequestsTableProps> = ({ userId }) => {
+    const router = useRouter();
+    const theme = useTheme();
+    const [requests, setRequests] = useState<VacationRequest[]>([]);
+    const [loading, setLoading] = useState<boolean>(true);
+    const [error, setError] = useState<string | null>(null);
+    const [page, setPage] = useState<number>(0);
+    const [rowsPerPage, setRowsPerPage] = useState<number>(10);
+    const [openDetailDialog, setOpenDetailDialog] = useState<boolean>(false);
+    const [selectedRequest, setSelectedRequest] = useState<VacationRequest | null>(null);
+    const [openSuspendDialog, setOpenSuspendDialog] = useState(false);
+
+    useEffect(() => {
+        const fetchRequests = async () => {
+            try {
+                setLoading(true);
+                const response = await axios.get(`${API_BASE_URL}/vacation-requests/user/${userId}`);
+                setRequests(response.data);
+            } catch (err) {
+                setError('Error al cargar las solicitudes de vacaciones');
+                console.error('Error fetching vacation requests:', err);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        if (userId) {
+            fetchRequests();
+        }
+    }, [userId]);
+
+    const handleChangePage = (event: unknown, newPage: number) => {
+        setPage(newPage);
+    };
+
+    const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLInputElement>) => {
+        setRowsPerPage(parseInt(event.target.value, 10));
+        setPage(0);
+    };
+
+    const handleOpenDetailDialog = (request: VacationRequest) => {
+        setSelectedRequest(request);
+        setOpenDetailDialog(true);
+    };
+
+    const handleCloseDetailDialog = () => {
+        setOpenDetailDialog(false);
+    };
+
+    const handleEditRequest = (requestId: number) => {
+        router.push(`/vacations/vacations-requests/${requestId}`);
+    };
+
+    const handleSuspendSuccess = async () => {
+        try {
+            const response = await axios.get(`${API_BASE_URL}/vacation-requests`);
+            setRequests(response.data);
+            setOpenDetailDialog(false);
+            setOpenSuspendDialog(false);
+        } catch (error) {
+            console.error('Error al actualizar las solicitudes:', error);
+        }
+    };
+
+
+    if (loading) return <Typography>Cargando solicitudes...</Typography>;
+    if (error) return <Typography color="error">{error}</Typography>;
+
+    return (
+        <Box sx={{ width: '100%' }}>
+            <Paper sx={{ width: '100%', mb: 2 }}>
+                <TableContainer>
+                    <Table>
+                        <TableHead>
+                            <TableRow>
+                                <TableCell>ID</TableCell>
+                                <TableCell>Fecha Solicitud</TableCell>
+                                <TableCell>Fecha Inicio</TableCell>
+                                <TableCell>Fecha Fin</TableCell>
+                                <TableCell>Días</TableCell>
+                                <TableCell>Estado</TableCell>
+                                <TableCell>Aprobaciones</TableCell>
+                                <TableCell>Acciones</TableCell>
+                            </TableRow>
+                        </TableHead>
+                        <TableBody>
+                            {requests
+                                .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+                                .map((request) => (
+                                    <TableRow key={request.id}>
+                                        <TableCell>{request.id}</TableCell>
+                                        <TableCell>{formatDate(request.requestDate)}</TableCell>
+                                        <TableCell>{formatDate(request.startDate)}</TableCell>
+                                        <TableCell>{formatDate(request.endDate)}</TableCell>
+                                        <TableCell>{request.totalDays}</TableCell>
+                                        <TableCell>
+                                            <Chip
+                                                label={statusMap[request.status as keyof typeof statusMap]?.label || 'Desconocido'}
+                                                color={getStatusColor(request.status) as any}
+                                                size="small"
+                                            />
+                                        </TableCell>
+                                        <TableCell>
+                                            <Box sx={{ display: 'flex', gap: 1 }}>
+                                                {request.approvedByHR ? (
+                                                    <CheckIcon color="success" fontSize="small" />
+                                                ) : (
+                                                    <CloseIcon color="error" fontSize="small" />
+                                                )}
+                                                {request.approvedBySupervisor ? (
+                                                    <CheckIcon color="success" fontSize="small" />
+                                                ) : (
+                                                    <CloseIcon color="error" fontSize="small" />
+                                                )}
+                                            </Box>
+                                        </TableCell>
+                                        <TableCell>
+                                            <Box sx={{ display: 'flex', gap: 1 }}>
+                                                <IconButton
+                                                    size="small"
+                                                    onClick={() => handleOpenDetailDialog(request)}
+                                                    color="primary"
+                                                >
+                                                    <VisibilityIcon />
+                                                </IconButton>
+                                                <IconButton
+                                                    size="small"
+                                                    onClick={() => handleEditRequest(request.id)}
+                                                    color="secondary"
+                                                >
+                                                    <EditIcon />
+                                                </IconButton>
+                                            </Box>
+                                        </TableCell>
+                                    </TableRow>
+                                ))}
+                        </TableBody>
+                    </Table>
+                </TableContainer>
+                <TablePagination
+                    rowsPerPageOptions={[5, 10, 25]}
+                    component="div"
+                    count={requests.length}
+                    rowsPerPage={rowsPerPage}
+                    page={page}
+                    onPageChange={handleChangePage}
+                    onRowsPerPageChange={handleChangeRowsPerPage}
+                    labelRowsPerPage="Solicitudes por página"
+                />
+            </Paper>
+
+            {/* Diálogo de detalles */}
+            <Dialog open={openDetailDialog} onClose={handleCloseDetailDialog} maxWidth="sm" fullWidth>
+                <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <InfoIcon color="primary" />
+                    Detalles de la Solicitud #{selectedRequest?.id}
+                </DialogTitle>
+                <DialogContent dividers>
+                    {selectedRequest && (
+                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                                <AccountIcon color="action" />
+                                <Typography variant="body1">
+                                    <strong>C.I.:</strong> {selectedRequest.ci}
+                                </Typography>
+                            </Box>
+
+                            {selectedRequest.position && (
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                                    <WorkIcon color="action" />
+                                    <Typography variant="body1">
+                                        <strong>Posición:</strong> {selectedRequest.position}
+                                    </Typography>
+                                </Box>
+                            )}
+
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                                <CalendarIcon color="action" />
+                                <Typography variant="body1">
+                                    <strong>Fecha Solicitud:</strong> {formatDate(selectedRequest.requestDate)}
+                                </Typography>
+                            </Box>
+
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                                <EventAvailableIcon color="action" />
+                                <Typography variant="body1">
+                                    <strong>Fecha Inicio:</strong> {formatDate(selectedRequest.startDate)}
+                                </Typography>
+                            </Box>
+
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                                <EventBusyIcon color="action" />
+                                <Typography variant="body1">
+                                    <strong>Fecha Fin:</strong> {formatDate(selectedRequest.endDate)}
+                                </Typography>
+                            </Box>
+
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                                <TodayIcon color="action" />
+                                <Typography variant="body1">
+                                    <strong>Días Solicitados:</strong> {selectedRequest.totalDays}
+                                </Typography>
+                            </Box>
+
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                                <DateRangeIcon color="action" />
+                                <Typography variant="body1">
+                                    <strong>Fecha Retorno:</strong> {formatDate(selectedRequest.returnDate)}
+                                </Typography>
+                            </Box>
+
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                                <Typography variant="body1">
+                                    <strong>Estado:</strong>{' '}
+                                    <Chip
+                                        label={statusMap[selectedRequest.status as keyof typeof statusMap]?.label || 'Desconocido'}
+                                        color={getStatusColor(selectedRequest.status) as any}
+                                        size="small"
+                                    />
+                                </Typography>
+                            </Box>
+
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                                <ApprovedIcon color="action" />
+                                <Typography variant="body1">
+                                    <strong>Aprobado por Personal:</strong>{' '}
+                                    {selectedRequest.approvedByHR ? (
+                                        <CheckIcon color="success" fontSize="small" />
+                                    ) : (
+                                        <CloseIcon color="error" fontSize="small" />
+                                    )}
+                                </Typography>
+                            </Box>
+
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                                <SupervisorIcon color="action" />
+                                <Typography variant="body1">
+                                    <strong>Aprobado por Jefe Superior:</strong>{' '}
+                                    {selectedRequest.approvedBySupervisor ? (
+                                        <CheckIcon color="success" fontSize="small" />
+                                    ) : (
+                                        <CloseIcon color="error" fontSize="small" />
+                                    )}
+                                </Typography>
+                            </Box>
+
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                                <CalendarIcon color="action" />
+                                <Typography variant="body1">
+                                    <strong>Periodo de Gestión:</strong> {formatDate(selectedRequest.managementPeriodStart)} - {formatDate(selectedRequest.managementPeriodEnd)}
+                                </Typography>
+                            </Box>
+
+                            {selectedRequest.postponedReason && (
+                                <Box sx={{
+                                    p: 2,
+                                    backgroundColor: theme.palette.warning.light,
+                                    borderRadius: 1
+                                }}>
+                                    <Typography variant="subtitle2" color="text.secondary">
+                                        <strong>Motivo de postergación:</strong> {selectedRequest.postponedReason}
+                                    </Typography>
+                                </Box>
+                            )}
+                            {/* Botón para suspender */}
+                            {selectedRequest.status !== 'SUSPENDED' && (
+                                <Box sx={{ mt: 2, display: 'flex', justifyContent: 'flex-end' }}>
+                                    <Button
+                                        variant="contained"
+                                        color="warning"
+                                        startIcon={<EditIcon />}
+                                        onClick={() => setOpenSuspendDialog(true)}
+                                    >
+                                        Suspender Solicitud
+                                    </Button>
+                                </Box>
+                            )}
+                        </Box>
+                    )}
+                </DialogContent>
+            </Dialog>
+            {/* Diálogo de suspensión (componente reutilizable) */}
+            <SuspendVacationDialog
+                open={openSuspendDialog}
+                onClose={() => setOpenSuspendDialog(false)}
+                request={selectedRequest as unknown as (Omit<VacationRequest, "managementPeriodStart" | "managementPeriodEnd" | "reviewDate"> & { position: string | undefined }) | null}
+                onSuccess={handleSuspendSuccess}
+            />
+        </Box>
+    );
+};
+
+export default VacationRequestsTable;
