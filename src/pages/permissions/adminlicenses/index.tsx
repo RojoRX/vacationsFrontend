@@ -42,6 +42,7 @@ import useUser from 'src/hooks/useUser';
 import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 import ReportDownloadModal from 'src/pages/reports/reportDownloadModal';
+import LicenseDetailDialog from '../detail-dialog';
 
 interface AdminLicensesProps {
     licenses: License[];
@@ -62,7 +63,6 @@ const AdminLicenses: AclComponent = () => {
     const [filteredLicenses, setFilteredLicenses] = useState<License[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const [openDialog, setOpenDialog] = useState(false);
     const [selectedLicense, setSelectedLicense] = useState<License | null>(null);
     const [userDetails, setUserDetails] = useState<{
         [key: string]: {
@@ -77,8 +77,9 @@ const AdminLicenses: AclComponent = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [filterApproval, setFilterApproval] = useState<'all' | 'approved' | 'pending'>('all');
     const [filterType, setFilterType] = useState<'all' | 'supervisor' | 'personal'>('all');
-    // Dentro del componente AdminLicenses:
     const [reportModalOpen, setReportModalOpen] = useState(false);
+    const [licenseDialogOpen, setLicenseDialogOpen] = useState(false);
+
     useEffect(() => {
         fetchAllLicenses();
     }, []);
@@ -88,10 +89,10 @@ const AdminLicenses: AclComponent = () => {
         axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/licenses`)
             .then((response) => {
                 const licensesData = response.data;
-                const sortedLicenses = licensesData.sort((a: License, b: License) => b.id - a.id); // orden descendente
+                const sortedLicenses = licensesData.sort((a: License, b: License) => b.id - a.id);
                 setLicenses(sortedLicenses);
 
-                const userRequests = licensesData.map((license: License) =>
+                const userRequests = sortedLicenses.map((license: License) =>
                     axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/users/${license.userId}`)
                         .then(userResponse => ({
                             userId: license.userId,
@@ -141,7 +142,6 @@ const AdminLicenses: AclComponent = () => {
     ) => {
         let filtered = [...licenses];
 
-        // Filtrar por término de búsqueda (nombre, CI o departamento)
         if (term) {
             filtered = filtered.filter(license => {
                 const userDetail = details[license.userId];
@@ -154,14 +154,12 @@ const AdminLicenses: AclComponent = () => {
             });
         }
 
-        // Filtrar por estado de aprobación
         if (approvalFilter === 'approved') {
             filtered = filtered.filter(license => license.personalDepartmentApproval);
         } else if (approvalFilter === 'pending') {
             filtered = filtered.filter(license => !license.personalDepartmentApproval);
         }
 
-        // Filtrar por tipo de aprobación
         if (typeFilter === 'supervisor') {
             filtered = filtered.filter(license => !license.immediateSupervisorApproval);
         } else if (typeFilter === 'personal') {
@@ -188,43 +186,19 @@ const AdminLicenses: AclComponent = () => {
         setFilterType(type);
     };
 
-    const handleOpenDialog = (license: License) => {
+    const handleViewLicense = (license: License) => {
         setSelectedLicense(license);
-        setOpenDialog(true);
+        setLicenseDialogOpen(true);
     };
 
-    const handleCloseDialog = () => {
-        setOpenDialog(false);
-        setSelectedLicense(null);
-    };
-
-    const handlePersonalApprove = () => {
-        if (selectedLicense && user) {
-            const newApprovalState = !selectedLicense.personalDepartmentApproval;
-
-            axios.patch(
-                `${process.env.NEXT_PUBLIC_API_BASE_URL}/licenses/${selectedLicense.id}/personal-approval`,
-                {
-                    approval: newApprovalState,
-                    userId: user.id,
-                }
+    const handleLicenseUpdate = (updatedLicense: License) => {
+        setLicenses(prev =>
+            prev.map(license =>
+                license.id === updatedLicense.id ? updatedLicense : license
             )
-                .then(() => {
-                    setLicenses(prev =>
-                        prev.map(license =>
-                            license.id === selectedLicense.id
-                                ? { ...license, personalDepartmentApproval: newApprovalState }
-                                : license
-                        )
-                    );
-                    handleCloseDialog();
-                })
-                .catch(() => {
-                    setError('Error al cambiar el estado de la licencia');
-                });
-        }
+        );
+        setSelectedLicense(updatedLicense);
     };
-
 
     const formatDate = (dateString: string) => {
         return format(parseISO(dateString), 'PPP', { locale: es });
@@ -272,7 +246,6 @@ const AdminLicenses: AclComponent = () => {
                 >
                     Generar Reporte
                 </Button>
-
             </Box>
 
             {/* Filtros y búsqueda */}
@@ -385,7 +358,7 @@ const AdminLicenses: AclComponent = () => {
                                                 variant="outlined"
                                                 size="small"
                                                 startIcon={<Visibility />}
-                                                onClick={() => handleOpenDialog(license)}
+                                                onClick={() => handleViewLicense(license)}
                                             >
                                                 Gestionar
                                             </Button>
@@ -421,111 +394,26 @@ const AdminLicenses: AclComponent = () => {
                 sx={{ mt: 2 }}
             />
 
-            {/* Diálogo de detalles */}
-            <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
-                <DialogTitle sx={{
-                    backgroundColor: 'primary.main',
-                    color: 'white',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 1
-                }}>
-                    <Business sx={{ fontSize: 24 }} />
-                    Gestión de Licencia
-                </DialogTitle>
-                <DialogContent sx={{ py: 3 }}>
-                    {selectedLicense && (
-                        <Grid container spacing={2}>
-                            <Grid item xs={12} sm={6} mt={4}>
-                                <Typography variant="subtitle1" gutterBottom>
-                                    <strong>Información de la Licencia</strong>
-                                </Typography>
-                                <Typography><strong>ID:</strong> {selectedLicense.id}</Typography>
-                                <Typography><strong>Tipo:</strong> {selectedLicense.licenseType}</Typography>
-                                <Typography><strong>Inicio:</strong> {formatDate(selectedLicense.startDate)}</Typography>
-                                <Typography><strong>Fin:</strong> {formatDate(selectedLicense.endDate)}</Typography>
-                                <Typography><strong>Emisión:</strong> {formatDate(selectedLicense.issuedDate)}</Typography>
-                            </Grid>
-                            <Grid item xs={12} sm={6} mt={4}>
-                                <Typography variant="subtitle1" gutterBottom>
-                                    <strong>Información del Solicitante</strong>
-                                </Typography>
-                                <Typography>
-                                    <strong>Nombre:</strong> {userDetails[selectedLicense.userId]?.name || 'N/A'}
-                                </Typography>
-                                <Typography>
-                                    <strong>CI:</strong> {userDetails[selectedLicense.userId]?.ci || 'N/A'}
-                                </Typography>
-                                <Typography>
-                                    <strong>Celular:</strong> {userDetails[selectedLicense.userId]?.celular || 'N/A'}
-                                </Typography>
-                                <Typography>
-                                    <strong>Departamento:</strong> {userDetails[selectedLicense.userId]?.department || 'N/A'}
-                                </Typography>
-                            </Grid>
-                            <Grid item xs={12}>
-                                <Box sx={{
-                                    display: 'flex',
-                                    justifyContent: 'space-around',
-                                    mt: 2,
-                                    p: 2,
-                                    backgroundColor: 'default',
-                                    borderRadius: 1
-                                }}>
-                                    <Box textAlign="center">
-                                        <Typography variant="body2">
-                                            <strong>Aprobación Supervisor</strong>
-                                        </Typography>
-                                        <Chip
-                                            label={selectedLicense.immediateSupervisorApproval ? 'Aprobado' : 'Pendiente'}
-                                            color={selectedLicense.immediateSupervisorApproval ? 'primary' : 'default'}
-                                            icon={selectedLicense.immediateSupervisorApproval ? <CheckCircle /> : <Cancel />}
-                                        />
-                                    </Box>
-                                    <Box textAlign="center">
-                                        <Typography variant="body2">
-                                            <strong>Aprobación RRHH</strong>
-                                        </Typography>
-                                        <Chip
-                                            label={selectedLicense.personalDepartmentApproval ? 'Aprobado' : 'Pendiente'}
-                                            color={selectedLicense.personalDepartmentApproval ? 'primary' : 'default'}
-                                            icon={selectedLicense.personalDepartmentApproval ? <CheckCircle /> : <Cancel />}
-                                        />
-                                    </Box>
-                                </Box>
-                            </Grid>
-                        </Grid>
-                    )}
-                </DialogContent>
-                <DialogActions sx={{ px: 3, py: 2 }}>
-                    <Button
-                        onClick={handleCloseDialog}
-                        color="inherit"
-                        variant="outlined"
-                    >
-                        Cerrar
-                    </Button>
-                    <Button
-                        onClick={handlePersonalApprove}
-                        color={selectedLicense?.personalDepartmentApproval ? "error" : "success"}
-                        variant="contained"
-                        startIcon={selectedLicense?.personalDepartmentApproval ? <Cancel /> : <CheckCircle />}
-                    >
-                        {selectedLicense?.personalDepartmentApproval ? "Desaprobar RRHH" : "Aprobar RRHH"}
-                    </Button>
-                </DialogActions>
-            </Dialog>
-            // Y el modal al final del componente:
+            {/* Diálogo de detalles de licencia */}
+            {selectedLicense && (
+                <LicenseDetailDialog
+                    open={licenseDialogOpen}
+                    onClose={() => setLicenseDialogOpen(false)}
+                    license={selectedLicense}
+                    userDetails={userDetails}
+                    currentUser={user}
+                    onLicenseUpdate={handleLicenseUpdate}
+                />
+            )}
+
             <ReportDownloadModal
                 open={reportModalOpen}
                 onClose={() => setReportModalOpen(false)}
             />
         </Paper>
-
     );
 };
 
-// Configurar ACL para dar acceso a administradores
 AdminLicenses.acl = {
     action: 'manage',
     subject: 'all-licenses',

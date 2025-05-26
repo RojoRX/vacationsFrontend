@@ -6,9 +6,20 @@ export interface SolicitudesDeVacacionAutorizadas {
   totalAuthorizedVacationDays: number;
 }
 
+export interface Licencia {
+  id: number;
+  licenseType: string;
+  startDate: string;
+  endDate: string;
+  timeRequested: string;
+  totalDays: number;
+}
+
 export interface LicenciasAutorizadas {
   totalAuthorizedDays: number;
+  requests: Licencia[];  // ✅ Agregás esto
 }
+
 
 export interface VacationData {
   name:string;
