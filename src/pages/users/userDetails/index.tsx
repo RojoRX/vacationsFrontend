@@ -38,6 +38,7 @@ import { ChangePasswordDialog } from 'src/pages/management/passwordChangeAdmin';
 import CombinedHolidayPeriods from '../combined-recess';
 import { CalendarIcon } from '@mui/x-date-pickers';
 import VacationRequestsTable from '../vacations-user';
+import { VacationReportDialog } from 'src/pages/reports/vacationReports';
 
 interface Department {
   id: number;
@@ -76,7 +77,7 @@ const UserInformation: AclComponent = () => {
     : null;
   const [openCreate, setOpenCreate] = useState(false);
   const [openChangePassword, setOpenChangePassword] = useState(false);
-
+  const [dialogOpen, setDialogOpen] = useState(false);
   useEffect(() => {
     if (ci) {
       fetchUser(ci as string);
@@ -430,6 +431,10 @@ const UserInformation: AclComponent = () => {
               )}
               {activeTab === 3 && (
                 <>
+                  <Button variant="outlined" onClick={() => setDialogOpen(true)}>
+                    Generar Reporte de Vacaciones
+                  </Button>
+                  <VacationReportDialog open={dialogOpen} onClose={() => setDialogOpen(false)} ci={user.ci} />
                   <VacationRequestsTable userId={user.id} />
                   {/**  <UserHolidayPeriods userId={user.id} year={new Date().getFullYear()} />*/}
                 </>
