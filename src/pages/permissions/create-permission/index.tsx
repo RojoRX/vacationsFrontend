@@ -57,7 +57,9 @@ const RequestPermissionDialog: AclComponent = ({ open, onClose, onSuccess }) => 
     endDate: string;
     totalDays: number;
     holidays: { year: number; date: string; description: string }[];
+    ignoredWeekendHolidays?: { date: string; description: string }[];
   } | null>(null);
+
 
   useEffect(() => {
     const fetchVacationData = async () => {
@@ -142,8 +144,10 @@ const RequestPermissionDialog: AclComponent = ({ open, onClose, onSuccess }) => 
         startDate: response.data.startDate,
         endDate: response.data.endDate,
         totalDays: response.data.totalDays,
-        holidays: response.data.holidaysApplied || [] // ✅ corregido
+        holidays: response.data.holidaysApplied || [],
+        ignoredWeekendHolidays: response.data.ignoredWeekendHolidays || [],
       });
+
 
       setSuccess(true);
       onSuccess?.();
@@ -221,7 +225,7 @@ const RequestPermissionDialog: AclComponent = ({ open, onClose, onSuccess }) => 
                 {licenseInfo.holidays.length > 0 && (
                   <Box mt={2} textAlign="left">
                     <Divider sx={{ my: 2 }} />
-                    <Typography variant="subtitle2">Feriados omitidos en el conteo:</Typography>
+                    <Typography variant="subtitle2">Feriados incluidos en el conteo:</Typography>
                     {licenseInfo.holidays.map((h, idx) => (
                       <Typography key={idx} variant="body2">
                         • {h.date} ({h.year}) - {h.description}
@@ -229,6 +233,18 @@ const RequestPermissionDialog: AclComponent = ({ open, onClose, onSuccess }) => 
                     ))}
                   </Box>
                 )}
+                {licenseInfo.ignoredWeekendHolidays && licenseInfo.ignoredWeekendHolidays.length > 0 && (
+                  <Box mt={2} textAlign="left">
+                    <Divider sx={{ my: 2 }} />
+                    <Typography variant="subtitle2">Feriados caídos en fin de semana (omitidos):</Typography>
+                    {licenseInfo.ignoredWeekendHolidays.map((h, idx) => (
+                      <Typography key={idx} variant="body2">
+                        • {h.date} - {h.description}
+                      </Typography>
+                    ))}
+                  </Box>
+                )}
+
 
               </>
             )}
