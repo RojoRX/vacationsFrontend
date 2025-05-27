@@ -12,7 +12,9 @@ export interface VacationRequest {
   username?: string;                          // Para compatibilidad
   employeeName?: string;                      // Para compatibilidad
   user?: any;                                 // Para compatibilidad
-  userName?: string;                          // Nombre de usuario (nuevo)
+  userName?: string;  
+  fullname?:string;
+  academicUnit: string;                 // Nombre de usuario (nuevo)
   requestDate: string;
   startDate: string;
   endDate: string;

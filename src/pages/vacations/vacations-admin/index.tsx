@@ -94,9 +94,12 @@ const AdminVacationRequests: FC = () => {
 
   const filteredRequests = requests
     .filter((request) => {
-      const matchesName = (request.username || '').toLowerCase().includes(searchQuery.toLowerCase());
+      const lowerQuery = searchQuery.toLowerCase();
+      const matchesNameOrCI =
+        (request.username || '').toLowerCase().includes(lowerQuery) ||
+        (request.ci || '').toString().includes(lowerQuery);
       const matchesStatus = statusFilter === '' || request.status === statusFilter;
-      return matchesName && matchesStatus;
+      return matchesNameOrCI && matchesStatus;
     })
     .sort((a, b) => b.id - a.id);
 
@@ -120,16 +123,16 @@ const AdminVacationRequests: FC = () => {
     setSelectedRequest(null);
   };
 
-const handleSuspendSuccess = async () => {
-  try {
-    const response = await axios.get(`${API_BASE_URL}/vacation-requests`);
-    setRequests(response.data);
-    setOpenDetailDialog(false);
-    setOpenSuspendDialog(false);
-  } catch (error) {
-    console.error('Error al actualizar las solicitudes:', error);
-  }
-};
+  const handleSuspendSuccess = async () => {
+    try {
+      const response = await axios.get(`${API_BASE_URL}/vacation-requests`);
+      setRequests(response.data);
+      setOpenDetailDialog(false);
+      setOpenSuspendDialog(false);
+    } catch (error) {
+      console.error('Error al actualizar las solicitudes:', error);
+    }
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -185,6 +188,10 @@ const handleSuspendSuccess = async () => {
                 <TableRow>
                   <TableCell>ID</TableCell>
                   <TableCell>Empleado</TableCell>
+                  <TableCell>CI</TableCell> {/* NUEVA COLUMNA */}
+                  <TableCell>Departamento</TableCell> {/* NUEVA COLUMNA */}
+                  <TableCell>Unidad Academica</TableCell> {/* NUEVA COLUMNA */}
+
                   <TableCell>Fecha de Solicitud</TableCell>
                   <TableCell>Estado</TableCell>
                   <TableCell>Aprobado</TableCell>
@@ -197,7 +204,10 @@ const handleSuspendSuccess = async () => {
                   .map((request) => (
                     <TableRow key={request.id}>
                       <TableCell>{request.id}</TableCell>
-                      <TableCell>{request.username}</TableCell>
+                      <TableCell>{request.fullname}</TableCell>
+                      <TableCell>{request.ci}</TableCell> {/* NUEVA CELDA */}
+                      <TableCell>{request.department}</TableCell> {/* NUEVA CELDA */}
+                      <TableCell>{request.academicUnit}</TableCell> {/* NUEVA CELDA */}
                       <TableCell>{formatDate(request.requestDate)}</TableCell>
                       <TableCell>
                         <Chip
@@ -207,23 +217,26 @@ const handleSuspendSuccess = async () => {
                       </TableCell>
                       <TableCell>{request.approvedByHR ? 'Sí' : 'No'}</TableCell>
                       <TableCell>
-                        <Button
-                          variant="contained"
-                          color="primary"
-                          onClick={() => router.push(`/vacations/vacations-requests/${request.id}`)}
-                          sx={{ mr: 1 }}
-                        >
-                          Ver Solicitud
-                        </Button>
-                        <Button
-                          variant="outlined"
-                          color="info"
-                          startIcon={<InfoIcon />}
-                          onClick={() => handleOpenDetailDialog(request)}
-                        >
-                          Detalles
-                        </Button>
+                        <Box display="flex" flexDirection="column" gap={1}>
+                          {/*    <Button
+                            variant="contained"
+                            color="primary"
+                            onClick={() => router.push(`/vacations/vacations-requests/${request.id}`)}
+                          >
+                            Ver Solicitud
+                          </Button>*/}
+                       
+                          <Button
+                            variant="outlined"
+                            color="info"
+                            startIcon={<InfoIcon />}
+                            onClick={() => handleOpenDetailDialog(request)}
+                          >
+                            Detalles
+                          </Button>
+                        </Box>
                       </TableCell>
+
                     </TableRow>
                   ))}
               </TableBody>
@@ -256,14 +269,20 @@ const handleSuspendSuccess = async () => {
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                 <AccountTieIcon color="action" />
                 <Typography variant="body1">
-                  <strong>Empleado:</strong> {selectedRequest.username}
+                  <strong>Empleado:</strong> {selectedRequest.fullname}
                 </Typography>
               </Box>
 
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                 <AccountTieIcon color="action" />
                 <Typography variant="body1">
-                  <strong>Posición:</strong> {selectedRequest.position}
+                  <strong>Departamento:</strong> {selectedRequest.department}
+                </Typography>
+              </Box>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                <AccountTieIcon color="action" />
+                <Typography variant="body1">
+                  <strong>Unidad Academica:</strong> {selectedRequest.academicUnit}
                 </Typography>
               </Box>
 
