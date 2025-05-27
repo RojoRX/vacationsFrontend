@@ -183,12 +183,13 @@ const AdminLicenses: AclComponent = () => {
     };
 
     const handleFilterApproval = (type: 'all' | 'approved' | 'pending') => {
-        setFilterApproval(type);
+        setFilterApproval(prev => (prev === type ? 'all' : type));
     };
 
     const handleFilterType = (type: 'all' | 'supervisor' | 'personal') => {
-        setFilterType(type);
+        setFilterType(prev => (prev === type ? 'all' : type));
     };
+
 
     const handleViewLicense = (license: License) => {
         setSelectedLicense(license);

@@ -197,9 +197,19 @@ const LicenseDetailDialog: React.FC<LicenseDetailDialogProps> = ({
                             onClick={handlePersonalApprove}
                             color={license.personalDepartmentApproval ? "error" : "success"}
                             variant="contained"
-                            startIcon={loading ? <CircularProgress size={20} color="inherit" /> :
-                                (license.personalDepartmentApproval ? <Cancel /> : <CheckCircle />)}
-                            disabled={loading}
+                            startIcon={
+                                loading ? (
+                                    <CircularProgress size={20} color="inherit" />
+                                ) : license.personalDepartmentApproval ? (
+                                    <Cancel />
+                                ) : (
+                                    <CheckCircle />
+                                )
+                            }
+                            disabled={
+                                loading ||
+                                (license.immediateSupervisorApproval === true && license.personalDepartmentApproval === true)
+                            }
                         >
                             {license.personalDepartmentApproval ? "Desaprobar" : "Aprobar"}
                         </Button>
