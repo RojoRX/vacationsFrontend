@@ -162,7 +162,7 @@ const NonHolidayManager: React.FC = () => {
   };
 
   const handleDescriptionChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = sanitizeDescription(e.target.value);
+    const value = e.target.value;
     if (currentNonHoliday) {
       setCurrentNonHoliday({
         ...currentNonHoliday,

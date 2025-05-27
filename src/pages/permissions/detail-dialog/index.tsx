@@ -12,9 +12,11 @@ import {
     CircularProgress,
     Alert
 } from '@mui/material';
+import { PictureAsPdf } from '@mui/icons-material';
 import { Business, CheckCircle, Cancel } from '@mui/icons-material';
 import axios from 'axios';
 import { License } from 'src/interfaces/licenseTypes';
+import { generateLicensePdf } from 'src/utils/licensePdfGenerator';
 
 interface LicenseDetailDialogProps {
     open: boolean;
@@ -78,6 +80,18 @@ const LicenseDetailDialog: React.FC<LicenseDetailDialogProps> = ({
             setLoading(false);
         }
     };
+    const handleDownloadPDF = () => {
+        if (!license || !userDetails[license.userId]) return;
+
+        const pdf = generateLicensePdf(license, {
+            user: {
+                fullName: userDetails[license.userId]?.name,
+                ci: userDetails[license.userId]?.ci
+            }
+        });
+
+        pdf.save(`licencia_${license.id}.pdf`);
+    };
 
     return (
         <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
@@ -137,7 +151,7 @@ const LicenseDetailDialog: React.FC<LicenseDetailDialogProps> = ({
                         }}>
                             <Box textAlign="center">
                                 <Typography variant="body2">
-                                    <strong>Aprobación Supervisor</strong>
+                                    <strong>Aprobación Jefe Superior</strong>
                                 </Typography>
                                 <Chip
                                     label={license.immediateSupervisorApproval ? 'Aprobado' : 'Pendiente'}
@@ -147,7 +161,7 @@ const LicenseDetailDialog: React.FC<LicenseDetailDialogProps> = ({
                             </Box>
                             <Box textAlign="center">
                                 <Typography variant="body2">
-                                    <strong>Aprobación RRHH</strong>
+                                    <strong>Aprobación Dpto. Personal</strong>
                                 </Typography>
                                 <Chip
                                     label={license.personalDepartmentApproval ? 'Aprobado' : 'Pendiente'}
@@ -160,28 +174,48 @@ const LicenseDetailDialog: React.FC<LicenseDetailDialogProps> = ({
                 </Grid>
             </DialogContent>
             <DialogActions sx={{ px: 3, py: 2 }}>
-                <Button
-                    onClick={onClose}
-                    color="inherit"
-                    variant="outlined"
-                    disabled={loading}
+                <Box
+                    sx={{
+                        display: 'flex',
+                        justifyContent: 'center',
+                        width: '100%',
+                        gap: 2,
+                        flexWrap: 'wrap' // Opcional: permite que los botones bajen a otra línea en pantallas pequeñas
+                    }}
                 >
-                    Cerrar
-                </Button>
-
-                {currentUser?.role === 'admin' && (
                     <Button
-                        onClick={handlePersonalApprove}
-                        color={license.personalDepartmentApproval ? "error" : "success"}
-                        variant="contained"
-                        startIcon={loading ? <CircularProgress size={20} color="inherit" /> :
-                            (license.personalDepartmentApproval ? <Cancel /> : <CheckCircle />)}
+                        onClick={handleDownloadPDF}
+                        variant="outlined"
+                        color="primary"
+                        startIcon={<PictureAsPdf />}
                         disabled={loading}
                     >
-                        {license.personalDepartmentApproval ? "Desaprobar RRHH" : "Aprobar RRHH"}
+                        Descargar Licencia
                     </Button>
-                )}
+                    {currentUser?.role === 'admin' && (
+                        <Button
+                            onClick={handlePersonalApprove}
+                            color={license.personalDepartmentApproval ? "error" : "success"}
+                            variant="contained"
+                            startIcon={loading ? <CircularProgress size={20} color="inherit" /> :
+                                (license.personalDepartmentApproval ? <Cancel /> : <CheckCircle />)}
+                            disabled={loading}
+                        >
+                            {license.personalDepartmentApproval ? "Desaprobar" : "Aprobar"}
+                        </Button>
+
+                    )}
+                    <Button
+                        onClick={onClose}
+                        color="inherit"
+                        variant="outlined"
+                        disabled={loading}
+                    >
+                        Cerrar
+                    </Button>
+                </Box>
             </DialogActions>
+
         </Dialog>
     );
 };

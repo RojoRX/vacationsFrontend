@@ -47,12 +47,6 @@ const navigation = (): VerticalNavItemsType => {
           subject: 'vacation-dashboard',
         },
         {
-          title: 'Detalles Vacaciones',
-          path: '/vacations/vacations-summary',
-          action: 'read',
-          subject: 'vacation-summary',
-        },
-        {
           title: 'Solicitudes de Vacaciones',
           path: '/vacations/vacations-requests',
           action: 'read',
@@ -730,7 +724,8 @@ const navigation = (): VerticalNavItemsType => {
     //     }
     //   ]
     // },
-    {
+    
+    /*{
       path: '/acl',
       action: 'read',
       subject: 'acl-page',
@@ -777,7 +772,7 @@ const navigation = (): VerticalNavItemsType => {
           path: 'https://pixinvent.com/demo/materialize-mui-react-nextjs-admin-template/documentation'
         }
       ]
-    }
+    }*/
   ]
 }
 

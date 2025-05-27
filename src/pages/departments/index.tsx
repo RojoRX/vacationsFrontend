@@ -156,7 +156,10 @@ const DepartmentManagement: React.FC = () => {
                 <Avatar sx={{ mr: 2, backgroundColor: 'secondary.main' }}>
                     <Business />
                 </Avatar>
-                <Typography variant="h4" component="h1">
+                <Typography variant="h4" component="h1" sx={{
+                color: 'white',
+
+            }}>
                     Gestión de Departamentos
                 </Typography>
             </Box>

@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Box, TextField, Button, Typography, Container, Alert, 
-  CircularProgress, Paper, Table, TableBody, TableCell, 
+import {
+  Box, TextField, Button, Typography, Container, Alert,
+  CircularProgress, Paper, Table, TableBody, TableCell,
   TableContainer, TableHead, TableRow, TablePagination,
   InputAdornment, IconButton, Chip, Toolbar, MenuItem,
   FormControl, InputLabel, Select
 } from '@mui/material';
-import { 
-  Search as SearchIcon, 
+import {
+  Search as SearchIcon,
   Refresh as RefreshIcon,
   Person as PersonIcon,
   Visibility as VisibilityIcon,
@@ -66,7 +66,7 @@ const SearchUsers = () => {
   // Filtrado adicional por rol y posición
   const filteredUsers = users.filter(user => {
     const matchesRole = roleFilter === 'all' || user.role?.toLowerCase() === roleFilter.toLowerCase();
-    const matchesPosition = positionFilter === 'all' || 
+    const matchesPosition = positionFilter === 'all' ||
       (user.position && user.position.toLowerCase().includes(positionFilter.toLowerCase()));
     return matchesRole && matchesPosition;
   });
@@ -83,8 +83,8 @@ const SearchUsers = () => {
           Búsqueda de Usuarios
         </Typography>
 
-        <Toolbar sx={{ 
-          display: 'flex', 
+        <Toolbar sx={{
+          display: 'flex',
           flexDirection: { xs: 'column', sm: 'row' },
           alignItems: { xs: 'flex-start', sm: 'center' },
           justifyContent: 'space-between',
@@ -92,9 +92,9 @@ const SearchUsers = () => {
           p: 0,
           mb: 3
         }}>
-          <Box sx={{ 
-            display: 'flex', 
-            gap: 2, 
+          <Box sx={{
+            display: 'flex',
+            gap: 2,
             width: { xs: '100%', sm: 'auto' },
             flexWrap: 'wrap'
           }}>
@@ -174,6 +174,8 @@ const SearchUsers = () => {
                   <TableCell>Rol</TableCell>
                   <TableCell>Posición</TableCell>
                   <TableCell>Profesión</TableCell>
+                  <TableCell>Departamento</TableCell>
+                  <TableCell>Unidad Académica</TableCell>
                   <TableCell>Fecha Ingreso</TableCell>
                   <TableCell>Acciones</TableCell>
                 </TableRow>
@@ -191,20 +193,20 @@ const SearchUsers = () => {
                         </Typography>
                       </TableCell>
                       <TableCell>
-                        <Chip 
-                          label={user.role} 
+                        <Chip
+                          label={user.role}
                           color={
-                            user.role === 'SUPERVISOR' ? 'primary' : 
-                            user.role === 'ADMIN' ? 'secondary' : 'default'
-                          } 
-                          size="small" 
+                            user.role === 'SUPERVISOR' ? 'primary' :
+                              user.role === 'ADMIN' ? 'secondary' : 'default'
+                          }
+                          size="small"
                         />
                       </TableCell>
                       <TableCell>{user.position || '-'}</TableCell>
-                      <TableCell>{user.profesion || '-'}</TableCell>
-                      <TableCell>
-                        {new Date(user.fecha_ingreso).toLocaleDateString('es-ES')}
-                      </TableCell>
+                      <TableCell>{user.profession?.name || '-'}</TableCell>
+                      <TableCell>{user.department?.name || '-'}</TableCell>
+                      <TableCell>{user.academicUnit?.name || '-'}</TableCell>
+                      <TableCell>{new Date(user.fecha_ingreso).toLocaleDateString('es-ES')}</TableCell>
                       <TableCell>
                         <Button
                           variant="outlined"
@@ -218,6 +220,7 @@ const SearchUsers = () => {
                     </TableRow>
                   ))}
               </TableBody>
+
             </Table>
             <TablePagination
               rowsPerPageOptions={[5, 10, 25]}

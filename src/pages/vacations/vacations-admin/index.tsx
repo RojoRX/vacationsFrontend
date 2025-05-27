@@ -44,6 +44,7 @@ import { format } from 'date-fns';
 import SuspendVacationDialog from '../vacations-suspend';
 import { VacationRequest } from 'src/interfaces/vacationRequests';
 import { formatDate } from 'src/utils/dateUtils';
+import Link from 'next/link';
 
 // Tipado de la solicitud de vacaciones
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || '';
@@ -204,7 +205,26 @@ const AdminVacationRequests: FC = () => {
                   .map((request) => (
                     <TableRow key={request.id}>
                       <TableCell>{request.id}</TableCell>
-                      <TableCell>{request.fullname}</TableCell>
+                      <TableCell>
+                        <Link href={`/users/${request.ci}`} passHref>
+                          <Box
+                            component="a"
+                            color="primary.main"
+                            sx={{
+                              cursor: 'pointer',
+                              textDecoration: 'none',
+                              fontWeight: 'bold',
+                              display: 'inline-block',
+                              '&:hover': {
+                                textDecoration: 'none',
+                              }
+                            }}
+                          >
+                            {request.fullname}
+                          </Box>
+                        </Link>
+                      </TableCell>
+
                       <TableCell>{request.ci}</TableCell> {/* NUEVA CELDA */}
                       <TableCell>{request.department}</TableCell> {/* NUEVA CELDA */}
                       <TableCell>{request.academicUnit}</TableCell> {/* NUEVA CELDA */}
@@ -225,7 +245,7 @@ const AdminVacationRequests: FC = () => {
                           >
                             Ver Solicitud
                           </Button>*/}
-                       
+
                           <Button
                             variant="outlined"
                             color="info"

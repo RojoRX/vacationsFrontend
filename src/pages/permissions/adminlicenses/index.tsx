@@ -43,6 +43,7 @@ import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 import ReportDownloadModal from 'src/pages/reports/reportDownloadModal';
 import LicenseDetailDialog from '../detail-dialog';
+import Link from 'next/link';
 
 interface AdminLicensesProps {
     licenses: License[];
@@ -70,6 +71,7 @@ const AdminLicenses: AclComponent = () => {
             ci: string;
             celular: string;
             department: string;
+            academicUnit: string
         }
     }>({});
     const [page, setPage] = useState(0);
@@ -91,7 +93,6 @@ const AdminLicenses: AclComponent = () => {
                 const licensesData = response.data;
                 const sortedLicenses = licensesData.sort((a: License, b: License) => b.id - a.id);
                 setLicenses(sortedLicenses);
-
                 const userRequests = sortedLicenses.map((license: License) =>
                     axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/users/${license.userId}`)
                         .then(userResponse => ({
@@ -99,11 +100,12 @@ const AdminLicenses: AclComponent = () => {
                             userName: userResponse.data.fullName,
                             userCi: userResponse.data.ci,
                             celular: userResponse.data.celular || 'N/A',
-                            department: userResponse.data.department?.name || 'Sin departamento'
+                            department: userResponse.data.department?.name || 'Sin departamento',
+                            academicUnit: userResponse.data.academicUnit?.name || 'Sin Unidad academica'
                         }))
                 );
 
-                return Promise.all(userRequests);
+                return Promise.all(userRequests)
             })
             .then(userDetailsArray => {
                 const userDetailsMap: {
@@ -112,14 +114,16 @@ const AdminLicenses: AclComponent = () => {
                         ci: string;
                         celular: string;
                         department: string;
-                    }
+                        academicUnit: string;
+                    };
                 } = {};
                 userDetailsArray.forEach(user => {
                     userDetailsMap[user.userId] = {
                         name: user.userName,
                         ci: user.userCi,
                         celular: user.celular,
-                        department: user.department
+                        department: user.department,
+                        academicUnit: user.academicUnit
                     };
                 });
                 setUserDetails(userDetailsMap);
@@ -272,19 +276,19 @@ const AdminLicenses: AclComponent = () => {
                             variant={filterApproval === 'all' ? 'filled' : 'outlined'}
                         />
                         <Chip
-                            label="Aprobadas RRHH"
+                            label="Aprobadas Dpto. Personal"
                             onClick={() => handleFilterApproval('approved')}
                             color={filterApproval === 'approved' ? 'primary' : 'default'}
                             variant={filterApproval === 'approved' ? 'filled' : 'outlined'}
                         />
                         <Chip
-                            label="Pendientes RRHH"
+                            label="Pendientes Dpto. Personal. "
                             onClick={() => handleFilterApproval('pending')}
                             color={filterApproval === 'pending' ? 'primary' : 'default'}
                             variant={filterApproval === 'pending' ? 'filled' : 'outlined'}
                         />
                         <Chip
-                            label="Pendientes Supervisor"
+                            label="Pendientes Jefe Superior"
                             onClick={() => handleFilterType('supervisor')}
                             color={filterType === 'supervisor' ? 'secondary' : 'default'}
                             variant={filterType === 'supervisor' ? 'filled' : 'outlined'}
@@ -302,7 +306,7 @@ const AdminLicenses: AclComponent = () => {
                             <TableCell sx={{ fontWeight: 'bold' }}>Solicitante</TableCell>
                             <TableCell sx={{ fontWeight: 'bold' }}>CI</TableCell>
                             <TableCell sx={{ fontWeight: 'bold' }}>Departamento</TableCell>
-                            <TableCell sx={{ fontWeight: 'bold' }}>Tipo</TableCell>
+                            <TableCell sx={{ fontWeight: 'bold' }}>Unidad Academica</TableCell>
                             <TableCell sx={{ fontWeight: 'bold' }}>Fechas</TableCell>
                             <TableCell sx={{ fontWeight: 'bold' }}>Estado</TableCell>
                             <TableCell sx={{ fontWeight: 'bold' }}>Acciones</TableCell>
@@ -316,7 +320,25 @@ const AdminLicenses: AclComponent = () => {
                                     <TableRow key={license.id} hover>
                                         <TableCell>{license.id}</TableCell>
                                         <TableCell>
-                                            {userDetails[license.userId]?.name || 'N/A'}
+                                            {userDetails[license.userId]?.ci ? (
+                                                <Link href={`/users/${userDetails[license.userId].ci}`} passHref>
+                                                    <Box
+                                                        component="a" // Esto hace que se comporte como un enlace
+                                                        color="primary.main" // Usamos `primary.main` porque `Box` no tiene la prop `color` directa como `Typography`
+                                                        sx={{
+                                                            cursor: 'pointer',
+                                                            textDecoration: 'none',
+                                                            fontWeight: 'bold',
+                                                            display: 'inline-block', // Para mantener el comportamiento en línea como un texto
+                                                            '&:hover': {
+                                                                textDecoration: 'none', // Aseguramos que no haya subrayado al pasar el mouse
+                                                            },
+                                                        }}
+                                                    >
+                                                        {userDetails[license.userId].name}
+                                                    </Box>
+                                                </Link>
+                                            ) : 'N/A'}
                                         </TableCell>
                                         <TableCell>
                                             {userDetails[license.userId]?.ci || 'N/A'}
@@ -325,8 +347,9 @@ const AdminLicenses: AclComponent = () => {
                                             {userDetails[license.userId]?.department || 'N/A'}
                                         </TableCell>
                                         <TableCell>
-                                            {license.licenseType}
+                                            {userDetails[license.userId]?.academicUnit || 'N/A'}
                                         </TableCell>
+
                                         <TableCell>
                                             <Box>
                                                 <Typography variant="body2">
@@ -340,13 +363,13 @@ const AdminLicenses: AclComponent = () => {
                                         <TableCell>
                                             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
                                                 <Chip
-                                                    label={license.immediateSupervisorApproval ? 'Aprobado Sup.' : 'Pendiente Sup.'}
+                                                    label={license.immediateSupervisorApproval ? 'Aprobado Jefe' : 'Pendiente Jefe'}
                                                     color={license.immediateSupervisorApproval ? 'primary' : 'default'}
                                                     size="small"
                                                     icon={license.immediateSupervisorApproval ? <CheckCircle /> : <Cancel />}
                                                 />
                                                 <Chip
-                                                    label={license.personalDepartmentApproval ? 'Aprobado RRHH' : 'Pendiente RRHH'}
+                                                    label={license.personalDepartmentApproval ? 'Aprobado Personal' : 'Pendiente Personal'}
                                                     color={license.personalDepartmentApproval ? 'primary' : 'default'}
                                                     size="small"
                                                     icon={license.personalDepartmentApproval ? <CheckCircle /> : <Cancel />}

@@ -54,6 +54,7 @@ import EditVacationDialog from '../vacations-edit';
 
 interface VacationRequest {
     id: number;
+
     position: string;
     requestDate: string;
     startDate: string;
@@ -374,7 +375,7 @@ const VacationRequestList: VacationRequestsComponent = () => {
                         <TableHead>
                             <TableRow>
                                 <TableCell>Nª</TableCell>
-                                <TableCell>Posición</TableCell>
+                                
                                 <TableCell>Fecha Solicitud</TableCell>
                                 <TableCell>Fecha Inicio</TableCell>
                                 <TableCell>Fecha Fin</TableCell>
@@ -389,7 +390,6 @@ const VacationRequestList: VacationRequestsComponent = () => {
                                 .map((request) => (
                                     <TableRow key={request.id}>
                                         <TableCell>{request.id}</TableCell>
-                                        <TableCell>{request.position}</TableCell>
                                         <TableCell>{formatDate(request.requestDate)}</TableCell>
                                         <TableCell>{formatDate(request.startDate)}</TableCell>
                                         <TableCell>{formatDate(request.endDate)}</TableCell>
@@ -439,13 +439,10 @@ const VacationRequestList: VacationRequestsComponent = () => {
                 <DialogContent dividers>
                     {selectedRequest && (
                         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-
+                            {/** 
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                                 <AccountTieIcon color="action" />
-                                <Typography variant="body1">
-                                    <strong>Posición:</strong> {selectedRequest.position}
-                                </Typography>
-                            </Box>
+                            </Box>*/}
 
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                                 <CalendarCheckIcon color="action" />
@@ -497,7 +494,7 @@ const VacationRequestList: VacationRequestsComponent = () => {
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                                 <HumanResourcesIcon color="action" />
                                 <Typography variant="body1">
-                                    <strong>Aprobado por RRHH:</strong>{' '}
+                                    <strong>Aprobado por Dpto. Personal:</strong>{' '}
                                     {selectedRequest.approvedByHR ? (
                                         <CheckIcon color="success" fontSize="small" />
                                     ) : (
@@ -528,6 +525,7 @@ const VacationRequestList: VacationRequestsComponent = () => {
                     >
                         Cerrar
                     </Button>
+                    {/* 
                     <Button
                         onClick={() => handleOpenEditDialog(selectedRequest!)}
                         color="primary"
@@ -535,7 +533,8 @@ const VacationRequestList: VacationRequestsComponent = () => {
                         startIcon={<EditIcon />}
                     >
                         Editar
-                    </Button>
+                    </Button>*/}
+
                     <Button
                         onClick={handleViewDetails}
                         color="secondary"
