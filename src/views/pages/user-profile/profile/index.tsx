@@ -7,12 +7,12 @@ import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
 import DialogTitle from '@mui/material/DialogTitle';
 import TextField from '@mui/material/TextField';
-import CircularProgress from '@mui/material/CircularProgress'; // Para el estado de carga
-import Box from '@mui/material/Box'; // Para centrar el spinner
-import Alert from '@mui/material/Alert'; // Para mensajes de error o éxito
-import Typography from '@mui/material/Typography'; // Para títulos y subtítulos
-import Card from '@mui/material/Card'; // Para agrupar secciones visualmente
-import CardContent from '@mui/material/CardContent'; // Contenido de la tarjeta
+import CircularProgress from '@mui/material/CircularProgress';
+import Box from '@mui/material/Box';
+import Alert from '@mui/material/Alert';
+import Typography from '@mui/material/Typography';
+import Card from '@mui/material/Card';
+import CardContent from '@mui/material/CardContent';
 
 // ** Demo Components (asegúrate de que AboutOverivew pueda manejar los nuevos datos)
 import AboutOverivew from 'src/views/pages/user-profile/profile/AboutOverivew';
@@ -21,9 +21,7 @@ import AboutOverivew from 'src/views/pages/user-profile/profile/AboutOverivew';
 import useUser from 'src/hooks/useUser';
 
 // ** Tipos (ajustamos estos tipos a la nueva estructura del backend)
-import { ProfileTabCommonType, ProfileTeamsType } from 'src/@fake-db/types'; // Mantener si son relevantes para AboutOverview
-
-// Interface para la estructura completa del usuario del backend
+// Asegúrate de que UserData refleje exactamente la estructura de tu backend
 interface UserData {
   id: number;
   ci: string;
@@ -40,35 +38,36 @@ interface UserData {
   department: {
     id: number;
     name: string;
-  } | null; // Puede ser null
+  } | null;
   academicUnit: {
     id: number;
     name: string;
-  } | null; // Puede ser null
+  } | null;
   profession: {
     id: number;
     name: string;
     createdAt: string;
     updatedAt: string;
-  } | null; // Puede ser null
+  } | null;
 }
 
 const ProfileTab = () => {
-  const [userDataApi, setUserDataApi] = useState<UserData | null>(null); // Datos crudos de la API
+  const [userDataApi, setUserDataApi] = useState<UserData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
-  const [editData, setEditData] = useState<Partial<UserData>>({});
-  const [saveSuccess, setSaveSuccess] = useState<boolean>(false); // Estado para éxito al guardar
+  // Solo los campos que se pueden editar: email y celular
+  const [editData, setEditData] = useState<Partial<{ email: string; celular: string }>>({});
+  const [saveSuccess, setSaveSuccess] = useState<boolean>(false);
+  const [validationErrors, setValidationErrors] = useState<{ email?: string; celular?: string }>({}); // Estado para errores de validación
 
   const user = useUser();
-  console.log(user)
   const userId = user?.id;
 
   const fetchUserData = useCallback(async () => {
     if (!userId) {
       setLoading(false);
-      setError('User ID not available. Please log in.');
+      setError('ID de usuario no disponible. Por favor, inicia sesión.');
       return;
     }
 
@@ -77,9 +76,13 @@ const ProfileTab = () => {
     try {
       const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
       const response = await axios.get<UserData>(`${baseUrl}/users/${userId}`);
-      setUserDataApi(response.data); // Guardar los datos crudos
-      setEditData(response.data); // Inicializar datos para edición
-      setSaveSuccess(false); // Resetear el estado de éxito al cargar nuevos datos
+      setUserDataApi(response.data);
+      // Inicializar editData solo con email y celular para la edición
+      setEditData({
+        email: response.data.email || '', // Asegurarse de que no sea null
+        celular: response.data.celular || '', // Asegurarse de que no sea null
+      });
+      setSaveSuccess(false);
     } catch (err) {
       setError('No se pudieron cargar los datos del usuario. Inténtalo de nuevo más tarde.');
       console.error('Error fetching user data:', err);
@@ -90,9 +93,8 @@ const ProfileTab = () => {
 
   useEffect(() => {
     fetchUserData();
-  }, [fetchUserData]); // Dependencia del useCallback
+  }, [fetchUserData]);
 
-  // Función para transformar los datos de la API al formato esperado por AboutOverivew
   const getTransformedData = (data: UserData) => {
     return {
       about: [
@@ -101,53 +103,75 @@ const ProfileTab = () => {
         {
           icon: 'mdi:calendar',
           property: 'Fecha de Ingreso',
-          value: data.fecha_ingreso ? new Date(data.fecha_ingreso).toLocaleDateString('es-ES') : 'N/A', // Formato legible
+          value: data.fecha_ingreso ? new Date(data.fecha_ingreso).toLocaleDateString('es-ES') : 'N/A',
         },
-        { icon: 'mdi:email', property: 'Email', value: data.email || 'N/A' }, // Nuevo campo
+        { icon: 'mdi:email', property: 'Email', value: data.email || 'N/A' },
       ],
       contacts: [
         { icon: 'mdi:account-box', property: 'Usuario', value: data.username },
         { icon: 'mdi:phone', property: 'Celular', value: data.celular || 'N/A' },
       ],
-      teams: [], // Podrías poblar esto si tienes equipos relacionados al usuario
+      teams: [],
       overview: [
         { icon: 'mdi:briefcase', property: 'Cargo', value: data.position || 'N/A' },
-        { icon: 'mdi:badge-account-horizontal', property: 'Tipo de Empleado', value: data.tipoEmpleado || 'N/A' }, // Nuevo campo
-        { icon: 'mdi:briefcase', property: 'Profesión', value: data.profession?.name || 'N/A' }, // Acceso a .name
+        { icon: 'mdi:badge-account-horizontal', property: 'Tipo de Empleado', value: data.tipoEmpleado || 'N/A' },
+        { icon: 'mdi:briefcase', property: 'Profesión', value: data.profession?.name || 'N/A' },
         { icon: 'mdi:sitemap', property: 'Rol', value: data.role },
         { icon: 'mdi:office-building', property: 'Departamento', value: data.department?.name || 'N/A' },
-        { icon: 'mdi:school', property: 'Unidad Académica', value: data.academicUnit?.name || 'N/A' }, // Nuevo campo
+        { icon: 'mdi:school', property: 'Unidad Académica', value: data.academicUnit?.name || 'N/A' },
       ],
     };
   };
 
   const handleOpenDialog = () => {
-    setEditData(userDataApi || {}); // Asegura que los datos del diálogo sean los actuales de la API
+    // Asegura que editData siempre se inicialice con los valores actuales de userDataApi para email y celular
+    setEditData({
+      email: userDataApi?.email || '',
+      celular: userDataApi?.celular || '',
+    });
+    setValidationErrors({}); // Limpiar errores de validación al abrir el diálogo
     setEditDialogOpen(true);
   };
+
   const handleCloseDialog = () => setEditDialogOpen(false);
+
+  // Validación básica del frontend
+  const validateForm = () => {
+    const errors: { email?: string; celular?: string } = {};
+    if (editData.email && !/\S+@\S+\.\S+/.test(editData.email)) {
+      errors.email = 'El email no es válido.';
+    }
+    if (editData.celular && !/^\d{7,10}$/.test(editData.celular)) { // Ejemplo: 7 a 10 dígitos numéricos
+      errors.celular = 'El celular debe contener entre 7 y 10 dígitos numéricos.';
+    }
+    setValidationErrors(errors);
+    return Object.keys(errors).length === 0; // Retorna true si no hay errores
+  };
 
   const handleSaveChanges = async () => {
     if (!userId) return;
 
+    if (!validateForm()) {
+      return; // Detener si la validación falla
+    }
+
     try {
       const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
-      const updatePayload: Partial<UserData> = {
-        fullName: editData.fullName,
+      const updatePayload = {
+        email: editData.email,
         celular: editData.celular,
-        // Si profesión y posición son editables, necesitarías enviar sus IDs o nombres según tu API
-        // Por simplicidad, aquí solo actualizamos lo que se está mostrando en los TextFields
-        position: editData.position,
-        // Puedes agregar más campos editables aquí
       };
 
       await axios.patch(`${baseUrl}/users/${userId}`, updatePayload);
       setSaveSuccess(true);
       fetchUserData(); // Volver a cargar los datos para reflejar los cambios
       handleCloseDialog();
-    } catch (err) {
-      setError('Error al guardar los cambios. Por favor, inténtalo de nuevo.');
-      console.error('Error saving changes:', err);
+    } catch (err: any) { // Captura el error para acceder a su respuesta
+      console.error('Error al guardar los cambios:', err);
+      // Intentar obtener el mensaje de error del backend si está disponible
+      const errorMessage = err.response?.data?.message || 'Error al guardar los cambios. Por favor, inténtalo de nuevo.';
+      setError(errorMessage); // Mostrar el error en el Alert principal
+      setSaveSuccess(false); // Asegurarse de que no se muestre el mensaje de éxito
     }
   };
 
@@ -160,7 +184,8 @@ const ProfileTab = () => {
     );
   }
 
-  if (error) {
+  // Si hubo un error en la carga inicial, lo mostramos
+  if (error && !editDialogOpen) { // Solo si el error no es del guardado en el diálogo
     return (
       <Alert severity="error" sx={{ mt: 4, mb: 4 }}>
         {error}
@@ -201,6 +226,12 @@ const ProfileTab = () => {
                   ¡Cambios guardados con éxito!
                 </Alert>
               )}
+              {/* Mostrar el error de guardado aquí si existe */}
+              {error && (
+                <Alert severity="error" sx={{ mt: 3 }}>
+                  {error}
+                </Alert>
+              )}
             </CardContent>
           </Card>
         </Grid>
@@ -208,50 +239,67 @@ const ProfileTab = () => {
 
       <Dialog open={editDialogOpen} onClose={handleCloseDialog} fullWidth maxWidth="sm">
         <DialogTitle>Editar Datos del Usuario</DialogTitle>
-        <DialogContent dividers> {/* `dividers` añade una línea divisoria */}
+        <DialogContent dividers>
+          {/* Campo para Email */}
           <TextField
             fullWidth
-            label="Nombre Completo"
-            value={editData.fullName || ''}
-            onChange={(e) => setEditData({ ...editData, fullName: e.target.value })}
+            label="Email"
+            value={editData.email || ''}
+            onChange={(e) => {
+              setEditData({ ...editData, email: e.target.value });
+              setValidationErrors({ ...validationErrors, email: undefined }); // Limpiar error al cambiar
+            }}
             margin="normal"
             variant="outlined"
             sx={{ mb: 2 }}
+            type="email" // Para un teclado adecuado en móviles
+            error={!!validationErrors.email} // Mostrar error visual
+            helperText={validationErrors.email} // Mostrar mensaje de error
           />
+          {/* Campo para Celular */}
           <TextField
             fullWidth
             label="Celular"
             value={editData.celular || ''}
-            onChange={(e) => setEditData({ ...editData, celular: e.target.value })}
+            onChange={(e) => {
+              setEditData({ ...editData, celular: e.target.value });
+              setValidationErrors({ ...validationErrors, celular: undefined }); // Limpiar error al cambiar
+            }}
             margin="normal"
             variant="outlined"
+            sx={{ mb: 2 }}
+            type="tel" // Para un teclado numérico en móviles
+            error={!!validationErrors.celular} // Mostrar error visual
+            helperText={validationErrors.celular} // Mostrar mensaje de error
+          />
+          {/* Se eliminan los campos que no se pueden editar */}
+          {/* <TextField
+            fullWidth
+            label="Nombre Completo"
+            value={userDataApi.fullName || ''} // Mostrar el valor actual, pero de solo lectura
+            margin="normal"
+            variant="outlined"
+            InputProps={{ readOnly: true }} // Solo lectura
             sx={{ mb: 2 }}
           />
           <TextField
             fullWidth
             label="Posición"
-            value={editData.position || ''}
-            onChange={(e) => setEditData({ ...editData, position: e.target.value })}
+            value={userDataApi.position || ''} // Mostrar el valor actual, pero de solo lectura
             margin="normal"
             variant="outlined"
+            InputProps={{ readOnly: true }} // Solo lectura
             sx={{ mb: 2 }}
           />
-          {/* Si `profession` es editable directamente por un TextField, considera usar un `Autocomplete` o `Select`
-              ya que es un objeto con `id` y `name` en el backend.
-              Por ahora, solo muestro un ejemplo con texto plano, pero esto no sería ideal para guardar.
-          */}
           <TextField
             fullWidth
-            label="Profesión (Solo lectura si no hay un mecanismo para editar el objeto)"
-            value={editData.profession?.name || ''}
+            label="Profesión"
+            value={userDataApi.profession?.name || ''} // Mostrar el valor actual, pero de solo lectura
             margin="normal"
             variant="outlined"
-            InputProps={{
-              readOnly: true, // Hacerlo de solo lectura para evitar enviar nombres incorrectos
-            }}
+            InputProps={{ readOnly: true }} // Solo lectura
             sx={{ mb: 2 }}
-          />
-          {/* Puedes añadir más campos editables aquí según sea necesario */}
+          /> */}
         </DialogContent>
         <DialogActions>
           <Button onClick={handleCloseDialog} color="secondary">
