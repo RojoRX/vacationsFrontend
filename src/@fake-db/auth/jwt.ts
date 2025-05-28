@@ -51,12 +51,12 @@ const users: UserDataType[] = [
     id: 6,
     ci: '56781234',
     fecha_ingreso: '2014-07-20',
-    username: 'patriciaSupervisor',
+    username: 'Patricia',
     password: 'supervisorpassword', // Simplified password for mock
     departmentId: 7,//2
     role: 'supervisor',
     fullName: 'Patricia Quispe Chavez',
-    celular: '67778899', // Added cell phone number
+    celular: '677788910', // Added cell phone number
     profesion: 'Docente de Química'
   },
   {

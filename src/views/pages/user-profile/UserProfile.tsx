@@ -87,7 +87,7 @@ const UserProfile = ({ tab, data }: { tab: string; data: UserProfileActiveTab })
   }, [tab])
 
   const tabContentList: { [key: string]: ReactElement } = {
-    profile: <Profile data={data as ProfileTabType} />,
+    profile: <Profile />,
     teams: <Teams data={data as TeamsTabType[]} />,
     projects: <Projects data={data as ProjectsTabType[]} />,
     connections: <Connections data={data as ConnectionsTabType[]} />
