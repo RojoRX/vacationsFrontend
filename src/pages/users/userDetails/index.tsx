@@ -169,7 +169,7 @@ const UserInformation: AclComponent = () => {
     <Box sx={{ maxWidth: 1200, mx: 'auto', p: 3 }}>
       <Grid container spacing={3}>
         {/* Sección de información del usuario */}
-        <Grid item xs={12} md={4}>
+        <Grid item xs={12} md={12}>
           <Card>
             <CardContent sx={{ textAlign: 'center' }}>
               <Avatar sx={{
@@ -197,7 +197,7 @@ const UserInformation: AclComponent = () => {
               <Box sx={{ textAlign: 'left' }}>
                 <Typography variant="body1" sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
                   <WorkIcon sx={{ mr: 1, color: 'text.secondary' }} />
-                  <strong>Posición:</strong> {user.position}
+                  <strong>Posición:</strong> {user.position || 'No registrado'}
                 </Typography>
 
                 <Typography variant="body1" sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
@@ -268,22 +268,25 @@ const UserInformation: AclComponent = () => {
                 Editar Usuario
               </Button>
               {user.username === null ? (
-                <Button variant="contained" color="primary" onClick={() => setOpenCreate(true)}>
+                <Button variant="contained" color="primary" sx={{ mt: 2, ml:1 }} onClick={() => setOpenCreate(true)}>
                   Crear credenciales
                 </Button>
               ) : (
-                <Button variant="outlined" color="secondary" onClick={() => setOpenChangePassword(true)}>
+                <Button variant="outlined" color="secondary" sx={{ mt: 2, ml:1  }} onClick={() => setOpenChangePassword(true)}>
                   Cambiar contraseña
                 </Button>
               )}
-              <CreateCredentialsDialog open={openCreate} onClose={() => setOpenCreate(false)} ci={user.ci} />
+              <CreateCredentialsDialog open={openCreate} onClose={async () => {
+                setOpenCreate(false);
+                await fetchUser(user.ci);
+              }} ci={user.ci} />
 
             </CardContent>
           </Card>
         </Grid>
 
         {/* Sección de gestión */}
-        <Grid item xs={12} md={8}>
+        <Grid item xs={12} md={12}>
           <Card>
             <CardContent>
               <Tabs

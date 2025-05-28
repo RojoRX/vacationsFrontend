@@ -37,13 +37,11 @@ interface CreateUserForm {
     username?: string;
     password?: string;
 }
-
 interface UserResponse extends Omit<CreateUserForm, 'password'> {
     id: number;
     createdAt: string;
     temporaryPassword?: string;
 }
-
 const schema = yup.object().shape({
     ci: yup.string()
         .required('CI es requerido')
@@ -63,6 +61,7 @@ const schema = yup.object().shape({
     celular: yup.string().matches(/^\d{7,15}$/, 'Número inválido').notRequired(),
     position: yup.string().notRequired(),
     tipoEmpleado: yup.string().required('Tipo requerido'),
+
 });
 const CreateUserForm: React.FC = () => {
     const router = useRouter();
@@ -80,7 +79,7 @@ const CreateUserForm: React.FC = () => {
     const [credentialsDialogOpen, setCredentialsDialogOpen] = useState(false);
 
     const [createdUser, setCreatedUser] = useState<UserResponse | null>(null);
-    const { control, handleSubmit, formState: { errors }, reset } = useForm<CreateUserForm>({
+    const { control, handleSubmit, formState: { errors }, reset, watch, setValue } = useForm<CreateUserForm>({
         resolver: yupResolver(schema),
         defaultValues: {
             tipoEmpleado: 'DOCENTE',
@@ -88,7 +87,8 @@ const CreateUserForm: React.FC = () => {
             profession: { id: undefined },
         },
     });
-
+    const [unidadError, setUnidadError] = useState(false);
+    const tipoEmpleado = watch("tipoEmpleado");
     useEffect(() => {
         const fetchInitialData = async () => {
             try {
@@ -106,8 +106,27 @@ const CreateUserForm: React.FC = () => {
         };
         fetchInitialData();
     }, []);
+    // Este se ejecuta cada vez que cambia tipoEmpleado
+    useEffect(() => {
+        if (tipoEmpleado === 'DOCENTE') {
+            setValue('department.id', null as unknown as number);
+        } else if (tipoEmpleado === 'ADMINISTRATIVO') {
+            setValue('academicUnit.id', null as unknown as number);
+        }
+    }, [tipoEmpleado, setValue]);
+
     const [submitting, setSubmitting] = useState(false);
     const onSubmit = async (data: CreateUserForm) => {
+        const academicId = data.academicUnit?.id;
+        const departmentId = data.department?.id;
+
+        // Validación adicional: debe haber al menos uno
+        if (!academicId && !departmentId) {
+            setUnidadError(true);
+            return;
+        } else {
+            setUnidadError(false);
+        }
         setSubmitting(true);
         try {
             const payload = {
@@ -122,7 +141,7 @@ const CreateUserForm: React.FC = () => {
                 position: data.position,
                 tipoEmpleado: data.tipoEmpleado,
             };
-
+            console.log(payload)
             const response = await api.post(`${process.env.NEXT_PUBLIC_API_BASE_URL}/users`, payload);
             const createdUser = response.data;
 
@@ -137,6 +156,7 @@ const CreateUserForm: React.FC = () => {
             reset();
 
         } catch (err: any) {
+            console.log(error)
             setResult({
                 success: false,
                 message: err.response?.data?.message || 'Ocurrió un error al registrar el usuario.'
@@ -388,6 +408,8 @@ const CreateUserForm: React.FC = () => {
 
                         {/* Columna derecha */}
                         <Grid item xs={12} md={6}>
+                            {/* Reset de campos no usados al cambiar tipoEmpleado */}
+                            {/* Profesión */}
                             <Box sx={{ mb: 3 }}>
                                 <Controller
                                     name="profession"
@@ -402,11 +424,12 @@ const CreateUserForm: React.FC = () => {
                                                 variant="outlined"
                                                 onChange={(e) => field.onChange({ id: e.target.value })}
                                                 value={field.value?.id || ''}
+                                                sx={{ mb: 2 }}
                                             >
                                                 <MenuItem value="" disabled>
                                                     Seleccione una profesión
                                                 </MenuItem>
-                                                {professions.map(p => (
+                                                {professions.map((p) => (
                                                     <MenuItem key={p.id} value={p.id}>
                                                         {p.name}
                                                     </MenuItem>
@@ -422,58 +445,94 @@ const CreateUserForm: React.FC = () => {
                                 />
                             </Box>
 
+                            {/* Unidad Académica o Departamento */}
+                            {/* Unidad Académica o Departamento + leyenda de validación */}
                             <Box sx={{ mb: 3 }}>
-                                <Controller
-                                    name="academicUnit"
-                                    control={control}
-                                    render={({ field }) => (
-                                        <FormControl fullWidth size="small">
-                                            <InputLabel>Unidad Académica</InputLabel>
-                                            <Select
-                                                {...field}
-                                                label="Unidad Académica"
-                                                variant="outlined"
-                                                onChange={(e) => field.onChange({ id: e.target.value })}
-                                                value={field.value?.id || ''}
-                                                sx={{ mb: 2 }}
-                                            >
-                                                {academicUnits.map(u => (
-                                                    <MenuItem key={u.id} value={u.id}>{u.name}</MenuItem>
-                                                ))}
-                                            </Select>
-                                        </FormControl>
-                                    )}
-                                />
+                                {tipoEmpleado === 'DOCENTE' && (
+                                    <Controller
+                                        name="academicUnit.id"
+                                        control={control}
+                                        render={({ field, fieldState }) => (
+                                            <FormControl fullWidth size="small" error={!!fieldState.error}>
+                                                <InputLabel>Unidad Académica (Docentes)</InputLabel>
+                                                <Select
+                                                    {...field}
+                                                    label="Unidad Académica"
+                                                    value={field.value ?? ''}
+                                                    onChange={(e) => {
+                                                        const value = e.target.value;
+                                                        field.onChange(value === '' ? undefined : Number(value));
+                                                    }}
+                                                    sx={{ mb: 2 }}
+                                                >
+                                                    <MenuItem value="" disabled>
+                                                        Seleccione una unidad académica
+                                                    </MenuItem>
+                                                    {academicUnits.map((unit) => (
+                                                        <MenuItem key={unit.id} value={unit.id}>
+                                                            {unit.name}
+                                                        </MenuItem>
+                                                    ))}
+                                                </Select>
+                                                {fieldState.error && (
+                                                    <Typography variant="caption" color="error">
+                                                        {fieldState.error.message}
+                                                    </Typography>
+                                                )}
+                                            </FormControl>
+                                        )}
+                                    />
+                                )}
+
+                                {tipoEmpleado === 'ADMINISTRATIVO' && (
+                                    <Controller
+                                        name="department.id"
+                                        control={control}
+                                        render={({ field, fieldState }) => (
+                                            <FormControl fullWidth size="small" error={!!fieldState.error}>
+                                                <InputLabel>Departamento (Administrativos)</InputLabel>
+                                                <Select
+                                                    {...field}
+                                                    label="Departamento"
+                                                    value={field.value ?? ''}
+                                                    onChange={(e) => {
+                                                        const value = e.target.value;
+                                                        field.onChange(value === '' ? undefined : Number(value));
+                                                    }}
+                                                    sx={{ mb: 2 }}
+                                                >
+                                                    <MenuItem value="" disabled>
+                                                        Seleccione un departamento
+                                                    </MenuItem>
+                                                    {departments.map((dept) => (
+                                                        <MenuItem key={dept.id} value={dept.id}>
+                                                            {dept.name}
+                                                        </MenuItem>
+                                                    ))}
+                                                </Select>
+                                                {fieldState.error && (
+                                                    <Typography variant="caption" color="error">
+                                                        {fieldState.error.message}
+                                                    </Typography>
+                                                )}
+                                            </FormControl>
+                                        )}
+                                    />
+                                )}
+
+                                {unidadError && (
+                                    <Typography variant="body2" color="error" sx={{ mt: 1, ml:1 }}>
+                                        Debe seleccionar una Unidad Académica o un Departamento.
+                                    </Typography>
+                                )}
                             </Box>
 
-                            <Box sx={{ mb: 3 }}>
-                                <Controller
-                                    name="department"
-                                    control={control}
-                                    render={({ field }) => (
-                                        <FormControl fullWidth size="small">
-                                            <InputLabel>Departamento</InputLabel>
-                                            <Select
-                                                {...field}
-                                                label="Departamento"
-                                                variant="outlined"
-                                                onChange={(e) => field.onChange({ id: e.target.value })}
-                                                value={field.value?.id || ''}
-                                                sx={{ mb: 2 }}
-                                            >
-                                                {departments.map(d => (
-                                                    <MenuItem key={d.id} value={d.id}>{d.name}</MenuItem>
-                                                ))}
-                                            </Select>
-                                        </FormControl>
-                                    )}
-                                />
-                            </Box>
-
+                            {/* Cargo */}
                             <Box sx={{ mb: 3 }}>
                                 <Controller
                                     name="position"
                                     control={control}
+
                                     render={({ field }) => (
                                         <TextField
                                             {...field}
@@ -481,12 +540,12 @@ const CreateUserForm: React.FC = () => {
                                             fullWidth
                                             variant="outlined"
                                             size="small"
-                                            sx={{ mb: 2 }}
                                         />
                                     )}
                                 />
                             </Box>
 
+                            {/* Tipo de Empleado */}
                             <Box sx={{ mb: 3 }}>
                                 <Controller
                                     name="tipoEmpleado"
@@ -514,9 +573,11 @@ const CreateUserForm: React.FC = () => {
                                 />
                             </Box>
                         </Grid>
+
                     </Grid>
 
                     <Box mt={4} display="flex" justifyContent="flex-end">
+
                         <Button
                             type="submit"
                             variant="contained"
@@ -531,7 +592,7 @@ const CreateUserForm: React.FC = () => {
                                 borderRadius: 1
                             }}
                         >
-                            {loading ? 'Creando...' : 'Crear Usuario'}
+                            {loading ? 'Creando...' : 'Registrar Personal'}
                         </Button>
                         {/* Diálogo de resultados */}
                         <ResultDialog
