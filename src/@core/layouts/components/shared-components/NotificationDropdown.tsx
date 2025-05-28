@@ -31,6 +31,8 @@ export type NotificationsType = {
   message: string;
   createdAt: string;
   read: boolean;
+  resourceType?: 'VACATION' | 'LICENSE';
+  resourceId?: number;
 };
 
 interface Props {

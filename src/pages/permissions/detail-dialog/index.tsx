@@ -49,6 +49,7 @@ const LicenseDetailDialog: React.FC<LicenseDetailDialogProps> = ({
         const date = new Date(dateString);
         return date.toLocaleDateString('es-ES');
     };
+    const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
     const handlePersonalApprove = async () => {
         if (!license || !currentUser) return;
@@ -66,19 +67,27 @@ const LicenseDetailDialog: React.FC<LicenseDetailDialogProps> = ({
                 }
             );
 
-            const updatedLicense = {
-                ...license,
-                personalDepartmentApproval: newApprovalState
-            };
+            // Refetch de la licencia actualizada
+            const res = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/licenses/${license.id}`);
+            const updatedLicense = res.data;
 
             onLicenseUpdate(updatedLicense);
-            onClose();
+
+            setSuccessMessage(
+                newApprovalState
+                    ? 'Licencia aprobada correctamente por el Dpto. Personal.'
+                    : 'Aprobación del Dpto. Personal removida.'
+            );
+
+            setTimeout(() => setSuccessMessage(null), 10000);
+            //onClose();
         } catch (err) {
             setError('Error al cambiar el estado de la licencia');
             console.error('Error updating license:', err);
         } finally {
             setLoading(false);
         }
+
     };
     const handleDownloadPDF = () => {
         if (!license || !userDetails[license.userId]) return;
@@ -111,7 +120,11 @@ const LicenseDetailDialog: React.FC<LicenseDetailDialogProps> = ({
                         {error}
                     </Alert>
                 )}
-
+                {successMessage && (
+                    <Alert severity="success" sx={{ mb: 2 }}>
+                        {successMessage}
+                    </Alert>
+                )}
                 <Grid container spacing={2}>
                     <Grid item xs={12} sm={6} mt={4}>
                         <Typography variant="subtitle1" gutterBottom>
@@ -121,6 +134,8 @@ const LicenseDetailDialog: React.FC<LicenseDetailDialogProps> = ({
                         <Typography><strong>Tipo:</strong> {license.licenseType}</Typography>
                         <Typography><strong>Inicio:</strong> {formatDate(license.startDate)}</Typography>
                         <Typography><strong>Fin:</strong> {formatDate(license.endDate)}</Typography>
+                        <Typography><strong>Tipo:</strong> {license.timeRequested}</Typography>
+                        <Typography><strong>Tiempo Solicitado:</strong> {license.totalDays}</Typography>
                         <Typography><strong>Emisión:</strong> {formatDate(license.issuedDate)}</Typography>
                     </Grid>
                     <Grid item xs={12} sm={6} mt={4}>
