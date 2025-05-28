@@ -30,7 +30,7 @@ const users: UserDataType[] = [
     username: 'testSupervisor',
     password: 'supervisorpassword', // Simplified password for mock
     departmentId: 1,
-    role: 'client',
+    role: 'supervisor',
     fullName: 'Carmen Sanchez Guiterrez',
     celular: '', // Cell phone left empty
     profesion: ''
