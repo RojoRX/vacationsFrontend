@@ -25,12 +25,12 @@ import {
     Tooltip,
     Badge
 } from '@mui/material';
-import { 
-    Search, 
-    CheckCircle, 
-    Cancel, 
-    Visibility, 
-    Person, 
+import {
+    Search,
+    CheckCircle,
+    Cancel,
+    Visibility,
+    Person,
     FilterAlt,
     Refresh
 } from '@mui/icons-material';
@@ -61,12 +61,12 @@ const DepartmentLicenses: AclComponent = () => {
     const [error, setError] = useState<string | null>(null);
     const [openDialog, setOpenDialog] = useState(false);
     const [selectedLicense, setSelectedLicense] = useState<License | null>(null);
-    const [userDetails, setUserDetails] = useState<{ 
-        [key: string]: { 
-            name: string; 
-            ci: string; 
-            celular: string 
-        } 
+    const [userDetails, setUserDetails] = useState<{
+        [key: string]: {
+            name: string;
+            ci: string;
+            celular: string
+        }
     }>({});
     const [page, setPage] = useState(0);
     const [rowsPerPage, setRowsPerPage] = useState(10);
@@ -85,7 +85,7 @@ const DepartmentLicenses: AclComponent = () => {
             .then((response) => {
                 const licensesData = response.data;
                 setLicenses(licensesData);
-                
+
                 const userRequests = licensesData.map((license: License) =>
                     axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/users/${license.userId}`)
                         .then(userResponse => ({
@@ -101,8 +101,8 @@ const DepartmentLicenses: AclComponent = () => {
             .then(userDetailsArray => {
                 const userDetailsMap: { [key: string]: { name: string; ci: string; celular: string } } = {};
                 userDetailsArray.forEach(user => {
-                    userDetailsMap[user.userId] = { 
-                        name: user.userName, 
+                    userDetailsMap[user.userId] = {
+                        name: user.userName,
                         ci: user.userCi,
                         celular: user.celular
                     };
@@ -120,7 +120,7 @@ const DepartmentLicenses: AclComponent = () => {
 
     const applyFilters = (licenses: License[], details: any, term: string, approvalFilter: string) => {
         let filtered = [...licenses];
-        
+
         // Filtrar por término de búsqueda (nombre o CI)
         if (term) {
             filtered = filtered.filter(license => {
@@ -132,14 +132,14 @@ const DepartmentLicenses: AclComponent = () => {
                 );
             });
         }
-        
+
         // Filtrar por estado de aprobación
         if (approvalFilter === 'approved') {
             filtered = filtered.filter(license => license.immediateSupervisorApproval);
         } else if (approvalFilter === 'pending') {
             filtered = filtered.filter(license => !license.immediateSupervisorApproval);
         }
-        
+
         setFilteredLicenses(filtered);
         setPage(0); // Resetear a la primera página al aplicar filtros
     };
@@ -169,29 +169,29 @@ const DepartmentLicenses: AclComponent = () => {
     const handleApprove = () => {
         if (selectedLicense && user?.id) {
             const approval = !selectedLicense.immediateSupervisorApproval;
-    
+
             axios.patch(
                 `${process.env.NEXT_PUBLIC_API_BASE_URL}/licenses/${selectedLicense.id}/approve?supervisorId=${user?.id}`,
                 { approval } // <-- se envía como booleano
             )
-            .then(() => {
-                setLicenses(prev =>
-                    prev.map(license =>
-                        license.id === selectedLicense.id
-                            ? { ...license, immediateSupervisorApproval: approval }
-                            : license
-                    )
-                );
-    
-                handleCloseDialog();
-            })
-            .catch((error) => {
-                setError('Error al cambiar el estado de la licencia');
-                console.error('Error al aprobar/desaprobar licencia:', error);
-            });
+                .then(() => {
+                    setLicenses(prev =>
+                        prev.map(license =>
+                            license.id === selectedLicense.id
+                                ? { ...license, immediateSupervisorApproval: approval }
+                                : license
+                        )
+                    );
+
+                    handleCloseDialog();
+                })
+                .catch((error) => {
+                    setError('Error al cambiar el estado de la licencia');
+                    console.error('Error al aprobar/desaprobar licencia:', error);
+                });
         }
     };
-    
+
 
     const formatDate = (dateString: string) => {
         return format(parseISO(dateString), 'PPP', { locale: es });
@@ -220,9 +220,9 @@ const DepartmentLicenses: AclComponent = () => {
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
                 <Typography variant="h5" component="h2" sx={{ display: 'flex', alignItems: 'center' }}>
                     <Person sx={{ mr: 1, color: 'primary.main' }} />
-                    Solicitudes de Licencias del departamento 
+                    Solicitudes de Licencias del departamento
                 </Typography>
-                
+
                 <Tooltip title="Recargar datos">
                     <IconButton onClick={fetchLicenses} color="primary">
                         <Refresh />
@@ -318,7 +318,7 @@ const DepartmentLicenses: AclComponent = () => {
                                                     icon={license.immediateSupervisorApproval ? <CheckCircle /> : <Cancel />}
                                                 />
                                                 <Chip
-                                                    label={license.personalDepartmentApproval ? 'Aprobado RRHH' : 'Pendiente RRHH'}
+                                                    label={license.personalDepartmentApproval ? 'Aprobado Dpto. Personal' : 'Pendiente Dpto. Personal'}
                                                     color={license.personalDepartmentApproval ? 'primary' : 'default'}
                                                     size="small"
                                                     icon={license.personalDepartmentApproval ? <CheckCircle /> : <Cancel />}
@@ -370,7 +370,7 @@ const DepartmentLicenses: AclComponent = () => {
 
             {/* Diálogo de detalles */}
             <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
-                <DialogTitle sx={{ 
+                <DialogTitle sx={{
                     backgroundColor: 'primary.main',
                     color: 'white',
                     display: 'flex',
@@ -408,8 +408,8 @@ const DepartmentLicenses: AclComponent = () => {
                                 </Typography>
                             </Grid>
                             <Grid item xs={12}>
-                                <Box sx={{ 
-                                    display: 'flex', 
+                                <Box sx={{
+                                    display: 'flex',
                                     justifyContent: 'space-around',
                                     mt: 2,
                                     p: 2,
@@ -418,7 +418,7 @@ const DepartmentLicenses: AclComponent = () => {
                                 }}>
                                     <Box textAlign="center">
                                         <Typography variant="body2">
-                                            <strong>Aprobación Supervisor</strong>
+                                            <strong>Aprobación Jefe Superior</strong>
                                         </Typography>
                                         <Chip
                                             label={selectedLicense.immediateSupervisorApproval ? 'Aprobado' : 'Pendiente'}
@@ -428,7 +428,7 @@ const DepartmentLicenses: AclComponent = () => {
                                     </Box>
                                     <Box textAlign="center">
                                         <Typography variant="body2">
-                                            <strong>Aprobación RRHH</strong>
+                                            <strong>Aprobación Dpto. Personal</strong>
                                         </Typography>
                                         <Chip
                                             label={selectedLicense.personalDepartmentApproval ? 'Aprobado' : 'Pendiente'}
@@ -442,22 +442,27 @@ const DepartmentLicenses: AclComponent = () => {
                     )}
                 </DialogContent>
                 <DialogActions sx={{ px: 3, py: 2 }}>
-                    <Button 
-                        onClick={handleCloseDialog} 
+                    <Button
+                        onClick={handleCloseDialog}
                         color="inherit"
                         variant="outlined"
                     >
                         Cerrar
                     </Button>
                     {user?.role === 'supervisor' && (
-                        <Button
-                            onClick={handleApprove}
-                            color={selectedLicense?.immediateSupervisorApproval ? "error" : "success"}
-                            variant="contained"
-                            startIcon={selectedLicense?.immediateSupervisorApproval ? <Cancel /> : <CheckCircle />}
-                        >
-                            {selectedLicense?.immediateSupervisorApproval ? "Desaprobar" : "Aprobar"}
-                        </Button>
+                        <Tooltip title="La aprobación del Jefe Superior está deshabilitada por el momento">
+                            <span> {/* Necesario para que Tooltip funcione con botones deshabilitados */}
+                                <Button
+                                    onClick={handleApprove}
+                                    color={selectedLicense?.immediateSupervisorApproval ? "error" : "success"}
+                                    variant="contained"
+                                    startIcon={selectedLicense?.immediateSupervisorApproval ? <Cancel /> : <CheckCircle />}
+                                    disabled // <- desactivado por ahora
+                                >
+                                    {selectedLicense?.immediateSupervisorApproval ? "Desaprobar" : "Aprobar"}
+                                </Button>
+                            </span>
+                        </Tooltip>
                     )}
                 </DialogActions>
             </Dialog>
