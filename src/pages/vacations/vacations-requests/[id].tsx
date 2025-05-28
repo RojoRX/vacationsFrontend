@@ -148,7 +148,7 @@ const VacationRequestDetails = () => {
       );
 
       setRequest(response.data);
-      requestId=response.data.id;
+      requestId = response.data.id;
       setSelectedStatus(response.data.status);
 
       if (response.data.managementPeriodStart && response.data.managementPeriodEnd) {
@@ -509,17 +509,23 @@ const VacationRequestDetails = () => {
                 value={selectedStatus}
                 onChange={handleStatusChange}
                 label="Estado"
+                disabled={request?.status !== 'PENDING'}
               >
                 {STATUS_OPTIONS.map((status) => (
                   <MenuItem key={status.value} value={status.value}>
                     <Box display="flex" alignItems="center">
-
                       <Box ml={1}>{status.label}</Box>
                     </Box>
                   </MenuItem>
                 ))}
               </Select>
+              {request?.status !== 'PENDING' && (
+                <Typography variant="body2" color="error" sx={{ mt: 1 }}>
+                  No se puede modificar el estado porque la solicitud ya fue procesada.
+                </Typography>
+              )}
             </FormControl>
+
           </CardContent>
         </Card>
       )}
