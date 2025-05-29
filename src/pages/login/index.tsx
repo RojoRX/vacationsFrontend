@@ -100,8 +100,8 @@ const schema = yup.object().shape({
 })
 
 const defaultValues = {
-  password: 'testpassword',
-  username: 'testuser'
+  password: 'password',
+  username: 'lucionazario'
 }
 
 interface FormData {
@@ -137,12 +137,14 @@ const LoginPage = () => {
 
   const onSubmit = (data: FormData) => {
     const { username, password } = data; // Cambia 'email' a 'username'
-    auth.login({ username: username, password, rememberMe }, () => { // Cambia 'email' a 'username'
-      setError('username', { // Cambia 'email' a 'username'
+    auth.login({ username, password, rememberMe }, (err) => {
+      console.error('Login error:', err);
+      setError('username', {
         type: 'manual',
         message: 'Username or Password is invalid'
       });
     });
+
   };
 
   const imageSource = skin === 'bordered' ? 'auth-v2-login-illustration-bordered' : 'auth-v2-login-illustration'
