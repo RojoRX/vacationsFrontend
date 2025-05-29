@@ -1,29 +1,32 @@
 export default function getBusinessDays(startDate: Date, endDate: Date): number {
   const normalizeUTC = (date: Date): Date => {
-    const normalized = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
-    console.log("Normalizando fecha:", date.toString(), "→", normalized.toUTCString());
-    return normalized;
+    return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
   };
 
   const start = normalizeUTC(startDate);
   const end = normalizeUTC(endDate);
 
-  if (start > end) {
-    console.log("Fecha de inicio mayor a la final. Retornando 0.");
-    return 0;
+  if (start > end) return 0;
+
+  // Calcular la diferencia total en días
+  const diffTime = end.getTime() - start.getTime();
+  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1; // +1 para incluir ambos extremos
+
+  // Calcular semanas completas y días restantes
+  const weeks = Math.floor(diffDays / 7);
+  const remainingDays = diffDays % 7;
+
+  // Días hábiles base (5 días por semana)
+  let businessDays = weeks * 5;
+
+  // Calcular días hábiles en los días restantes
+  const startDay = start.getUTCDay();
+  for (let i = 0; i < remainingDays; i++) {
+    const currentDay = (startDay + i) % 7;
+    if (currentDay !== 0 && currentDay !== 6) { // 0 es domingo, 6 es sábado
+      businessDays++;
+    }
   }
 
-  let count = 0;
-  const current = new Date(start);
-
-  while (current <= end) {
-    const day = current.getUTCDay(); // getUTCDay para día de la semana sin zona local
-    const isBusinessDay = day !== 0 && day !== 6;
-    console.log(`Revisando: ${current.toUTCString()} (día ${day}) → ${isBusinessDay ? "Día hábil" : "Fin de semana"}`);
-    if (isBusinessDay) count++;
-    current.setUTCDate(current.getUTCDate() + 1); // avanzar un día en UTC
-  }
-
-  console.log("Total de días hábiles:", count);
-  return count;
+  return businessDays;
 }
