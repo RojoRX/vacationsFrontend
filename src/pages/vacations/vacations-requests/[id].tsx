@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import axios, { AxiosError } from 'axios';
+import axios from 'src/lib/axios';
 import { useRouter } from 'next/router';
 import CelebrationIcon from '@mui/icons-material/Celebration';
 import {
@@ -235,18 +235,29 @@ const VacationRequestDetails = () => {
     }
   };
 
-  const handleFetchError = (error: unknown) => {
-    let errorMessage = 'Error al obtener los detalles de la solicitud';
+const handleFetchError = (error: unknown) => {
+  let errorMessage = 'Error al obtener los detalles de la solicitud';
 
-    if (axios.isAxiosError(error)) {
-      errorMessage = error.response?.data?.message || error.message;
-    } else if (error instanceof Error) {
-      errorMessage = error.message;
-    }
+  if (
+    typeof error === 'object' &&
+    error !== null &&
+    'response' in error &&
+    typeof (error as any).response?.data?.message === 'string'
+  ) {
+    errorMessage = (error as any).response.data.message;
+  } else if (
+    typeof error === 'object' &&
+    error !== null &&
+    'message' in error &&
+    typeof (error as any).message === 'string'
+  ) {
+    errorMessage = (error as any).message;
+  }
 
-    console.error('Error:', error);
-    setError(errorMessage);
-  };
+  console.error('Error:', error);
+  setError(errorMessage);
+};
+
 
   useEffect(() => {
     fetchRequestDetails();
@@ -276,18 +287,28 @@ const VacationRequestDetails = () => {
     }
   };
 
-  const handleStatusUpdateError = (error: unknown) => {
-    let errorMessage = 'Error al actualizar el estado';
+const handleStatusUpdateError = (error: unknown) => {
+  let errorMessage = 'Error al actualizar el estado';
 
-    if (axios.isAxiosError(error)) {
-      errorMessage = error.response?.data?.message || error.message;
-    } else if (error instanceof Error) {
-      errorMessage = error.message;
-    }
+  if (
+    typeof error === 'object' &&
+    error !== null &&
+    'response' in error &&
+    typeof (error as any).response?.data?.message === 'string'
+  ) {
+    errorMessage = (error as any).response.data.message;
+  } else if (
+    typeof error === 'object' &&
+    error !== null &&
+    'message' in error &&
+    typeof (error as any).message === 'string'
+  ) {
+    errorMessage = (error as any).message;
+  }
 
-    console.error('Error updating status:', error);
-    setError(errorMessage);
-  };
+  console.error('Error updating status:', error);
+  setError(errorMessage);
+};
 
   const toggleApprovedByHR = async () => {
     if (!request) return;

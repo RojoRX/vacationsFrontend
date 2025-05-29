@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import axios, { AxiosError } from 'axios';
+import axios from 'src/lib/axios'
+import { AxiosError } from 'axios';
 import {
     Button, Dialog, DialogActions, DialogContent, DialogTitle, TextField,
     Table, TableBody, TableCell, TableHead, TableRow, CircularProgress, Snackbar, Alert,

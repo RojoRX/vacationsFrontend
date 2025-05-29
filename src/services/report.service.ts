@@ -1,4 +1,4 @@
-import axios, { AxiosError } from 'axios';
+import axios from 'src/lib/axios'
 
 const downloadReport = async (params: {
   year?: number;
@@ -12,7 +12,7 @@ const downloadReport = async (params: {
     queryParams.append('employeeType', params.employeeType);
 
     const url = `${process.env.NEXT_PUBLIC_API_BASE_URL}/reports/monthly?${queryParams.toString()}`;
-    
+
     const response = await axios.get(url, {
       responseType: 'blob',
       headers: {
@@ -23,10 +23,10 @@ const downloadReport = async (params: {
     const downloadUrl = window.URL.createObjectURL(new Blob([response.data]));
     const link = document.createElement('a');
     link.href = downloadUrl;
-    
+
     const contentDisposition = response.headers['content-disposition'];
     let fileName = `reporte_${params.year || 'all'}`;
-    
+
     if (contentDisposition) {
       const fileNameMatch = contentDisposition.match(/filename="?(.+)"?/);
       if (fileNameMatch?.[1]) {
@@ -39,7 +39,7 @@ const downloadReport = async (params: {
     link.setAttribute('download', fileName);
     document.body.appendChild(link);
     link.click();
-    
+
     setTimeout(() => {
       link.parentNode?.removeChild(link);
       window.URL.revokeObjectURL(downloadUrl);
@@ -47,14 +47,22 @@ const downloadReport = async (params: {
 
   } catch (error: unknown) {
     // Manejo seguro de errores
-    if (axios.isAxiosError(error)) {
-      const serverMessage = error.response?.data?.message;
-      const errorMessage = serverMessage || error.message || 'Error al descargar el reporte';
+    if (
+      typeof error === 'object' &&
+      error !== null &&
+      'response' in error &&
+      typeof (error as any).response === 'object'
+    ) {
+      const response = (error as any).response;
+      const serverMessage = response?.data?.message;
+      const errorMessage = serverMessage || (error as any).message || 'Error al descargar el reporte';
+
       console.error('Error en la solicitud:', {
         message: errorMessage,
-        status: error.response?.status,
-        data: error.response?.data
+        status: response?.status,
+        data: response?.data,
       });
+
       throw new Error(errorMessage);
     }
 

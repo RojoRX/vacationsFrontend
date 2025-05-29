@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import axios, { AxiosError } from 'axios';
+import { AxiosError } from 'axios';
+import axios from 'src/lib/axios'
 import { useRouter } from 'next/router';
 import {
   Typography,
@@ -206,13 +207,26 @@ const VacationRequestDetailsInfo = () => {
     }
   };
   const handleFetchError = (error: unknown) => {
+
     let errorMessage = 'Error al obtener los detalles de la solicitud';
 
-    if (axios.isAxiosError(error)) {
-      errorMessage = error.response?.data?.message || error.message;
-    } else if (error instanceof Error) {
-      errorMessage = error.message;
+
+    if (
+      typeof error === 'object' &&
+      error !== null &&
+      'response' in error &&
+      typeof (error as any).response?.data?.message === 'string'
+    ) {
+      errorMessage = (error as any).response.data.message;
+    } else if (
+      typeof error === 'object' &&
+      error !== null &&
+      'message' in error &&
+      typeof (error as any).message === 'string'
+    ) {
+      errorMessage = (error as any).message;
     }
+
 
     console.error('Error:', error);
     setError(errorMessage);
@@ -261,7 +275,7 @@ const VacationRequestDetailsInfo = () => {
           variant="contained"
           startIcon={<DownloadIcon />}
           onClick={handleDownloadPDF}
-          sx={{ backgroundColor: '#1976d2', color: 'white', textAlign: "center"}}
+          sx={{ backgroundColor: '#1976d2', color: 'white', textAlign: "center" }}
         >
           Descargar PDF
         </Button>

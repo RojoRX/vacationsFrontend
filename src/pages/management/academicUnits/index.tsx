@@ -35,8 +35,10 @@ import {
 import { useForm, Controller } from 'react-hook-form';
 import * as yup from 'yup';
 import { yupResolver } from '@hookform/resolvers/yup';
-import axios, { AxiosError } from 'axios';
+import { AxiosError } from 'axios';
+import axios from 'src/lib/axios'
 import api from 'src/utils/axios';
+import { API_BASE_URL } from 'src/lib/api';
 
 const schema = yup.object().shape({
     name: yup.string()
@@ -62,37 +64,36 @@ const AcademicUnitManager: React.FC = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [page, setPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
-
     const { control, handleSubmit, reset, formState: { errors } } = useForm<{ name: string }>({
         resolver: yupResolver(schema),
         defaultValues: { name: '' }
     });
 
-const fetchUnits = async (search = '') => {
-  try {
-    setLoading(true); // <- Asegurate de inicializar esto
-    let response;
+    const fetchUnits = async (search = '') => {
+        try {
+            setLoading(true); // <- Asegurate de inicializar esto
+            let response;
 
-    if (search.trim() !== '') {
-      response = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/academic-units/search`, {
-        params: { name: search }
-      });
-    } else {
-      response = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/academic-units`);
-    }
+            if (search.trim() !== '') {
+                response = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/academic-units/search`, {
+                    params: { name: search }
+                });
+            } else {
+                response = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/academic-units`);
+            }
 
-    setUnits(response.data); // ← Verifica si `data` es un array directamente o necesitas .items
-  } catch (error) {
-    console.error('Error al cargar unidades académicas:', error);
-    setSnackbar({
-      open: true,
-      message: 'Error al cargar unidades académicas',
-      severity: 'error'
-    });
-  } finally {
-    setLoading(false); // <- Finaliza loading
-  }
-};
+            setUnits(response.data); // ← Verifica si `data` es un array directamente o necesitas .items
+        } catch (error) {
+            console.error('Error al cargar unidades académicas:', error);
+            setSnackbar({
+                open: true,
+                message: 'Error al cargar unidades académicas',
+                severity: 'error'
+            });
+        } finally {
+            setLoading(false); // <- Finaliza loading
+        }
+    };
 
 
 
@@ -117,10 +118,10 @@ const fetchUnits = async (search = '') => {
         setIsSubmitting(true);
         try {
             if (currentUnit) {
-               await axios.put(`/academic-units/${currentUnit.id}`, data);
+                await axios.put(`${API_BASE_URL}/academic-units/${currentUnit.id}`, data);
                 setSnackbar({ open: true, message: 'Unidad académica actualizada con éxito', severity: 'success' });
             } else {
-                await axios.post('/academic-units', data);
+                await axios.post(`${API_BASE_URL}/academic-units`, data);
                 setSnackbar({ open: true, message: 'Unidad académica creada con éxito', severity: 'success' });
             }
             fetchUnits(searchTerm);
@@ -143,7 +144,7 @@ const fetchUnits = async (search = '') => {
 
     const confirmDelete = async () => {
         try {
-            await axios.delete(`/academic-units/${unitToDelete}`);
+            await axios.delete(`${API_BASE_URL}/academic-units/${unitToDelete}`);
             setSnackbar({ open: true, message: 'Unidad académica eliminada con éxito', severity: 'success' });
             fetchUnits(searchTerm);
         } catch (error) {
