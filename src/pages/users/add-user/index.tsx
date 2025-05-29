@@ -142,7 +142,7 @@ const CreateUserForm: React.FC = () => {
                 tipoEmpleado: data.tipoEmpleado,
             };
             console.log(payload)
-            const response = await api.post(`${process.env.NEXT_PUBLIC_API_BASE_URL}/users`, payload);
+            const response = await axios.post(`${process.env.NEXT_PUBLIC_API_BASE_URL}/users`, payload);
             const createdUser = response.data;
 
             // Guardamos el usuario creado en el estado
