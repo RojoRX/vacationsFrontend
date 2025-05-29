@@ -10,7 +10,7 @@ import {
     DialogTitle,
     MenuItem,
 } from '@mui/material';
-import axios from 'axios';
+import axios from 'src/lib/axios';
 import getBusinessDays from 'src/utils/businessDays';
 
 interface CustomHolidayFormProps {

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import axios from 'axios';
+import axios from 'src/lib/axios';
 import useUser from 'src/hooks/useUser';
 import { TextField, Button, Typography } from '@mui/material';
 

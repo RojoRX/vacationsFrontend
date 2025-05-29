@@ -5,7 +5,7 @@ import { ReactNode } from 'react'
 import { GetStaticPaths, GetStaticProps, GetStaticPropsContext, InferGetStaticPropsType } from 'next/types'
 
 // ** Third Party Imports
-import axios from 'axios'
+import axios from 'src/lib/axios'
 
 // ** Types
 import { InvoiceType } from 'src/types/apps/invoiceTypes'

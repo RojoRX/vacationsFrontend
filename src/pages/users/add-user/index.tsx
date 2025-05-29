@@ -10,7 +10,7 @@ import {
     Slide
 } from '@mui/material';
 import { CheckCircle, PersonAdd, PersonAdd as PersonAddIcon } from '@mui/icons-material';
-import axios from 'axios';
+import axios from 'src/lib/axios';
 import { useForm, Controller } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';

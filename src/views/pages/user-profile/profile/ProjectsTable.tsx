@@ -12,7 +12,7 @@ import AvatarGroup from '@mui/material/AvatarGroup'
 import LinearProgress from '@mui/material/LinearProgress'
 
 // ** Third Party Imports
-import axios from 'axios'
+import axios from 'src/lib/axios'
 
 // ** Types Imports
 import { ThemeColor } from 'src/@core/layouts/types'

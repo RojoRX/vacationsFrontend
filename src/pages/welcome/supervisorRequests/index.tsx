@@ -1,6 +1,6 @@
 // src/views/pages/dashboard/SupervisorPendingRequestsCard.tsx
 import React, { useEffect, useState } from 'react';
-import axios from 'axios';
+import axios from 'src/lib/axios';
 import { Card, CardContent, Typography, CircularProgress, Alert, Button, Box } from '@mui/material';
 import Icon from 'src/@core/components/icon'; // Assuming you have this icon component
 import { useRouter } from 'next/router';

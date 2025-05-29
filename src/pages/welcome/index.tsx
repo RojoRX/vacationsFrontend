@@ -1,6 +1,6 @@
 // src/views/pages/dashboard/WelcomeDashboard.tsx
 import { useEffect, useState } from 'react';
-import axios from 'axios';
+import axios from 'src/lib/axios';
 import Grid from '@mui/material/Grid';
 import Typography from '@mui/material/Typography';
 import Button from '@mui/material/Button';

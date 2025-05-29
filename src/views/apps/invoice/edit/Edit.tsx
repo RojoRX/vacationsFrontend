@@ -12,7 +12,7 @@ import Alert from '@mui/material/Alert'
 import { SingleInvoiceType, InvoiceLayoutProps } from 'src/types/apps/invoiceTypes'
 
 // ** Third Party Components
-import axios from 'axios'
+import axios from 'src/lib/axios'
 
 // ** Demo Components Imports
 import EditCard from './EditCard'

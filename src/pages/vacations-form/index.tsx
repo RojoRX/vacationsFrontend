@@ -19,7 +19,7 @@ import {
   Send as SendIcon,
   Info as InfoIcon
 } from '@mui/icons-material';
-import axios from 'axios';
+import axios from 'src/lib/axios';
 import { format, isBefore, isAfter, parseISO, addDays } from 'date-fns';
 import { es } from 'date-fns/locale';
 import useUser from 'src/hooks/useUser';
@@ -69,34 +69,36 @@ const VacationRequestSubmissionForm = () => {
   const [selectedStartDate, setSelectedStartDate] = useState<Date | null>(null);
   const [requestId, setRequestId] = useState<number | null>(null);
 
-function getMostRecentAnniversary(ingresoDateStr: string, today: Date = new Date()): string {
-  // Parsear la fecha de ingreso
-  const [ingresoYear, ingresoMonth, ingresoDay] = ingresoDateStr.split('-').map(Number);
-  
-  // Obtener componentes de la fecha actual
-  const currentYear = today.getFullYear();
-  const currentMonth = today.getMonth() + 1; // Los meses en Date son 0-indexados
-  const currentDay = today.getDate();
+  function getMostRecentAnniversary(ingresoDateStr: string, today: Date = new Date()): string {
+    // Parsear la fecha de ingreso
+    const [ingresoYear, ingresoMonth, ingresoDay] = ingresoDateStr.split('-').map(Number);
 
-  // Calcular año tentativo (mismo año que el actual)
-  let anniversaryYear = currentYear;
+    // Obtener componentes de la fecha actual
+    const currentYear = today.getFullYear();
+    const currentMonth = today.getMonth() + 1; // Los meses en Date son 0-indexados
+    const currentDay = today.getDate();
 
-  // Verificar si la fecha de aniversario ya pasó este año
-  const hasAnniversaryPassed = 
-    (ingresoMonth < currentMonth) || 
-    (ingresoMonth === currentMonth && ingresoDay <= currentDay);
+    // Calcular año tentativo (mismo año que el actual)
+    let anniversaryYear = currentYear;
 
-  // Ajustar el año si el aniversario aún no ha llegado
-  if (!hasAnniversaryPassed) {
-    anniversaryYear = currentYear - 1;
+    // Verificar si la fecha de aniversario ya pasó este año
+    const hasAnniversaryPassed =
+      (ingresoMonth < currentMonth) ||
+      (ingresoMonth === currentMonth && ingresoDay <= currentDay);
+
+    // Ajustar el año si el aniversario aún no ha llegado
+    if (!hasAnniversaryPassed) {
+      anniversaryYear = currentYear - 1;
+    }
+
+    // Formatear la fecha resultante
+    const formattedMonth = String(ingresoMonth).padStart(2, '0');
+    const formattedDay = String(ingresoDay).padStart(2, '0');
+    console.log("Informacion del hook" + " " + user?.fecha_ingreso);
+    return `${anniversaryYear}-${formattedMonth}-${formattedDay}`;
+
+
   }
-
-  // Formatear la fecha resultante
-  const formattedMonth = String(ingresoMonth).padStart(2, '0');
-  const formattedDay = String(ingresoDay).padStart(2, '0');
-
-  return `${anniversaryYear}-${formattedMonth}-${formattedDay}`;
-}
 
   useEffect(() => {
     const today = new Date();
@@ -166,13 +168,14 @@ function getMostRecentAnniversary(ingresoDateStr: string, today: Date = new Date
       setRequestSuccess(true);
       setRequestId(response.data.id || null); // Aquí guardamos el ID
     } catch (err: unknown) {
-      if (axios.isAxiosError(err)) {
-        setRequestError(err.response?.data?.message || 'Error al solicitar vacaciones');
+      const error = err as any
+      if (error?.response?.data?.message) {
+        setRequestError(error.response.data.message)
       } else {
-        setRequestError('Ocurrió un error inesperado al solicitar vacaciones');
+        setRequestError(`Error inesperado: ${String(err)}`)
       }
-      console.error('Error requesting vacation:', err);
     }
+
   };
   const handleDialogClose = () => {
     setOpenDialog(false);
@@ -352,7 +355,7 @@ function getMostRecentAnniversary(ingresoDateStr: string, today: Date = new Date
           )}
           {requestSuccess && (
             <Alert severity="success" sx={{ mt: 2 }}>
-             <strong> Solicitud enviada exitosamente</strong>
+              <strong> Solicitud enviada exitosamente</strong>
             </Alert>
           )}
 

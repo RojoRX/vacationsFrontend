@@ -8,12 +8,14 @@ const useUser = () => {
     const userData = window.localStorage.getItem('userData');
 
     if (userData) {
-      const parsed: User = JSON.parse(userData);
+      const parsed = JSON.parse(userData);
 
-      // Corrección de la fecha
-      if (parsed.fecha_ingreso) {
-        // Forzamos a tratar la fecha como UTC para evitar desfasajes de zona horaria
-        const date = new Date(parsed.fecha_ingreso + 'T00:00:00');
+      // Transformar clave si es necesario
+      const fecha = parsed.fechaIngreso || parsed.fecha_ingreso;
+
+      if (fecha) {
+        // Forzar formato UTC
+        const date = new Date(fecha + 'T00:00:00');
         parsed.fecha_ingreso = date.toISOString().split('T')[0]; // yyyy-MM-dd
       }
 

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
-import axios from 'axios';
+import axios from 'src/lib/axios';
 import {
     Box,
     Button,

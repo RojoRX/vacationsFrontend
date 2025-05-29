@@ -10,7 +10,7 @@ import {
   Typography,
   IconButton
 } from '@mui/material';
-import axios from 'axios';
+import axios from 'src/lib/axios';
 import CloseIcon from '@mui/icons-material/Close';
 
 interface VacationReportDialogProps {

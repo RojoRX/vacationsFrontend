@@ -28,7 +28,7 @@ import CardContent, { CardContentProps } from '@mui/material/CardContent'
 import Icon from 'src/@core/components/icon'
 
 // ** Third Party Imports
-import axios from 'axios'
+import axios from 'src/lib/axios'
 import DatePicker from 'react-datepicker'
 
 // ** Configs

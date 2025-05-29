@@ -21,7 +21,7 @@ import ApexChartWrapper from 'src/@core/styles/libs/react-apexcharts'
 import { useRouter } from 'next/router'
 
 // ** Axios
-import axios from 'axios'
+import axios from 'src/lib/axios'
 
 const AdminDashboard = () => {
   const [pendingVacationRequests, setPendingVacationRequests] = useState(0)

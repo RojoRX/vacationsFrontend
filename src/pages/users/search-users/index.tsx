@@ -13,7 +13,7 @@ import {
   Visibility as VisibilityIcon,
   FilterList as FilterIcon
 } from '@mui/icons-material';
-import axios from 'axios';
+import axios from 'src/lib/axios';
 import { User } from 'src/interfaces/usertypes';
 import router from 'next/router';
 

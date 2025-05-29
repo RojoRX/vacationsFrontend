@@ -8,7 +8,7 @@ import {
   TextField,
 } from '@mui/material';
 import { Pause as SuspendIcon } from '@mui/icons-material';
-import axios from 'axios';
+import axios from 'src/lib/axios';
 import { VacationRequest } from 'src/interfaces/vacationRequests';
 
 

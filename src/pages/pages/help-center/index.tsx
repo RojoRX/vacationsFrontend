@@ -8,7 +8,7 @@ import Typography from '@mui/material/Typography'
 import CardContent, { CardContentProps } from '@mui/material/CardContent'
 
 // ** Third Party Imports
-import axios from 'axios'
+import axios from 'src/lib/axios'
 
 // ** Types
 import { HelpCenterCategoriesType, HelpCenterArticlesOverviewType } from 'src/@fake-db/types'

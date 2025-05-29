@@ -43,7 +43,7 @@ import {
 } from '@mui/icons-material';
 import WorkHistoryIcon from '@mui/icons-material/WorkHistory';
 import AssignmentTurnedInIcon from '@mui/icons-material/AssignmentTurnedIn';
-import axios from 'axios';
+import axios from 'src/lib/axios';
 import useUser from 'src/hooks/useUser';
 import { useRouter } from 'next/router';
 import { Gestion } from 'src/interfaces/gestion';

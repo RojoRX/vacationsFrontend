@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import axios from 'src/lib/axios';
 import {
     Container, Typography, Table, TableBody, TableCell, TableContainer,
     TableHead, TableRow, Paper, TablePagination, TextField, IconButton,

@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react'
 
 // ** Axios Import
-import axios from 'axios'
+import axios from 'src/lib/axios'
 
 // ** Type Import
 import { HorizontalNavItemsType } from 'src/@core/layouts/types'

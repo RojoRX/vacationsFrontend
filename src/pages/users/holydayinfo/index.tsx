@@ -14,7 +14,7 @@ import {
   Event as EventIcon,
   FilterList as FilterIcon
 } from '@mui/icons-material';
-import axios from 'axios';
+import axios from 'src/lib/axios';
 import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 import getBusinessDays from 'src/utils/businessDays';

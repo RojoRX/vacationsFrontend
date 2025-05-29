@@ -13,7 +13,7 @@ import CardContent from '@mui/material/CardContent'
 import LinearProgress from '@mui/material/LinearProgress'
 
 // ** Third Party Imports
-import axios from 'axios'
+import axios from 'src/lib/axios'
 
 // ** Type Imports
 import { ProjectListDataType } from 'src/types/apps/userTypes'

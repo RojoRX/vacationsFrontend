@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import axios from 'src/lib/axios';
 import { FormControl, InputLabel, MenuItem, Select, CircularProgress, Typography, SelectChangeEvent } from '@mui/material';
 import useUser from 'src/hooks/useUser';
 

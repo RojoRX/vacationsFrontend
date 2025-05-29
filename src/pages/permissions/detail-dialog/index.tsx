@@ -14,7 +14,7 @@ import {
 } from '@mui/material';
 import { PictureAsPdf } from '@mui/icons-material';
 import { Business, CheckCircle, Cancel } from '@mui/icons-material';
-import axios from 'axios';
+import axios from 'src/lib/axios';
 import { License } from 'src/interfaces/licenseTypes';
 import { generateLicensePdf } from 'src/utils/licensePdfGenerator';
 

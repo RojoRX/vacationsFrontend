@@ -11,7 +11,7 @@ import {
 } from '@mui/material';
 import { useEffect, useState } from 'react';
 import Icon from 'src/@core/components/icon';
-import axios from 'axios';
+import axios from 'src/lib/axios';
 import { formatDistanceToNow } from 'date-fns';
 import useUser from 'src/hooks/useUser';
 import { useRouter } from 'next/router';
@@ -42,7 +42,7 @@ const NotificationDialog = ({ open, onClose, notification }: Props) => {
   const router = useRouter();
 
   const fetchNotifications = async () => {
-  
+
     if (!user?.id) return;
     try {
       const res = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/notifications/${user.id}`);
@@ -123,47 +123,47 @@ const NotificationDialog = ({ open, onClose, notification }: Props) => {
     return message;
   };
 
-const renderNotification = (n: NotificationsType) => {
-  console.log('Notificación:', n); // ✅ ahora sí podés depurar
+  const renderNotification = (n: NotificationsType) => {
+    console.log('Notificación:', n); // ✅ ahora sí podés depurar
 
-  return (
-    <Box
-      key={n.id}
-      p={2}
-      border={1}
-      borderRadius={2}
-      borderColor="divider"
-      bgcolor={n.read ? 'background.default' : 'action.hover'}
-    >
-      <Typography fontWeight={600}>{beautifyNotificationMessage(n.message)}</Typography>
+    return (
+      <Box
+        key={n.id}
+        p={2}
+        border={1}
+        borderRadius={2}
+        borderColor="divider"
+        bgcolor={n.read ? 'background.default' : 'action.hover'}
+      >
+        <Typography fontWeight={600}>{beautifyNotificationMessage(n.message)}</Typography>
 
-      <Typography variant="body2" color="text.secondary">
-        {formatDistanceToNow(new Date(n.createdAt))} atrás
-      </Typography>
+        <Typography variant="body2" color="text.secondary">
+          {formatDistanceToNow(new Date(n.createdAt))} atrás
+        </Typography>
 
-      <Stack direction="row" spacing={1} mt={2}>
-        {!n.read && (
+        <Stack direction="row" spacing={1} mt={2}>
+          {!n.read && (
+            <Button
+              size="small"
+              variant="outlined"
+              onClick={() => handleMarkAsRead(n.id)}
+            >
+              Marcar como leída
+            </Button>
+          )}
+
           <Button
             size="small"
-            variant="outlined"
-            onClick={() => handleMarkAsRead(n.id)}
+            variant="contained"
+            disabled={!n.resourceType || !n.resourceId}
+            onClick={() => handleNotificationRedirect(n)}
           >
-            Marcar como leída
+            Ver detalle
           </Button>
-        )}
-
-        <Button
-          size="small"
-          variant="contained"
-          disabled={!n.resourceType || !n.resourceId}
-          onClick={() => handleNotificationRedirect(n)}
-        >
-          Ver detalle
-        </Button>
-      </Stack>
-    </Box>
-  );
-};
+        </Stack>
+      </Box>
+    );
+  };
 
   return (
     <Dialog fullWidth maxWidth="sm" open={open} onClose={onClose}>

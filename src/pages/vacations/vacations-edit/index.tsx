@@ -12,7 +12,7 @@ import {
   Select,
   SelectChangeEvent,
 } from '@mui/material';
-import axios from 'axios';
+import axios from 'src/lib/axios';
 
 interface VacationRequest {
   id: number;

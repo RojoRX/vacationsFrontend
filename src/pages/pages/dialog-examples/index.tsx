@@ -5,7 +5,7 @@ import { GetStaticProps, InferGetStaticPropsType } from 'next/types'
 import Grid from '@mui/material/Grid'
 
 // ** Third Party Components
-import axios from 'axios'
+import axios from 'src/lib/axios'
 
 // ** Type Import
 import { PricingDataType } from 'src/@core/components/plan-details/types'

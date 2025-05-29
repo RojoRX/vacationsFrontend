@@ -2,7 +2,7 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit'
 
 // ** Axios Imports
-import axios from 'axios'
+import axios from 'src/lib/axios'
 
 // ** Types
 import { CalendarFiltersType, AddEventType, EventType } from 'src/types/apps/calendarTypes'

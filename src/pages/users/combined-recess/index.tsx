@@ -12,7 +12,7 @@ import {
     Snackbar
 } from '@mui/material';
 import { Edit, Delete, Launch } from '@mui/icons-material';
-import axios from 'axios';
+import axios from 'src/lib/axios';
 import getBusinessDays from 'src/utils/businessDays';
 import router from 'next/router';
 

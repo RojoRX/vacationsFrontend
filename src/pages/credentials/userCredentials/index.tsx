@@ -12,7 +12,7 @@ import {
 } from '@mui/material';
 import { Visibility, VisibilityOff } from '@mui/icons-material';
 import { useState } from 'react';
-import axios from 'axios';
+import axios from 'src/lib/axios';
 
 interface CreateCredentialsDialogProps {
     open: boolean;

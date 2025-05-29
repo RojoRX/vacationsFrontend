@@ -1,5 +1,5 @@
 import { useState, useEffect, Fragment, SyntheticEvent, ReactNode } from 'react';
-import axios from 'axios';
+import axios from 'src/lib/axios';
 import { formatDistanceToNow } from 'date-fns';
 
 // ** MUI Imports

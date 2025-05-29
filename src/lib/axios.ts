@@ -6,19 +6,18 @@ const axiosInstance = axios.create()
 
 // Interceptor para agregar el token
 axiosInstance.interceptors.request.use(config => {
-    const token = window.localStorage.getItem(authConfig.storageTokenKeyName)
-
-    // Asegura que headers exista
-    if (!config.headers) {
-        config.headers = {}
-    }
-
+  if (typeof window !== 'undefined') {
+    const token = localStorage.getItem('accessToken')
     if (token) {
-        config.headers.Authorization = token
+      config.headers = config.headers || {}
+      config.headers.Authorization = `Bearer ${token}`
+      console.log('✅ Interceptor funcionando. Token agregado:', token)
     }
-
-    return config
+  }
+  return config
 })
+
+
 
 
 export default axiosInstance

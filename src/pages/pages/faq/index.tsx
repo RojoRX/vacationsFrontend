@@ -12,7 +12,7 @@ import Typography from '@mui/material/Typography'
 import Icon from 'src/@core/components/icon'
 
 // ** Third Party Imports
-import axios from 'axios'
+import axios from 'src/lib/axios'
 
 // ** Types
 import { FaqType } from 'src/@fake-db/types'

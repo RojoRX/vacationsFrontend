@@ -40,7 +40,7 @@ import { getInitials } from 'src/@core/utils/get-initials'
 import { fetchData, deleteUser } from 'src/store/apps/user'
 
 // ** Third Party Components
-import axios from 'axios'
+import axios from 'src/lib/axios'
 
 // ** Types Imports
 import { RootState, AppDispatch } from 'src/store'

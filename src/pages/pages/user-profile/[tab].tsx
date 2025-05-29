@@ -2,7 +2,7 @@
 import { GetStaticProps, GetStaticPaths, GetStaticPropsContext, InferGetStaticPropsType } from 'next/types'
 
 // ** Third Party Imports
-import axios from 'axios'
+import axios from 'src/lib/axios'
 
 // ** Demo Components Imports
 import UserProfile from 'src/views/pages/user-profile/UserProfile'

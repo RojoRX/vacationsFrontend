@@ -21,7 +21,7 @@ import TableCell, { TableCellBaseProps } from '@mui/material/TableCell'
 import { SingleInvoiceType, InvoiceLayoutProps } from 'src/types/apps/invoiceTypes'
 
 // ** Third Party Components
-import axios from 'axios'
+import axios from 'src/lib/axios'
 
 // ** Configs
 import themeConfig from 'src/configs/themeConfig'

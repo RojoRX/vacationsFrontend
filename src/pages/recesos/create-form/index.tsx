@@ -15,7 +15,7 @@ import {
   Alert
 } from '@mui/material';
 import { Event as EventIcon } from '@mui/icons-material';
-import axios from 'axios';
+import axios from 'src/lib/axios';
 
 interface GeneralHolidayFormProps {
   open: boolean;

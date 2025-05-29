@@ -10,7 +10,7 @@ import Typography from '@mui/material/Typography';
 import CardContent from '@mui/material/CardContent';
 
 // ** Third Party Imports
-import axios from 'axios';
+import axios from 'src/lib/axios';
 
 // ** Icon Imports
 import Icon from 'src/@core/components/icon';
@@ -93,7 +93,7 @@ const UserProfileHeader = () => {
       <CardMedia
         component="img"
         alt="profile-header"
-        image="/images/banners/banner-4.jpg"  
+        image="/images/banners/banner-4.jpg"
         sx={{
           height: { xs: 150, md: 250 },
         }}

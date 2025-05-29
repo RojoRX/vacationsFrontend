@@ -12,7 +12,7 @@ import {
   Box,
 } from '@mui/material';
 import Icon from 'src/@core/components/icon';
-import axios from 'axios';
+import axios from 'src/lib/axios';
 import { formatDistanceToNow } from 'date-fns';
 import { useTheme } from '@mui/material/styles';
 import useUser from 'src/hooks/useUser';

@@ -10,7 +10,7 @@ import { styled } from '@mui/material/styles'
 import MuiCardContent, { CardContentProps } from '@mui/material/CardContent'
 
 // ** Third Party Imports
-import axios from 'axios'
+import axios from 'src/lib/axios'
 
 // ** Types
 import { PricingDataType } from 'src/@core/components/plan-details/types'

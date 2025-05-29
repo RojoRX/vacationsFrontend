@@ -2,7 +2,7 @@
 import { GetStaticProps, GetStaticPaths, GetStaticPropsContext, InferGetStaticPropsType } from 'next/types'
 
 // ** Third Party Imports
-import axios from 'axios'
+import axios from 'src/lib/axios'
 
 // ** Type Imports
 import { HelpCenterCategoriesType, HelpCenterSubcategoryArticlesType } from 'src/@fake-db/types'

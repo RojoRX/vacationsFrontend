@@ -21,7 +21,7 @@ import {
   Person as DebtIcon
 } from '@mui/icons-material';
 import { TextField } from '@mui/material';
-import axios from 'axios';
+import axios from 'src/lib/axios';
 import CustomHolidayForm from '../customholyday';
 import UserHolidayPeriods from '../holydayinfo';
 import { useRouter } from 'next/router';

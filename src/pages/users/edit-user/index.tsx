@@ -11,7 +11,7 @@ import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
 import { TipoEmpleadoEnum } from 'src/utils/enums/typeEmployees';
 import Department from 'src/interfaces/departments';
-import axios from 'axios';
+import axios from 'src/lib/axios';
 import { useRouter } from 'next/router';
 
 export interface UpdateUserDto {
