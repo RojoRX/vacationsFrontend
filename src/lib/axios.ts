@@ -1,23 +1,26 @@
 // src/lib/axios.ts
-import axios from 'axios'
-import authConfig from 'src/configs/auth'
+import axios, { AxiosInstance, AxiosStatic } from 'axios';
+import authConfig from 'src/configs/auth';
 
-const axiosInstance = axios.create()
+// 1. Creamos la instancia base
+const axiosInstance = axios.create() as AxiosInstance & {
+  isAxiosError: AxiosStatic['isAxiosError'];
+};
 
-// Interceptor para agregar el token
+// 2. Añadimos el método estático
+axiosInstance.isAxiosError = axios.isAxiosError;
+
+// 3. Configuramos los interceptores (igual que antes)
 axiosInstance.interceptors.request.use(config => {
   if (typeof window !== 'undefined') {
-    const token = localStorage.getItem('accessToken')
+    const token = localStorage.getItem(authConfig.storageTokenKeyName);
     if (token) {
-      config.headers = config.headers || {}
-      config.headers.Authorization = `Bearer ${token}`
-      console.log('✅ Interceptor funcionando. Token agregado:', token)
+      config.headers = config.headers || {};
+      config.headers.Authorization = `Bearer ${token}`;
+      console.log('✅ Interceptor funcionando. Token agregado:', token);
     }
   }
-  return config
-})
+  return config;
+});
 
-
-
-
-export default axiosInstance
+export default axiosInstance;
