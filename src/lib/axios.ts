@@ -13,6 +13,7 @@ axiosInstance.isAxiosError = axios.isAxiosError;
 // 3. Configuramos los interceptores (igual que antes)
 axiosInstance.interceptors.request.use(config => {
   if (typeof window !== 'undefined') {
+    
     const token = localStorage.getItem(authConfig.storageTokenKeyName);
     if (token) {
       config.headers = config.headers || {};

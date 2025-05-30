@@ -60,6 +60,7 @@ const AdminVacationRequests: FC = () => {
   const [openDetailDialog, setOpenDetailDialog] = useState(false);
   const theme = useTheme();
   const [openSuspendDialog, setOpenSuspendDialog] = useState(false);
+  const [showDeleted, setShowDeleted] = useState(false);
 
 
   const statusMap = {
@@ -73,7 +74,11 @@ const AdminVacationRequests: FC = () => {
   useEffect(() => {
     const fetchVacationRequests = async () => {
       try {
-        const response = await axios.get(`${API_BASE_URL}/vacation-requests`);
+        const endpoint = showDeleted
+          ? `${API_BASE_URL}/vacation-requests/deleted`
+          : `${API_BASE_URL}/vacation-requests`;
+
+        const response = await axios.get(endpoint);
         setRequests(response.data);
       } catch (error: any) {
         if (axios.isAxiosError(error) && error.response) {
@@ -134,6 +139,21 @@ const AdminVacationRequests: FC = () => {
       console.error('Error al actualizar las solicitudes:', error);
     }
   };
+  const handleSoftDelete = async () => {
+    if (!selectedRequest) return;
+    try {
+      await axios.patch(`${API_BASE_URL}/vacation-requests/${selectedRequest.id}/soft-delete`);
+      alert('Solicitud eliminada exitosamente');
+      setOpenDetailDialog(false);
+      // Recargar solicitudes para reflejar el cambio
+      const response = await axios.get(`${API_BASE_URL}/vacation-requests`);
+      setRequests(response.data);
+    } catch (error) {
+      console.error('Error al eliminar la solicitud:', error);
+      alert('Ocurrió un error al eliminar la solicitud.');
+    }
+  };
+
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -148,6 +168,7 @@ const AdminVacationRequests: FC = () => {
 
   return (
     <Container>
+
       <Typography variant="h4" gutterBottom>
         Solicitudes de Vacaciones
       </Typography>
@@ -183,6 +204,18 @@ const AdminVacationRequests: FC = () => {
         <CircularProgress />
       ) : (
         <>
+          <Button
+            variant="outlined"
+            color={showDeleted ? 'error' : 'primary'}
+            onClick={() => {
+              setLoading(true);
+              setShowDeleted(!showDeleted);
+            }}
+            sx={{ mb: 2 }}
+          >
+            {showDeleted ? 'Ver activas' : 'Ver eliminadas'}
+          </Button>
+
           <TableContainer component={Paper}>
             <Table>
               <TableHead>
@@ -420,6 +453,16 @@ const AdminVacationRequests: FC = () => {
           >
             Ver solicitud completa
           </Button>
+          {selectedRequest?.deleted !== true && (
+            <Button
+              onClick={handleSoftDelete}
+              color="error"
+              variant="outlined"
+              startIcon={<CloseIcon />}
+            >
+              Eliminar solicitud
+            </Button>
+          )}
         </DialogActions>
       </Dialog>
       {/* Diálogo de suspensión (componente reutilizable) */}

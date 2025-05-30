@@ -33,7 +33,8 @@ export interface VacationRequest {
   diasDeVacacion?: number;                    // Nuevo
   diasDeVacacionRestantes?: number;           // Nuevo
   recesos?: Receso[];                         // Nuevo
-  gestion?: Gestion;                          // Nuevo
+  gestion?: Gestion;   
+  deleted?:boolean;                       // Nuevo
 
   licenciasAutorizadas?: {
     totalAuthorizedDays: number;
