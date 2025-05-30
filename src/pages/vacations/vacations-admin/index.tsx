@@ -22,7 +22,9 @@ import {
   DialogActions,
   Box,
   useTheme,
-  Alert
+  Alert,
+  IconButton,
+  Grid
 } from '@mui/material';
 import router from 'next/router';
 import { Info as InfoIcon } from '@mui/icons-material';
@@ -46,6 +48,7 @@ import SuspendVacationDialog from '../vacations-suspend';
 import { VacationRequest } from 'src/interfaces/vacationRequests';
 import { formatDate } from 'src/utils/dateUtils';
 import Link from 'next/link';
+import useUser from 'src/hooks/useUser';
 
 // Tipado de la solicitud de vacaciones
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || '';
@@ -62,7 +65,7 @@ const AdminVacationRequests: FC = () => {
   const theme = useTheme();
   const [openSuspendDialog, setOpenSuspendDialog] = useState(false);
   const [showDeleted, setShowDeleted] = useState(false);
-
+  const user = useUser();
 
   const statusMap = {
     PENDING: { label: 'Pendiente', color: 'default' },
@@ -140,18 +143,32 @@ const AdminVacationRequests: FC = () => {
       console.error('Error al actualizar las solicitudes:', error);
     }
   };
+  const [feedbackMessage, setFeedbackMessage] = useState<string | null>(null);
+  const [feedbackSeverity, setFeedbackSeverity] = useState<'success' | 'error'>('success');
+
   const handleSoftDelete = async () => {
     if (!selectedRequest) return;
     try {
-      await axios.patch(`${API_BASE_URL}/vacation-requests/${selectedRequest.id}/soft-delete`);
-      alert('Solicitud eliminada exitosamente');
-      setOpenDetailDialog(false);
+      await axios.patch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/vacation-requests/${selectedRequest.id}/soft-delete`, {
+        userId: user?.id,
+      });
+
+      setFeedbackSeverity('success');
+      setFeedbackMessage('Solicitud eliminada exitosamente');
+
       // Recargar solicitudes para reflejar el cambio
       const response = await axios.get(`${API_BASE_URL}/vacation-requests`);
       setRequests(response.data);
-    } catch (error) {
+
+      // Opcional: cerrar el diálogo después de un tiempo
+      setTimeout(() => {
+        setOpenDetailDialog(false);
+        setFeedbackMessage(null);
+      }, 2000);
+    } catch (error: any) {
       console.error('Error al eliminar la solicitud:', error);
-      alert('Ocurrió un error al eliminar la solicitud.');
+      setFeedbackSeverity('error');
+      setFeedbackMessage(error?.response?.data?.message || 'Ocurrió un error al eliminar la solicitud.');
     }
   };
 
@@ -317,10 +334,21 @@ const AdminVacationRequests: FC = () => {
 
       {/* Diálogo de detalles */}
       <Dialog open={openDetailDialog} onClose={handleCloseDetailDialog} maxWidth="sm" fullWidth>
-        <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <InfoIcon color="primary" />
-          Detalles de la Solicitud #{selectedRequest?.id}
+        <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <InfoIcon color="primary" />
+            Detalles de la Solicitud #{selectedRequest?.id}
+          </Box>
+          <IconButton onClick={handleCloseDetailDialog}>
+            <CloseIcon />
+          </IconButton>
         </DialogTitle>
+
+        {feedbackMessage && (
+          <Alert severity={feedbackSeverity} sx={{ mx: 3, mt: 1 }}>
+            {feedbackMessage}
+          </Alert>
+        )}
         <DialogContent dividers>
           {selectedRequest && (
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
@@ -425,50 +453,61 @@ const AdminVacationRequests: FC = () => {
                     <strong>Motivo de postergación:</strong> {selectedRequest.postponedReason}
                   </Typography>
                 </Box>
+              )}{/* Botón para suspender */}
+              {selectedRequest.status !== 'SUSPENDED' && selectedRequest.deleted !== true && (
+                <Grid container spacing={1}>
+                  <Grid item xs={12}>
+                    <Button
+                      variant="contained"
+                      color="warning"
+                      startIcon={<EditIcon />}
+                      onClick={() => setOpenSuspendDialog(true)}
+                      fullWidth
+                    >
+                      Suspender Solicitud
+                    </Button>
+                  </Grid>
+                </Grid>
               )}
 
-              {/* Botón para suspender */}
-              {selectedRequest.status !== 'SUSPENDED' && selectedRequest.deleted !== true && (
-                <Box sx={{ mt: 2, display: 'flex', justifyContent: 'flex-end' }}>
-                  <Button
-                    variant="contained"
-                    color="warning"
-                    startIcon={<EditIcon />}
-                    onClick={() => setOpenSuspendDialog(true)}
-                  >
-                    Suspender Solicitud
-                  </Button>
-                </Box>
-              )}
             </Box>
           )}
         </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseDetailDialog} color="primary">
-            Cerrar
-          </Button>
-          <Button
-            onClick={() => {
-              if (selectedRequest) {
-                router.push(`/vacations/vacations-requests/${selectedRequest.id}`);
-              }
-            }}
-            color="secondary"
-            variant="contained"
-          >
-            Ver solicitud completa
-          </Button>
-          {selectedRequest?.deleted !== true && (
-            <Button
-              onClick={handleSoftDelete}
-              color="error"
-              variant="outlined"
-              startIcon={<CloseIcon />}
-            >
-              Eliminar solicitud
-            </Button>
-          )}
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Grid container spacing={1}>
+            <Grid item xs={12} sm={6}>
+              <Button
+                onClick={() => {
+                  if (selectedRequest) {
+                    router.push(`/vacations/vacations-requests/${selectedRequest.id}`);
+                  }
+                }}
+                color="secondary"
+                variant="contained"
+                fullWidth
+                startIcon={<ArrowRightIcon />}
+              >
+                Ver solicitud completa
+              </Button>
+            </Grid>
+
+            {selectedRequest?.deleted !== true && (
+              <Grid item xs={12} sm={6}>
+                <Button
+                  onClick={handleSoftDelete}
+                  color="error"
+                  variant="outlined"
+                  fullWidth
+                  startIcon={<CloseIcon />}
+                >
+                  Eliminar solicitud
+                </Button>
+              </Grid>
+            )}
+          </Grid>
         </DialogActions>
+
+
       </Dialog>
       {/* Diálogo de suspensión (componente reutilizable) */}
       <SuspendVacationDialog

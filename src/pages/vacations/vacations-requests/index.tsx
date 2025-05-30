@@ -49,12 +49,9 @@ import EditIcon from '@mui/icons-material/Edit';
 import SaveIcon from '@mui/icons-material/Save';
 import { DatePicker, LocalizationProvider } from '@mui/lab'; // Para v5
 import EditVacationDialog from '../vacations-edit';
-
-
-
+import toast from 'react-hot-toast';
 interface VacationRequest {
     id: number;
-
     position: string;
     requestDate: string;
     startDate: string;
@@ -96,6 +93,8 @@ const VacationRequestList: VacationRequestsComponent = () => {
         postponedReason: string;
     }>>({});
     const [isEditing, setIsEditing] = useState(false);
+    const [dialogMessage, setDialogMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
 
 
     const translateStatus = (status: string): string => {
@@ -117,14 +116,14 @@ const VacationRequestList: VacationRequestsComponent = () => {
     const handleUpdate = (updatedRequest: VacationRequest) => {
         // aquí actualizas tu lista de solicitudes, por ejemplo
         console.log('Solicitud actualizada:', updatedRequest);
-      };
-      useEffect(() => {
+    };
+    useEffect(() => {
         const fetchRequests = async () => {
             if (!user?.id) {
                 console.error('ID de usuario no disponible.');
                 return;
             }
-    
+
             try {
                 const response = await axios.get<VacationRequest[]>(
                     `${process.env.NEXT_PUBLIC_API_BASE_URL}/vacation-requests/user/${user.id}`
@@ -136,14 +135,14 @@ const VacationRequestList: VacationRequestsComponent = () => {
                 console.error('Error fetching vacation requests:', error);
             }
         };
-    
+
         fetchRequests();
     }, [user]);
-    
+
 
     useEffect(() => {
         let result = requests;
-    
+
         if (searchTerm) {
             result = result.filter(
                 (request) =>
@@ -152,17 +151,17 @@ const VacationRequestList: VacationRequestsComponent = () => {
                     request.requestDate.includes(searchTerm)
             );
         }
-    
+
         if (statusFilter !== 'all') {
             result = result.filter((request) => request.status === statusFilter);
         }
-    
+
         if (dateFilter.startDate || dateFilter.endDate) {
             result = result.filter((request) => {
                 const dateToFilter = new Date(request[dateFilter.filterType]);
                 const startDate = dateFilter.startDate ? new Date(dateFilter.startDate) : null;
                 const endDate = dateFilter.endDate ? new Date(dateFilter.endDate) : null;
-    
+
                 if (startDate && endDate) {
                     return dateToFilter >= startDate && dateToFilter <= endDate;
                 } else if (startDate) {
@@ -173,13 +172,13 @@ const VacationRequestList: VacationRequestsComponent = () => {
                 return true;
             });
         }
-    
+
         // Ordenar por la fecha de solicitud (requestDate) de forma descendente
         result = result.sort((a, b) => new Date(b.requestDate).getTime() - new Date(a.requestDate).getTime());
-    
+
         setFilteredRequests(result);
     }, [searchTerm, statusFilter, requests, dateFilter]);
-    
+
 
     const handleOpenDialog = (request: VacationRequest) => {
         setSelectedRequest(request);
@@ -205,6 +204,34 @@ const VacationRequestList: VacationRequestsComponent = () => {
         setRowsPerPage(parseInt(event.target.value, 10));
         setPage(0);
     };
+    const handleCancelRequest = async (requestId: number) => {
+        if (!user?.id) return;
+        try {
+            await axios.patch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/vacation-requests/${requestId}/soft-delete`, {
+                userId: user.id,
+            });
+
+            const updatedRequests = requests.filter((req) => req.id !== requestId);
+            setRequests(updatedRequests);
+            setFilteredRequests(updatedRequests);
+
+            setDialogMessage({
+                type: 'success',
+                text: 'La solicitud fue cancelada correctamente.',
+            });
+
+            // Opcional: Cerrar el diálogo luego de un tiempo
+            // setTimeout(() => handleCloseDialog(), 3000);
+        } catch (error: any) {
+            const message =
+                error?.response?.data?.message || 'Ocurrió un error al cancelar la solicitud.';
+            setDialogMessage({
+                type: 'error',
+                text: message,
+            });
+        }
+    };
+
 
     const handleRefresh = () => {
         setSearchTerm('');
@@ -282,6 +309,7 @@ const VacationRequestList: VacationRequestsComponent = () => {
             console.error('Error updating vacation request:', error);
             setIsEditing(false);
         }
+
     };
     return (
         <Box sx={{ width: '100%' }}>
@@ -375,7 +403,7 @@ const VacationRequestList: VacationRequestsComponent = () => {
                         <TableHead>
                             <TableRow>
                                 <TableCell>Nª</TableCell>
-                                
+
                                 <TableCell>Fecha Solicitud</TableCell>
                                 <TableCell>Fecha Inicio</TableCell>
                                 <TableCell>Fecha Fin</TableCell>
@@ -517,33 +545,43 @@ const VacationRequestList: VacationRequestsComponent = () => {
                         </Box>
                     )}
                 </DialogContent>
-                <DialogActions>
+                <DialogActions sx={{ display: 'flex', flexDirection: 'column', alignItems: 'stretch', gap: 1, px: 3, pb: 2 }}>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 1, flexWrap: 'wrap' }}>
+                        <Button
+                            onClick={handleViewDetails}
+                            color="secondary"
+                            variant="contained"
+                            startIcon={<ArrowRightIcon />}
+                            fullWidth
+                            sx={{ flex: 1 }}
+                        >
+                            Ver Informe
+                        </Button>
+                        <Button
+                            variant="outlined"
+                            color="error"
+                            disabled={selectedRequest?.status !== 'PENDING'}
+                            onClick={() => {
+                                if (selectedRequest?.id !== undefined) {
+                                    handleCancelRequest(selectedRequest.id);
+                                }
+                            }}
+                            fullWidth
+                            sx={{ flex: 1 }}
+                        >
+                            Cancelar Solicitud
+                        </Button>
+                    </Box>
                     <Button
                         onClick={handleCloseDialog}
                         color="primary"
                         startIcon={<CloseIcon />}
+                        fullWidth
                     >
                         Cerrar
                     </Button>
-                    {/* 
-                    <Button
-                        onClick={() => handleOpenEditDialog(selectedRequest!)}
-                        color="primary"
-                        variant="outlined"
-                        startIcon={<EditIcon />}
-                    >
-                        Editar
-                    </Button>*/}
-
-                    <Button
-                        onClick={handleViewDetails}
-                        color="secondary"
-                        variant="contained"
-                        startIcon={<ArrowRightIcon />}
-                    >
-                        Ver Informe
-                    </Button>
                 </DialogActions>
+
             </Dialog>
             {/* Nuevo diálogo de edición */}
             {/* Nuevo diálogo de edición */}
