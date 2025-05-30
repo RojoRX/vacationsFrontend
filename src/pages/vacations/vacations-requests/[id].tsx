@@ -235,28 +235,28 @@ const VacationRequestDetails = () => {
     }
   };
 
-const handleFetchError = (error: unknown) => {
-  let errorMessage = 'Error al obtener los detalles de la solicitud';
+  const handleFetchError = (error: unknown) => {
+    let errorMessage = 'Error al obtener los detalles de la solicitud';
 
-  if (
-    typeof error === 'object' &&
-    error !== null &&
-    'response' in error &&
-    typeof (error as any).response?.data?.message === 'string'
-  ) {
-    errorMessage = (error as any).response.data.message;
-  } else if (
-    typeof error === 'object' &&
-    error !== null &&
-    'message' in error &&
-    typeof (error as any).message === 'string'
-  ) {
-    errorMessage = (error as any).message;
-  }
+    if (
+      typeof error === 'object' &&
+      error !== null &&
+      'response' in error &&
+      typeof (error as any).response?.data?.message === 'string'
+    ) {
+      errorMessage = (error as any).response.data.message;
+    } else if (
+      typeof error === 'object' &&
+      error !== null &&
+      'message' in error &&
+      typeof (error as any).message === 'string'
+    ) {
+      errorMessage = (error as any).message;
+    }
 
-  console.error('Error:', error);
-  setError(errorMessage);
-};
+    console.error('Error:', error);
+    setError(errorMessage);
+  };
 
 
   useEffect(() => {
@@ -287,28 +287,28 @@ const handleFetchError = (error: unknown) => {
     }
   };
 
-const handleStatusUpdateError = (error: unknown) => {
-  let errorMessage = 'Error al actualizar el estado';
+  const handleStatusUpdateError = (error: unknown) => {
+    let errorMessage = 'Error al actualizar el estado';
 
-  if (
-    typeof error === 'object' &&
-    error !== null &&
-    'response' in error &&
-    typeof (error as any).response?.data?.message === 'string'
-  ) {
-    errorMessage = (error as any).response.data.message;
-  } else if (
-    typeof error === 'object' &&
-    error !== null &&
-    'message' in error &&
-    typeof (error as any).message === 'string'
-  ) {
-    errorMessage = (error as any).message;
-  }
+    if (
+      typeof error === 'object' &&
+      error !== null &&
+      'response' in error &&
+      typeof (error as any).response?.data?.message === 'string'
+    ) {
+      errorMessage = (error as any).response.data.message;
+    } else if (
+      typeof error === 'object' &&
+      error !== null &&
+      'message' in error &&
+      typeof (error as any).message === 'string'
+    ) {
+      errorMessage = (error as any).message;
+    }
 
-  console.error('Error updating status:', error);
-  setError(errorMessage);
-};
+    console.error('Error updating status:', error);
+    setError(errorMessage);
+  };
 
   const toggleApprovedByHR = async () => {
     if (!request) return;
@@ -566,7 +566,7 @@ const handleStatusUpdateError = (error: unknown) => {
         </Card>
       )}
 */}
-      {user?.role === 'admin' && (
+      {user?.role === 'admin' && !request?.deleted && (
         <Card sx={{ mb: 3 }}>
           <CardContent>
             <Typography variant="h6" gutterBottom fontWeight="bold">
@@ -579,13 +579,14 @@ const handleStatusUpdateError = (error: unknown) => {
               startIcon={request?.approvedByHR ? <CancelIcon /> : <CheckIcon />}
               onClick={toggleApprovedByHR}
               fullWidth
-              disabled={request?.approvedByHR === true} // 
+              disabled={request?.approvedByHR === true}
             >
               {request?.approvedByHR ? 'Desaprobar' : 'Aprobar'}
             </Button>
           </CardContent>
         </Card>
       )}
+
     </>
   );
 

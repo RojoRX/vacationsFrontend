@@ -21,7 +21,8 @@ import {
   DialogContent,
   DialogActions,
   Box,
-  useTheme
+  useTheme,
+  Alert
 } from '@mui/material';
 import router from 'next/router';
 import { Info as InfoIcon } from '@mui/icons-material';
@@ -96,7 +97,7 @@ const AdminVacationRequests: FC = () => {
     };
 
     fetchVacationRequests();
-  }, []);
+  }, [showDeleted]);
 
   const filteredRequests = requests
     .filter((request) => {
@@ -172,7 +173,11 @@ const AdminVacationRequests: FC = () => {
       <Typography variant="h4" gutterBottom>
         Solicitudes de Vacaciones
       </Typography>
-
+      {showDeleted && (
+        <Alert severity="warning" sx={{ mb: 2 }}>
+          Estás viendo solicitudes eliminadas
+        </Alert>
+      )}
       {/* Filtros */}
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px' }}>
         <TextField
@@ -259,7 +264,7 @@ const AdminVacationRequests: FC = () => {
                       </TableCell>
 
                       <TableCell>{request.ci}</TableCell> {/* NUEVA CELDA */}
-                      <TableCell>{request.department}</TableCell> {/* NUEVA CELDA */}
+                      <TableCell>{request.department || "No Registrado"}</TableCell> {/* NUEVA CELDA */}
                       <TableCell>{request.academicUnit}</TableCell> {/* NUEVA CELDA */}
                       <TableCell>{formatDate(request.requestDate)}</TableCell>
                       <TableCell>
@@ -423,7 +428,7 @@ const AdminVacationRequests: FC = () => {
               )}
 
               {/* Botón para suspender */}
-              {selectedRequest.status !== 'SUSPENDED' && (
+              {selectedRequest.status !== 'SUSPENDED' && selectedRequest.deleted !== true && (
                 <Box sx={{ mt: 2, display: 'flex', justifyContent: 'flex-end' }}>
                   <Button
                     variant="contained"
