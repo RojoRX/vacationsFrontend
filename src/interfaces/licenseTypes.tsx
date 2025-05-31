@@ -10,5 +10,6 @@ export interface License {
     personalDepartmentApproval: boolean;
     totalDays: string;
     userId:number;
+    deleted:boolean;
     // Puedes agregar más campos según sea necesario
 }

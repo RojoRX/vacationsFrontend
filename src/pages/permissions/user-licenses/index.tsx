@@ -4,7 +4,8 @@ import {
     Box, Typography, CircularProgress, Paper, Table, TableBody, TableCell,
     TableContainer, TableHead, TableRow, TablePagination, Button, Dialog,
     DialogTitle, DialogContent, DialogActions, IconButton, TableSortLabel,
-    TextField, MenuItem, Chip, Toolbar, InputAdornment
+    TextField, MenuItem, Chip, Toolbar, InputAdornment,
+    Alert
 } from '@mui/material';
 import { DatePicker } from '@mui/lab';
 import { green, red, orange, blue } from '@mui/material/colors';
@@ -47,6 +48,8 @@ const UserLicenses: AclComponent = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState<string>('all');
     const [yearFilter, setYearFilter] = useState<string>('');
+    const [alertMessage, setAlertMessage] = useState<string | null>(null);
+    const [alertSeverity, setAlertSeverity] = useState<'success' | 'error'>('success');
 
     useEffect(() => {
         if (user) {
@@ -123,6 +126,26 @@ const UserLicenses: AclComponent = () => {
 
     const handleCloseDetails = () => {
         setSelectedLicense(null);
+    };
+    const handleDeleteLicense = async () => {
+        if (!selectedLicense) return;
+
+        try {
+            await axios.delete(`${process.env.NEXT_PUBLIC_API_BASE_URL}/licenses/${selectedLicense.id}`);
+            setAlertMessage('Licencia eliminada correctamente');
+            setAlertSeverity('success');
+            // Recargar lista
+            const response = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/licenses/user/${user?.id}`);
+            const sortedLicenses = response.data.sort((a: License, b: License) =>
+                new Date(b.issuedDate).getTime() - new Date(a.issuedDate).getTime()
+            );
+            setLicenses(sortedLicenses);
+            setFilteredLicenses(sortedLicenses);
+            setSelectedLicense(null); // Cierra el diálogo
+        } catch (error) {
+            setAlertMessage('Error al eliminar la licencia');
+            setAlertSeverity('error');
+        }
     };
 
     const handleChangePage = (event: unknown, newPage: number) => {
@@ -339,6 +362,14 @@ const UserLicenses: AclComponent = () => {
                                 <CloseIcon />
                             </IconButton>
                         </DialogTitle>
+                        {alertMessage && (
+                            <Box mt={2}>
+                                <Alert severity={alertSeverity} onClose={() => setAlertMessage(null)}>
+                                    {alertMessage}
+                                </Alert>
+                            </Box>
+                        )}
+
                         <DialogContent dividers>
                             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
 
@@ -434,10 +465,21 @@ const UserLicenses: AclComponent = () => {
                                 }}
                                 color="secondary"
                                 variant="contained"
-                               
+
                             >
                                 Generar PDF
                             </Button>
+                            {selectedLicense && !selectedLicense.immediateSupervisorApproval && !selectedLicense.personalDepartmentApproval && (
+                                <Button
+                                    onClick={handleDeleteLicense}
+                                    variant="outlined"
+                                    color="error"
+                                    startIcon={<ClearIcon />}
+                                >
+                                    Eliminar
+                                </Button>
+                            )}
+
                         </DialogActions>
                     </Dialog>
                 )}

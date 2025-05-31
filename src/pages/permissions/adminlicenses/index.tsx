@@ -81,6 +81,7 @@ const AdminLicenses: AclComponent = () => {
     const [filterType, setFilterType] = useState<'all' | 'supervisor' | 'personal'>('all');
     const [reportModalOpen, setReportModalOpen] = useState(false);
     const [licenseDialogOpen, setLicenseDialogOpen] = useState(false);
+    const [viewDeleted, setViewDeleted] = useState(false);
 
     useEffect(() => {
         fetchAllLicenses();
@@ -131,6 +132,54 @@ const AdminLicenses: AclComponent = () => {
             })
             .catch(() => {
                 setError('Error al obtener las licencias');
+            })
+            .finally(() => {
+                setLoading(false);
+            });
+    };
+    const fetchDeletedLicenses = () => {
+        setLoading(true);
+        axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/licenses/deleted`)
+            .then((response) => {
+                const deletedLicenses = response.data.sort((a: License, b: License) => b.id - a.id);
+                setLicenses(deletedLicenses);
+                const userRequests = deletedLicenses.map((license: License) =>
+                    axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/users/${license.userId}`)
+                        .then(userResponse => ({
+                            userId: license.userId,
+                            userName: userResponse.data.fullName,
+                            userCi: userResponse.data.ci,
+                            celular: userResponse.data.celular || 'N/A',
+                            department: userResponse.data.department?.name || 'Sin departamento',
+                            academicUnit: userResponse.data.academicUnit?.name || 'Sin Unidad academica'
+                        }))
+                );
+                return Promise.all(userRequests);
+            })
+            .then(userDetailsArray => {
+                const userDetailsMap: {
+                    [key: string]: {
+                        name: string;
+                        ci: string;
+                        celular: string;
+                        department: string;
+                        academicUnit: string;
+                    };
+                } = {};
+                userDetailsArray.forEach(user => {
+                    userDetailsMap[user.userId] = {
+                        name: user.userName,
+                        ci: user.userCi,
+                        celular: user.celular,
+                        department: user.department,
+                        academicUnit: user.academicUnit
+                    };
+                });
+                setUserDetails(userDetailsMap);
+                applyFilters(licenses, userDetailsMap, searchTerm, filterApproval, filterType);
+            })
+            .catch(() => {
+                setError('Error al obtener licencias eliminadas');
             })
             .finally(() => {
                 setLoading(false);
@@ -197,13 +246,15 @@ const AdminLicenses: AclComponent = () => {
     };
 
     const handleLicenseUpdate = (updatedLicense: License) => {
-        setLicenses(prev =>
-            prev.map(license =>
-                license.id === updatedLicense.id ? updatedLicense : license
-            )
-        );
-        setSelectedLicense(updatedLicense);
+        if (updatedLicense.deleted) {
+            setLicenses(prev => prev.filter(lic => lic.id !== updatedLicense.id));
+        } else {
+            setLicenses(prev =>
+                prev.map(lic => (lic.id === updatedLicense.id ? updatedLicense : lic))
+            );
+        }
     };
+
 
     const formatDate = (dateString: string) => {
         return format(parseISO(dateString), 'PPP', { locale: es });
@@ -236,7 +287,13 @@ const AdminLicenses: AclComponent = () => {
                 <Typography variant="h5" component="h2" sx={{ display: 'flex', alignItems: 'center' }}>
                     <Business sx={{ mr: 1, color: 'primary.main' }} />
                     Gestión General de Permisos
+                    {viewDeleted && (
+                        <Typography variant="subtitle2" color="error" sx={{ ml: 2 }}>
+                            (Visualizando solicitudes eliminadas)
+                        </Typography>
+                    )}
                 </Typography>
+
 
                 <Tooltip title="Recargar datos">
                     <IconButton onClick={fetchAllLicenses} color="primary">
@@ -251,6 +308,22 @@ const AdminLicenses: AclComponent = () => {
                 >
                     Generar Reporte
                 </Button>
+                <Button
+                    variant="contained"
+                    color={viewDeleted ? 'success' : 'warning'}
+                    onClick={() => {
+                        if (viewDeleted) {
+                            fetchAllLicenses();
+                        } else {
+                            fetchDeletedLicenses();
+                        }
+                        setViewDeleted(!viewDeleted);
+                    }}
+                    sx={{ ml: 2 }}
+                >
+                    {viewDeleted ? 'Ver Licencias Activas' : 'Ver Licencias Eliminadas'}
+                </Button>
+
             </Box>
 
             {/* Filtros y búsqueda */}
