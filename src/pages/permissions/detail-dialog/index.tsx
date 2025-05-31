@@ -17,7 +17,7 @@ import { PictureAsPdf, Business, CheckCircle, Cancel, Close, Delete } from '@mui
 import axios from 'src/lib/axios';
 import { License } from 'src/interfaces/licenseTypes';
 import { generateLicensePdf } from 'src/utils/licensePdfGenerator';
-
+import {formatDate} from 'src/utils/dateUtils';
 interface LicenseDetailDialogProps {
     open: boolean;
     onClose: () => void;
@@ -46,11 +46,6 @@ const LicenseDetailDialog: React.FC<LicenseDetailDialogProps> = ({
     const [error, setError] = useState<string | null>(null);
     const [successMessage, setSuccessMessage] = useState<string | null>(null);
     const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
-
-    const formatDate = (dateString: string) => {
-        if (!dateString) return 'No disponible';
-        return new Date(dateString).toLocaleDateString('es-ES');
-    };
 
     const handlePersonalApprove = async () => {
         if (!license || !currentUser) return;
