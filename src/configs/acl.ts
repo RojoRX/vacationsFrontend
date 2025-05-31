@@ -29,7 +29,7 @@ const defineRulesFor = (role: string, subject: string) => {
     can('manage', 'all-licenses');
     can('manage', 'holiday-periods');
     can('manage', 'create-user');
-    
+
   } else if (role === 'client') {
     can(['read'], 'welcome-dashboard');
     can(['read'], 'welcome');
@@ -41,10 +41,12 @@ const defineRulesFor = (role: string, subject: string) => {
     can('read', 'user-licenses');
     can('read', 'user-profile'); // Agregar acceso al perfil de usuario para clientes
     can('read', 'profile-tab'); // Permitir acceso al componente ProfileTab para clientes
-    can('read', 'about-overview'); 
-    can('read', 'user-profile-tab'); 
-    can('read', 'vacation-dashboard'); 
+    can('read', 'about-overview');
+    can('read', 'user-profile-tab');
+    can('read', 'vacation-dashboard');
     can('read', 'holiday-periods');
+    can('read', 'personal-holiday-periods');
+
   } else if (role === 'supervisor') {
     can(['read'], 'welcome-dashboard');
     can(['read'], 'welcome');
@@ -59,11 +61,12 @@ const defineRulesFor = (role: string, subject: string) => {
     can('read', 'department-permission');
     can('read', 'user-profile'); // Agregar acceso al perfil de usuario para clientes
     can('read', 'profile-tab'); // Permitir acceso al componente ProfileTab para clientes
-    can('read', 'about-overview'); 
-    can('read', 'user-profile-tab'); 
-    can('read', 'vacation-dashboard'); 
+    can('read', 'about-overview');
+    can('read', 'user-profile-tab');
+    can('read', 'vacation-dashboard');
     can('read', 'holiday-periods');
-    
+    can('read', 'personal-holiday-periods');
+
   } else {
     can(['read', 'create', 'update', 'delete'], subject);
   }

@@ -65,6 +65,7 @@ const MenuItem = styled(MuiMenuItem)<MenuItemProps>(({ theme }) => ({
 
 const PerfectScrollbar = styled(PerfectScrollbarComponent)({
   maxHeight: 344,
+  overflowX: 'hidden'
 });
 
 const MenuItemTitle = styled(Typography)(({ theme }) => ({
@@ -93,7 +94,8 @@ const ScrollWrapper = ({ children, hidden }: { children: ReactNode; hidden: bool
   if (hidden) {
     return <Box sx={{ maxHeight: 349, overflowY: 'auto', overflowX: 'hidden' }}>{children}</Box>;
   } else {
-    return <PerfectScrollbarComponent options={{ wheelPropagation: false, suppressScrollX: true }}>{children}</PerfectScrollbarComponent>;
+   return <PerfectScrollbar options={{ wheelPropagation: false, suppressScrollX: true }}>{children}</PerfectScrollbar>;
+
   }
 };
 

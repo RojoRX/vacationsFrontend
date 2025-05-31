@@ -158,7 +158,7 @@ return (
                 .map((request) => (
                   <TableRow key={request.id}>
                     <TableCell>{request.id}</TableCell>
-                    <TableCell>{request.user.username}</TableCell>
+                    <TableCell>{request.user.fullname}</TableCell>
                     <TableCell>{request.user.ci}</TableCell>
                     <TableCell>{request.requestDate}</TableCell>
                     <TableCell>

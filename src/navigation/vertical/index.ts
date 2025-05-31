@@ -41,23 +41,24 @@ const navigation = (): VerticalNavItemsType => {
         //   subject: 'vacation-request-form',
         // },
         {
-          title: 'Resumen Vacaciones',
+          title: 'Resumen de Mis Vacaciones',
           path: '/vacations/vacations-dashboard',
           action: 'read',
           subject: 'vacation-dashboard',
         },
         {
-          title: 'Solicitudes de Vacaciones',
+          title: 'Mis Solicitudes de Vacaciones',
           path: '/vacations/vacations-requests',
           action: 'read',
           subject: 'vacation-request-list',
         },
         {
-          title: 'Ver Solicitudes de Vacaciones (Supervisor)',
+          title: 'Solicitudes Pendientes del Personal',
           path: '/vacations/vacations-supervisor',
           action: 'read',
           subject: 'supervisor-vacation-requests',
         },
+
         {
           title: 'Ver Todas las Solicitudes',
           path: '/vacations/vacations-admin',
@@ -82,17 +83,18 @@ const navigation = (): VerticalNavItemsType => {
           subject: 'user-licenses',
         },
         {
-          title: 'Permisos Departamento',
+          title: 'Solicitudes Pendientes del Personal',
           path: '/permissions/department-permission',
           action: 'read',
           subject: 'department-permission',
         },
         {
-          title: 'Solicitudes de Permisos',
+          title: 'Gestión de Solicitudes de Permisos',
           path: '/permissions/adminlicenses',
           action: 'read',
           subject: 'adminlicenses',
         },
+
       ],
     },
     {
@@ -107,11 +109,11 @@ const navigation = (): VerticalNavItemsType => {
           subject: 'holiday-periods'
         },
         {
-          title: 'Recesos Personalizados',
+          title: 'Mis Recesos',
           icon: 'mdi:calendar-account',
-          path: '/recess/custom',
-          action: 'manage',
-          subject: 'custom-holidays'
+          path: '/holidayPeriods/personalHolidayPeriods',
+          action: 'read',
+          subject: 'personal-holiday-periods'
         }
       ]
     },
@@ -724,7 +726,7 @@ const navigation = (): VerticalNavItemsType => {
     //     }
     //   ]
     // },
-    
+
     /*{
       path: '/acl',
       action: 'read',

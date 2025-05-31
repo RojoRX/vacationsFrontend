@@ -200,7 +200,7 @@ const LoginPage = () => {
             </Box>
             <Box sx={{ mb: 6 }}>
               <TypographyStyled variant='h5'>{`Bienvenido a ${themeConfig.templateName}! 👋🏻`}</TypographyStyled>
-              <Typography variant='body2'>Por favor inicia sesion en tu cuenta para comenzar.</Typography>
+              <Typography variant='body2'>Por favor inicia sesion en tu cuenta para comenzar. Utiliza tu Carnet de Identidad o Nombre de Usuario y contraseña</Typography>
             </Box>
             {/* 
             <Alert icon={false} sx={{ py: 3, mb: 6, ...bgColors.primaryLight, '& .MuiAlert-message': { p: 0 } }}>
@@ -221,7 +221,7 @@ const LoginPage = () => {
                   render={({ field: { value, onChange, onBlur } }) => (
                     <TextField
                       autoFocus
-                      label='Usuario' // Cambia 'Email' a 'Username'
+                      label='Usuario o CI' // Cambia 'Email' a 'Username'
                       value={value}
                       onBlur={onBlur}
                       onChange={onChange}
