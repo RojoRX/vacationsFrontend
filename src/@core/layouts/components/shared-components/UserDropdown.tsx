@@ -19,7 +19,7 @@ import Icon from 'src/@core/components/icon'
 
 // ** Context
 import { useAuth } from 'src/hooks/useAuth'
-import  useUser  from 'src/hooks/useUser'
+import useUser from 'src/hooks/useUser'
 
 // ** Type Imports
 import { Settings } from 'src/@core/context/settingsContext'
@@ -47,7 +47,7 @@ const UserDropdown = (props: Props) => {
   // ** Hooks
   const router = useRouter()
   const { logout } = useAuth()
-  const user  = useUser()
+  const user = useUser()
 
   // ** Vars
   const { direction } = settings
@@ -138,6 +138,13 @@ const UserDropdown = (props: Props) => {
           </Box>
         </MenuItem>
 
+        {user?.role === 'admin' && (
+          <MenuItem sx={{ p: 0 }} onClick={() => handleDropdownClose('/config')}>
+            <Box sx={styles}>
+              <Icon icon='mdi:account-outline' />
+              Configuracion
+            </Box>
+          </MenuItem>)}
         {/* <MenuItem sx={{ p: 0 }} onClick={() => handleDropdownClose('/apps/email')}>
           <Box sx={styles}>
             <Icon icon='mdi:email-outline' />
