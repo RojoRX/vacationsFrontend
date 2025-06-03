@@ -39,6 +39,7 @@ import CombinedHolidayPeriods from '../combined-recess';
 import { CalendarIcon } from '@mui/x-date-pickers';
 import VacationRequestsTable from '../vacations-user';
 import { VacationReportDialog } from 'src/pages/reports/vacationReports';
+import UserConfigDialog from '../userConfig';
 
 interface Department {
   id: number;
@@ -78,13 +79,12 @@ const UserInformation: AclComponent = () => {
   const [openCreate, setOpenCreate] = useState(false);
   const [openChangePassword, setOpenChangePassword] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [openConfig, setOpenConfig] = useState(false);
   useEffect(() => {
     if (ci) {
       fetchUser(ci as string);
     }
   }, [ci]);
-
-
   const fetchUser = async (ci: string) => {
     setLoading(true);
     try {
@@ -265,14 +265,14 @@ const UserInformation: AclComponent = () => {
                 sx={{ mt: 2 }}
                 onClick={() => setEditDialogOpen(true)}
               >
-                Editar Usuario
+                Editar Informacion
               </Button>
               {user.username === null ? (
-                <Button variant="contained" color="primary" sx={{ mt: 2, ml:1 }} onClick={() => setOpenCreate(true)}>
+                <Button variant="contained" color="primary" sx={{ mt: 2, ml: 1 }} onClick={() => setOpenCreate(true)}>
                   Crear credenciales
                 </Button>
               ) : (
-                <Button variant="outlined" color="secondary" sx={{ mt: 2, ml:1  }} onClick={() => setOpenChangePassword(true)}>
+                <Button variant="outlined" color="secondary" sx={{ mt: 2, ml: 1 }} onClick={() => setOpenChangePassword(true)}>
                   Cambiar contraseña
                 </Button>
               )}
@@ -280,7 +280,7 @@ const UserInformation: AclComponent = () => {
                 setOpenCreate(false);
                 await fetchUser(user.ci);
               }} ci={user.ci} />
-
+              <Button variant='outlined'  sx={{ mt: 2, ml: 1 }} onClick={() => setOpenConfig(true)}>Configurar Usuario</Button>
             </CardContent>
           </Card>
         </Grid>
@@ -489,6 +489,12 @@ const UserInformation: AclComponent = () => {
         open={openChangePassword}
         onClose={() => setOpenChangePassword(false)}
         ci={user.ci}
+      />
+      <UserConfigDialog
+        open={openConfig}
+        onClose={() => setOpenConfig(false)}
+        userId={user.id}
+         fechaIngreso={user.fecha_ingreso}
       />
 
       {/* Snackbar para notificaciones */}
