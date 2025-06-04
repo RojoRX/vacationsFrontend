@@ -13,6 +13,7 @@ import {
 import { Visibility, VisibilityOff } from '@mui/icons-material';
 import { useState } from 'react';
 import axios from 'src/lib/axios';
+import jsPDF from 'jspdf';
 
 interface CreateCredentialsDialogProps {
     open: boolean;
@@ -21,6 +22,38 @@ interface CreateCredentialsDialogProps {
 }
 
 const API_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
+const generateAndOpenPdf = (username: string, password: string) => {
+    const doc = new jsPDF();
+
+    doc.setFontSize(16);
+    doc.text('Credenciales de Acceso - Sistema de Vacaciones', 20, 20);
+
+    doc.setFontSize(12);
+    doc.text(`Usuario: ${username}`, 20, 40);
+    doc.text(`Contraseña: ${password}`, 20, 50);
+
+    // Texto adicional
+    doc.setFontSize(11);
+    doc.text(
+        'Nota: También puedes acceder al sistema utilizando tu número de CI como nombre de usuario.',
+        20,
+        70,
+        { maxWidth: 170 } // Para evitar que se corte en pantallas más pequeñas
+    );
+
+    doc.text(
+        'Te recomendamos guardar esta información en un lugar seguro.',
+        20,
+        80,
+        { maxWidth: 170 }
+    );
+
+    // Abrir el PDF en una nueva ventana
+    const blob = doc.output('blob');
+    const url = URL.createObjectURL(blob);
+    window.open(url, '_blank');
+};
+
 
 export const CreateCredentialsDialog: React.FC<CreateCredentialsDialogProps> = ({ open, onClose, ci }) => {
     const [username, setUsername] = useState('');
@@ -41,6 +74,10 @@ export const CreateCredentialsDialog: React.FC<CreateCredentialsDialogProps> = (
             });
 
             setResult(response.data);
+            // Extraer valores y generar PDF
+            const finalUsername = username || response.data.username;
+            const finalPassword = password || response.data.temporaryPassword || 'No proporcionada';
+            generateAndOpenPdf(finalUsername, finalPassword);
         } catch (err: any) {
             if (axios.isAxiosError(err)) {
                 setError(err.response?.data?.message || err.message || 'Error inesperado');

@@ -202,6 +202,7 @@ const SearchUsers = () => {
                               user.role === 'ADMIN' ? 'secondary' :
                                 'default'
                           }
+                          
                           size="small"
                         />
                       </TableCell>

@@ -14,6 +14,7 @@ interface VacationRequest {
     requestDate: string;
     position: string;
     department: string;
+    academicUnit: string
     startDate: string;
     endDate: string;
     totalDays: number;
@@ -133,10 +134,11 @@ export const generateVacationRequestPDF = (request: VacationRequest) => {
         ['Nombre de Usuario:', request.userName],
         ['Fecha de Ingreso:', formatDate(request.fechaIngreso)],
         ['Fecha de Solicitud:', formatDate(request.requestDate)],
-        ['Departamento:', request.department || 'No especificado'],
+        ['Unidad o Departamento:', request.department || request.academicUnit || 'No especificado'],
         ['Cargo que Ocupa:', request.position || 'No especificado'],
-        ['Solicita Vacación a partir de:', formatDate(request.startDate)]
+        ['Solicita Vacación a partir de:', formatDate(request.startDate)],
     ];
+
 
     autoTable(doc, {
         ...(tableConfig as Partial<UserOptions>),

@@ -57,6 +57,7 @@ interface VacationRequest {
   requestDate: string;
   position: string;
   department: string;
+  academicUnit:string;
   startDate: string;
   endDate: string;
   totalDays: number;
@@ -293,28 +294,33 @@ const VacationRequestDetailsInfo = () => {
     </Paper>
   );
 
-  const renderApplicantInfo = () => (
-    <>
-      <Typography variant="body1">
-        <strong>Nombre de Usuario:</strong> {request?.userName}
-      </Typography>
-      <Typography variant="body1">
-        <strong>Fecha de Ingreso:</strong> {formatDate(request?.fechaIngreso || '')}
-      </Typography>
-      <Typography variant="body1">
-        <strong>Fecha de Solicitud:</strong> {formatDate(request?.requestDate || '')}
-      </Typography>
-      <Typography variant="body1">
-        <strong>Departamento:</strong> {request?.department || 'No especificado'}
-      </Typography>
-      <Typography variant="body1">
-        <strong>Cargo que Ocupa:</strong> {request?.position || 'No especificado'}
-      </Typography>
-      <Typography variant="body1">
-        <strong>Solicita Vacacion a partir de:</strong> {formatDate(request?.startDate || '')}
-      </Typography>
-    </>
-  );
+  const renderApplicantInfo = () => {
+    const organizationalUnit =
+      request?.department || request?.academicUnit || 'No especificado';
+
+    return (
+      <>
+        <Typography variant="body1">
+          <strong>Nombre de Usuario:</strong> {request?.userName}
+        </Typography>
+        <Typography variant="body1">
+          <strong>Fecha de Ingreso:</strong> {formatDate(request?.fechaIngreso || '')}
+        </Typography>
+        <Typography variant="body1">
+          <strong>Fecha de Solicitud:</strong> {formatDate(request?.requestDate || '')}
+        </Typography>
+        <Typography variant="body1">
+          <strong>Unidad Organizacional:</strong> {organizationalUnit}
+        </Typography>
+        <Typography variant="body1">
+          <strong>Cargo que Ocupa:</strong> {request?.position || 'No especificado'}
+        </Typography>
+        <Typography variant="body1">
+          <strong>Solicita Vacación a partir de:</strong> {formatDate(request?.startDate || '')}
+        </Typography>
+      </>
+    );
+  };
 
   const renderPersonalDepartmentReport = () => (
     <>

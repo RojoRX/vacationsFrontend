@@ -16,6 +16,8 @@ import {
 import { Visibility, VisibilityOff } from '@mui/icons-material';
 import { useState } from 'react';
 import axios from 'src/lib/axios';
+import { jsPDF } from 'jspdf';
+
 
 interface ChangePasswordDialogProps {
   open: boolean;
@@ -24,6 +26,36 @@ interface ChangePasswordDialogProps {
 }
 
 const API_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
+
+
+const generateAndOpenPdf = (ci: string, password: string) => {
+  const doc = new jsPDF();
+
+  doc.setFontSize(16);
+  doc.text('Credenciales de Acceso - Sistema de Vacaciones', 20, 20);
+
+  doc.setFontSize(12);
+  doc.text(`Usuario: ${ci} (CI)`, 20, 40);
+  doc.text(`Contraseña: ${password}`, 20, 50);
+
+  doc.setFontSize(11);
+  doc.text(
+    'También puedes ingresar con tu número de CI como nombre de usuario.',
+    20,
+    70,
+    { maxWidth: 170 }
+  );
+  doc.text(
+    'Te recomendamos guardar esta información en un lugar seguro.',
+    20,
+    80,
+    { maxWidth: 170 }
+  );
+
+  const blob = doc.output('blob');
+  const url = URL.createObjectURL(blob);
+  window.open(url, '_blank');
+};
 
 export const ChangePasswordDialog: React.FC<ChangePasswordDialogProps> = ({ open, onClose, ci }) => {
   const [password, setPassword] = useState('');
@@ -54,10 +86,15 @@ export const ChangePasswordDialog: React.FC<ChangePasswordDialogProps> = ({ open
         password: password || undefined,
       });
 
+      const finalPassword = password || response.data.temporaryPassword;
       const mensaje = password
         ? 'Contraseña actualizada correctamente.'
-        : `Contraseña generada automáticamente: ${response.data.temporaryPassword}`;
+        : `Contraseña generada automáticamente: ${finalPassword}`;
+
       setResult(mensaje);
+
+      // ⬅️ Generar PDF con CI como usuario y la contraseña final
+      generateAndOpenPdf(ci, finalPassword);
     } catch (err: any) {
       if (axios.isAxiosError(err)) {
         setError(err.response?.data?.message || err.message || 'Error inesperado');
@@ -68,6 +105,7 @@ export const ChangePasswordDialog: React.FC<ChangePasswordDialogProps> = ({ open
       setLoading(false);
     }
   };
+
 
   return (
     <>

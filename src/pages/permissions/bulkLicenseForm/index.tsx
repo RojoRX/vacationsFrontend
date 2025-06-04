@@ -26,6 +26,7 @@ import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import esLocale from 'date-fns/locale/es';
+import getBusinessDays from 'src/utils/businessDays';
 
 interface LicenseFormData {
   timeRequested: string;
@@ -287,6 +288,12 @@ const BulkLicenseForm: React.FC<BulkLicenseFormProps> = ({ open, onClose, userId
                       minDate={license.startDate || undefined}
                       disabled={license.timeRequested !== 'Varios Días'}
                     />
+                    {license.startDate && license.endDate && (
+                      <Typography variant="body2" sx={{ mt: 1, fontStyle: 'italic' }}>
+                        Días hábiles: {getBusinessDays(license.startDate, license.endDate)}
+                      </Typography>
+                    )}
+
                   </LocalizationProvider>
                 </Grid>
               </Grid>

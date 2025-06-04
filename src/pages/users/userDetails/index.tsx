@@ -408,43 +408,6 @@ const triggerReload = () => {
               )}
               {activeTab === 2 && user && (
                 <>
-                  {/* Selector de años disponibles */}
-                  <Box sx={{ mb: 2, display: 'flex', justifyContent: 'flex-end' }}>
-                    <FormControl sx={{ minWidth: 150 }}>
-                      <InputLabel id="year-select-label">Desde la Gestión</InputLabel>
-                      <Select
-                        labelId="year-select-label"
-                        value={selectedYear}
-                        onChange={handleYearChange}
-                        size="small"
-                        label="Desde la Gestión"
-                      >
-                        {/* Generar los años disponibles dinámicamente */}
-                        {Array.from({ length: currentYear - new Date(user.fecha_ingreso).getFullYear() + 1 }, (_, i) => {
-                          const year = new Date(user.fecha_ingreso).getFullYear() + i;
-                          return (
-                            <MenuItem key={year} value={year}>
-                              {year}
-                            </MenuItem>
-                          );
-                        })}
-                      </Select>
-                    </FormControl>
-                  </Box>
-
-                  {/* Botón para disparar el fetch de la deuda vacacional */}
-                  <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
-                    <Button
-                      variant="contained"
-                      onClick={() => {
-                        // Acción de disparar el fetch cuando se hace clic en el botón
-                        console.log(`Obteniendo deuda vacacional para el año ${selectedYear}`);
-                      }}
-                    >
-                      Obtener Deuda Vacacional
-                    </Button>
-                  </Box>
-
                   {/* Componente UserVacationDebt */}
                   <UserVacationDebt
                     ci={user.ci}

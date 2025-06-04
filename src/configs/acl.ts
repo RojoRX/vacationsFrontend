@@ -29,6 +29,7 @@ const defineRulesFor = (role: string, subject: string) => {
     can('manage', 'all-licenses');
     can('manage', 'holiday-periods');
     can('manage', 'create-user');
+    can('manage', 'vacation-request-details-info');
 
   } else if (role === 'client') {
     can(['read'], 'welcome-dashboard');
@@ -46,6 +47,7 @@ const defineRulesFor = (role: string, subject: string) => {
     can('read', 'vacation-dashboard');
     can('read', 'holiday-periods');
     can('read', 'personal-holiday-periods');
+    can('read', 'vacation-request-details-info');
 
   } else if (role === 'supervisor') {
     can(['read'], 'welcome-dashboard');
@@ -66,6 +68,7 @@ const defineRulesFor = (role: string, subject: string) => {
     can('read', 'vacation-dashboard');
     can('read', 'holiday-periods');
     can('read', 'personal-holiday-periods');
+    can('read', 'vacation-request-details-info');
 
   } else {
     can(['read', 'create', 'update', 'delete'], subject);

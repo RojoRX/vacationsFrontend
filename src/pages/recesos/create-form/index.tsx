@@ -1,21 +1,22 @@
 import React, { useState } from 'react';
-import { 
-  Box, 
-  Button, 
-  TextField, 
-  MenuItem, 
-  Typography, 
-  Dialog, 
-  DialogActions, 
-  DialogContent, 
-  DialogTitle, 
-  CircularProgress, 
-  IconButton, 
+import {
+  Box,
+  Button,
+  TextField,
+  MenuItem,
+  Typography,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  CircularProgress,
+  IconButton,
   InputAdornment,
   Alert
 } from '@mui/material';
 import { Event as EventIcon } from '@mui/icons-material';
 import axios from 'src/lib/axios';
+import getBusinessDays from 'src/utils/businessDays';
 
 interface GeneralHolidayFormProps {
   open: boolean;
@@ -78,7 +79,7 @@ const GeneralHolidayForm: React.FC<GeneralHolidayFormProps> = ({ open, onClose, 
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
-    
+
     if (!validateForm()) return;
 
     setLoading(true);
@@ -92,20 +93,20 @@ const GeneralHolidayForm: React.FC<GeneralHolidayFormProps> = ({ open, onClose, 
       };
 
       await axios.post(`${process.env.NEXT_PUBLIC_API_BASE_URL}/general-holiday-periods`, payload);
-      
+
       // Reset form on success
       setNewHoliday({
         name: 'INVIERNO',
         startDate: new Date().toISOString().split('T')[0],
         endDate: new Date().toISOString().split('T')[0],
       });
-      
+
       onSuccess();
       onClose();
     } catch (error) {
       console.error('Error creating holiday:', error);
       setErrorMessage(
-        axios.isAxiosError(error) 
+        axios.isAxiosError(error)
           ? error.response?.data?.message || 'Error al crear el receso'
           : 'Error al crear el receso'
       );
@@ -117,7 +118,7 @@ const GeneralHolidayForm: React.FC<GeneralHolidayFormProps> = ({ open, onClose, 
   const handleStartDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const startDate = e.target.value;
     setNewHoliday(prev => ({ ...prev, startDate }));
-    
+
     // Reset end date if it's before the new start date
     if (newHoliday.endDate && new Date(newHoliday.endDate) < new Date(startDate)) {
       setNewHoliday(prev => ({ ...prev, endDate: '' }));
@@ -128,7 +129,7 @@ const GeneralHolidayForm: React.FC<GeneralHolidayFormProps> = ({ open, onClose, 
   const handleEndDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const endDate = e.target.value;
     setNewHoliday(prev => ({ ...prev, endDate }));
-    
+
     // Validate end date
     if (newHoliday.startDate && new Date(endDate) < new Date(newHoliday.startDate)) {
       setErrors(prev => ({
@@ -150,7 +151,7 @@ const GeneralHolidayForm: React.FC<GeneralHolidayFormProps> = ({ open, onClose, 
               {errorMessage}
             </Alert>
           )}
-          
+
           <TextField
             label="Tipo de Receso"
             select
@@ -165,7 +166,7 @@ const GeneralHolidayForm: React.FC<GeneralHolidayFormProps> = ({ open, onClose, 
             <MenuItem value="INVIERNO">Invierno</MenuItem>
             <MenuItem value="FINDEGESTION">Fin de Gestión</MenuItem>
           </TextField>
-          
+
           <TextField
             label="Fecha de Inicio"
             type="date"
@@ -187,7 +188,7 @@ const GeneralHolidayForm: React.FC<GeneralHolidayFormProps> = ({ open, onClose, 
               )
             }}
           />
-          
+
           <TextField
             label="Fecha de Fin"
             type="date"
@@ -210,14 +211,21 @@ const GeneralHolidayForm: React.FC<GeneralHolidayFormProps> = ({ open, onClose, 
               )
             }}
           />
+          {newHoliday.startDate && newHoliday.endDate && (
+            <Typography variant="body2" sx={{ mt: 1, fontStyle: 'italic' }}>
+              Días hábiles:{' '}
+              {getBusinessDays(new Date(newHoliday.startDate), new Date(newHoliday.endDate))}
+            </Typography>
+          )}
+
         </DialogContent>
         <DialogActions>
           <Button onClick={onClose} color="inherit" disabled={loading}>
             Cancelar
           </Button>
-          <Button 
+          <Button
             type="submit"
-            color="primary" 
+            color="primary"
             variant="contained"
             disabled={loading}
             startIcon={loading ? <CircularProgress size={20} /> : null}

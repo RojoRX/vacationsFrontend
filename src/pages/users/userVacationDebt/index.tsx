@@ -83,11 +83,11 @@ const UserVacationDebt: React.FC<UserVacationDebtProps> = ({ ci, fechaIngreso, s
                     .split('T')[0];
 
                 const response = await axios.get(
-                    `${process.env.NEXT_PUBLIC_API_BASE_URL}/vacations/debt-since-date`,
+                    `${process.env.NEXT_PUBLIC_API_BASE_URL}/vacations/accumulated-debt`,
                     {
                         params: {
                             carnetIdentidad: ci,
-                            startDate: startDateFormatted,
+                            //startDate: startDateFormatted,
                             endDate
                         }
                     }
@@ -144,7 +144,7 @@ const UserVacationDebt: React.FC<UserVacationDebtProps> = ({ ci, fechaIngreso, s
             {/* Resumen General */}
             <Grid container spacing={2} sx={{ mb: 3 }}>
                 <Grid item xs={12} md={4}>
-                <Paper sx={{ p: 2, }}>
+                    <Paper sx={{ p: 2, }}>
                         <Typography variant="subtitle2" color="textSecondary">
                             Total Dias Disponibles
                         </Typography>
@@ -154,7 +154,7 @@ const UserVacationDebt: React.FC<UserVacationDebtProps> = ({ ci, fechaIngreso, s
                     </Paper>
                 </Grid>
                 <Grid item xs={12} md={4}>
-                    <Paper sx={{ p: 2}}>
+                    <Paper sx={{ p: 2 }}>
                         <Typography variant="subtitle2" color="textSecondary">
                             Deuda Total
                         </Typography>
@@ -191,8 +191,8 @@ const UserVacationDebt: React.FC<UserVacationDebtProps> = ({ ci, fechaIngreso, s
                     <TableHead>
                         <TableRow>
                             <TableCell>Gestión</TableCell>
-                            <TableCell align="right">Días Vacación (Antiguedad)</TableCell>
-                            <TableCell align="right">Deuda Gestion</TableCell>
+                            <TableCell align="right">Días Vacación (Antigüedad)</TableCell>
+                            <TableCell align="right">Deuda Gestión</TableCell>
                             <TableCell align="right">Deuda Acumulada</TableCell>
                             <TableCell align="right">Días Disponibles</TableCell>
                         </TableRow>
@@ -201,31 +201,47 @@ const UserVacationDebt: React.FC<UserVacationDebtProps> = ({ ci, fechaIngreso, s
                         {data.detalles.map((detail, index) => (
                             <TableRow key={index}>
                                 <TableCell>
-                                    {formatDate(detail.startDate)} - {formatDate(detail.endDate)}
+                                    {new Date(detail.startDate).getFullYear()} - {new Date(detail.endDate).getFullYear()}
                                 </TableCell>
-                                <TableCell align="right">{detail.diasDeVacacion}</TableCell>
+
                                 <TableCell align="right">
-                                    <Chip
-                                        label={detail.deuda}
-                                        color={detail.deuda > 0 ? 'error' : 'success'}
-                                        size="small"
-                                    />
+                                    <Typography fontWeight="bold">{detail.diasDeVacacion}</Typography>
                                 </TableCell>
-                                <TableCell align="right">{detail.deudaAcumulativaHastaEstaGestion}</TableCell>
-                                <TableCell align="right">{detail.diasDisponibles}</TableCell>
+                                <TableCell align="right">
+                                    <Typography
+                                        fontWeight="bold"
+                                        color={detail.deuda > 0 ? 'error' : 'success'}
+                                    >
+                                        {detail.deuda}
+                                    </Typography>
+                                </TableCell>
+                                <TableCell align="right">
+                                    <Typography fontWeight="bold">
+                                        {detail.deudaAcumulativaHastaEstaGestion}
+                                    </Typography>
+                                </TableCell>
+                                <TableCell align="right">
+                                    <Typography
+                                        fontWeight="bold"
+                                        color={detail.diasDisponibles > 0 ? 'success.main' : 'text.primary'}
+                                    >
+                                        {detail.diasDisponibles}
+                                    </Typography>
+                                </TableCell>
                             </TableRow>
                         ))}
                     </TableBody>
                 </Table>
             </TableContainer>
 
+
             {/* Resumen adicional */}
             <Box sx={{ mt: 3, p: 2, bgcolor: theme.palette.grey[100], borderRadius: 1 }}>
                 <Typography variant="body2">
-                    <strong>Primera gestión:</strong> {formatDate(data.resumenGeneral.primeraGestion)}
+                    <strong>Primera gestión:</strong> {new Date(data.resumenGeneral.primeraGestion).getFullYear()}
                 </Typography>
                 <Typography variant="body2" sx={{ mt: 1 }}>
-                    <strong>Última gestión:</strong> {formatDate(data.resumenGeneral.ultimaGestion)}
+                    <strong>Última gestión:</strong> {new Date(data.resumenGeneral.ultimaGestion).getFullYear()}
                 </Typography>
             </Box>
         </Paper>

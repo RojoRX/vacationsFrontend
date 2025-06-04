@@ -121,8 +121,6 @@ const STATUS_OPTIONS: StatusOption[] = [
   },
 ];
 
-
-
 const VacationRequestDetails = () => {
   const router = useRouter();
   const { id } = router.query;
@@ -388,43 +386,51 @@ const VacationRequestDetails = () => {
     </Box>
   );
 
-  const renderApplicantSection = () => (
-    <Card sx={{ mb: 3 }}>
-      <CardContent>
-        <Box display="flex" alignItems="center" mb={2}>
-          <Avatar sx={{ bgcolor: 'primary.main', mr: 2 }}>
-            <PeopleIcon />
-          </Avatar>
-          <Typography variant="h6" fontWeight="bold">Información del Solicitante</Typography>
-          <Button
-            variant="outlined"
-            startIcon={<DownloadIcon />}
-            onClick={() => router.push(`/vacations/vacations-inform/${request?.requestId}`)}
-            sx={{ ml: 2, }}
-          >
-            Ver Informe
-          </Button>
-        </Box>
-        <Divider sx={{ mb: 2 }} />
+  const renderApplicantSection = () => {
+    const organizationalUnit =
+      request?.department || request?.academicUnit || 'No especificado';
 
-        <Grid container spacing={2}>
-          <Grid item xs={12} md={6}>
-            <List dense>
-              {renderInfoItem(<WorkIcon color="primary" />, "Nombre", request?.userName)}
-              {renderInfoItem(<TodayIcon color="primary" />, "Fecha de Ingreso", formatDate(request?.fechaIngreso || ''))}
-              {renderInfoItem(<EventIcon color="primary" />, "Fecha de Solicitud", formatDate(request?.requestDate || ''))}
-            </List>
+    return (
+      <Card sx={{ mb: 3 }}>
+        <CardContent>
+          <Box display="flex" alignItems="center" mb={2}>
+            <Avatar sx={{ bgcolor: 'primary.main', mr: 2 }}>
+              <PeopleIcon />
+            </Avatar>
+            <Typography variant="h6" fontWeight="bold">
+              Información del Solicitante
+            </Typography>
+            <Button
+              variant="outlined"
+              startIcon={<DownloadIcon />}
+              onClick={() => router.push(`/vacations/vacations-inform/${request?.requestId}`)}
+              sx={{ ml: 2 }}
+            >
+              Ver Informe
+            </Button>
+          </Box>
+          <Divider sx={{ mb: 2 }} />
+
+          <Grid container spacing={2}>
+            <Grid item xs={12} md={6}>
+              <List dense>
+                {renderInfoItem(<WorkIcon color="primary" />, "Nombre", request?.userName)}
+                {renderInfoItem(<TodayIcon color="primary" />, "Fecha de Ingreso", formatDate(request?.fechaIngreso || ''))}
+                {renderInfoItem(<EventIcon color="primary" />, "Fecha de Solicitud", formatDate(request?.requestDate || ''))}
+              </List>
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <List dense>
+                {renderInfoItem(<AssignmentIcon color="primary" />, "Unidad Organizacional", organizationalUnit)}
+                {renderInfoItem(<VerifiedUserIcon color="primary" />, "Cargo", request?.position || 'No especificado')}
+              </List>
+            </Grid>
           </Grid>
-          <Grid item xs={12} md={6}>
-            <List dense>
-              {renderInfoItem(<AssignmentIcon color="primary" />, "Departamento", request?.department || 'No especificado')}
-              {renderInfoItem(<VerifiedUserIcon color="primary" />, "Cargo", request?.position || 'No especificado')}
-            </List>
-          </Grid>
-        </Grid>
-      </CardContent>
-    </Card>
-  );
+        </CardContent>
+      </Card>
+    );
+  };
+
 
   const renderVacationDetailsSection = () => (
     <Card sx={{ mb: 3 }}>
