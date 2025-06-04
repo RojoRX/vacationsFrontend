@@ -219,7 +219,6 @@ const VacationDashboard = () => {
                 setLoading(false);
             }
         };
-
         fetchAllData();
     }, [user?.ci]);
 
@@ -259,9 +258,6 @@ const VacationDashboard = () => {
             <Grid container spacing={2} mb={4}>
                 <Grid item xs={12} sm={4}>
                     <Typography variant="h6">Nombre: {empleadoData?.name || 'No disponible'}</Typography>
-                </Grid>
-                <Grid item xs={12} sm={4}>
-                    <Typography variant="h6">Cargo: {empleadoData?.position || 'No disponible'}</Typography>
                 </Grid>
                 <Grid item xs={12} sm={4}>
                     <Typography variant="h6">Fecha de Ingreso: {empleadoData?.fechaIngreso ? formatFecha(empleadoData.fechaIngreso) : 'No disponible'}</Typography>

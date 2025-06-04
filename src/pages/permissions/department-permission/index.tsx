@@ -23,7 +23,8 @@ import {
     Chip,
     IconButton,
     Tooltip,
-    Badge
+    Badge,
+    Alert
 } from '@mui/material';
 import {
     Search,
@@ -32,7 +33,8 @@ import {
     Visibility,
     Person,
     FilterAlt,
-    Refresh
+    Refresh,
+    Inbox
 } from '@mui/icons-material';
 import { License } from 'src/interfaces/licenseTypes';
 import { User } from 'src/interfaces/usertypes';
@@ -204,17 +206,6 @@ const DepartmentLicenses: AclComponent = () => {
             </Box>
         );
     }
-
-    if (error) {
-        return (
-            <Box display="flex" justifyContent="center" alignItems="center" minHeight="300px">
-                <Typography variant="h6" color="error">
-                    {error}
-                </Typography>
-            </Box>
-        );
-    }
-
     return (
         <Paper elevation={3} sx={{ p: 3, borderRadius: 2 }}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
@@ -270,88 +261,110 @@ const DepartmentLicenses: AclComponent = () => {
             </Grid>
 
             {/* Tabla de licencias */}
-            <TableContainer>
-                <Table>
-                    <TableHead>
-                        <TableRow>
-                            <TableCell sx={{ fontWeight: 'bold' }}>ID</TableCell>
-                            <TableCell sx={{ fontWeight: 'bold' }}>Solicitante</TableCell>
-                            <TableCell sx={{ fontWeight: 'bold' }}>CI</TableCell>
-                            <TableCell sx={{ fontWeight: 'bold' }}>Tipo</TableCell>
-                            <TableCell sx={{ fontWeight: 'bold' }}>Fechas</TableCell>
-                            <TableCell sx={{ fontWeight: 'bold' }}>Estado</TableCell>
-                            {user?.role === 'supervisor' && <TableCell sx={{ fontWeight: 'bold' }}>Acciones</TableCell>}
-                        </TableRow>
-                    </TableHead>
-                    <TableBody>
-                        {filteredLicenses.length > 0 ? (
-                            filteredLicenses
-                                .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                                .map((license) => (
-                                    <TableRow key={license.id} hover>
-                                        <TableCell>{license.id}</TableCell>
-                                        <TableCell>
-                                            {userDetails[license.userId]?.name || 'N/A'}
-                                        </TableCell>
-                                        <TableCell>
-                                            {userDetails[license.userId]?.ci || 'N/A'}
-                                        </TableCell>
-                                        <TableCell>
-                                            {license.licenseType}
-                                        </TableCell>
-                                        <TableCell>
-                                            <Box>
-                                                <Typography variant="body2">
-                                                    <strong>Inicio:</strong> {formatDate(license.startDate)}
-                                                </Typography>
-                                                <Typography variant="body2">
-                                                    <strong>Fin:</strong> {formatDate(license.endDate)}
-                                                </Typography>
-                                            </Box>
-                                        </TableCell>
-                                        <TableCell>
-                                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                                                <Chip
-                                                    label={license.immediateSupervisorApproval ? 'Aprobado' : 'Pendiente'}
-                                                    color={license.immediateSupervisorApproval ? 'primary' : 'default'}
-                                                    size="small"
-                                                    icon={license.immediateSupervisorApproval ? <CheckCircle /> : <Cancel />}
-                                                />
-                                                <Chip
-                                                    label={license.personalDepartmentApproval ? 'Aprobado Dpto. Personal' : 'Pendiente Dpto. Personal'}
-                                                    color={license.personalDepartmentApproval ? 'primary' : 'default'}
-                                                    size="small"
-                                                    icon={license.personalDepartmentApproval ? <CheckCircle /> : <Cancel />}
-                                                />
-                                            </Box>
-                                        </TableCell>
-                                        {user?.role === 'supervisor' && (
-                                            <TableCell>
-                                                <Button
-                                                    variant="outlined"
-                                                    size="small"
-                                                    startIcon={<Visibility />}
-                                                    onClick={() => handleOpenDialog(license)}
-                                                >
-                                                    Ver
-                                                </Button>
-                                            </TableCell>
-                                        )}
-                                    </TableRow>
-                                ))
-                        ) : (
+            {/* Tabla o mensaje si no hay licencias */}
+            {licenses.length === 0 && !loading ? (
+                <Box sx={{ textAlign: 'center', py: 6 }}>
+                    <Inbox sx={{ fontSize: 48, color: 'text.secondary', mb: 1 }} />
+                    <Typography variant="h6" color="textSecondary">
+                        No hay licencias registradas para este departamento o unidad academica.
+                    </Typography>
+                </Box>
+            ) : (
+                <TableContainer>
+                    <Table>
+                        <TableHead>
                             <TableRow>
-                                <TableCell colSpan={user?.role === 'supervisor' ? 7 : 6} align="center" sx={{ py: 4 }}>
-                                    <Typography color="textSecondary">
+                                <TableCell sx={{ fontWeight: 'bold' }}>ID</TableCell>
+                                <TableCell sx={{ fontWeight: 'bold' }}>Solicitante</TableCell>
+                                <TableCell sx={{ fontWeight: 'bold' }}>CI</TableCell>
+                                <TableCell sx={{ fontWeight: 'bold' }}>Tipo</TableCell>
+                                <TableCell sx={{ fontWeight: 'bold' }}>Fechas</TableCell>
+                                <TableCell sx={{ fontWeight: 'bold' }}>Estado</TableCell>
+                                {user?.role === 'supervisor' && <TableCell sx={{ fontWeight: 'bold' }}>Acciones</TableCell>}
+                            </TableRow>
+                            <TableRow>
+                                <TableCell colSpan={user?.role === 'supervisor' ? 7 : 6} align="center" sx={{ py: 6 }}>
+                                    <Inbox sx={{ fontSize: 48, color: 'text.secondary', mb: 1 }} />
+                                    <Typography color="textSecondary" variant="subtitle1">
                                         No se encontraron licencias {searchTerm ? 'con ese filtro' : ''}
                                     </Typography>
                                 </TableCell>
                             </TableRow>
-                        )}
-                    </TableBody>
-                </Table>
-            </TableContainer>
 
+                        </TableHead>
+                        <TableBody>
+                            {filteredLicenses.length > 0 ? (
+                                filteredLicenses
+                                    .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+                                    .map((license) => (
+                                        <TableRow key={license.id} hover>
+                                            <TableCell>{license.id}</TableCell>
+                                            <TableCell>
+                                                {userDetails[license.userId]?.name || 'N/A'}
+                                            </TableCell>
+                                            <TableCell>
+                                                {userDetails[license.userId]?.ci || 'N/A'}
+                                            </TableCell>
+                                            <TableCell>
+                                                {license.licenseType}
+                                            </TableCell>
+                                            <TableCell>
+                                                <Box>
+                                                    <Typography variant="body2">
+                                                        <strong>Inicio:</strong> {formatDate(license.startDate)}
+                                                    </Typography>
+                                                    <Typography variant="body2">
+                                                        <strong>Fin:</strong> {formatDate(license.endDate)}
+                                                    </Typography>
+                                                </Box>
+                                            </TableCell>
+                                            <TableCell>
+                                                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                                                    <Chip
+                                                        label={license.immediateSupervisorApproval ? 'Aprobado' : 'Pendiente'}
+                                                        color={license.immediateSupervisorApproval ? 'primary' : 'default'}
+                                                        size="small"
+                                                        icon={license.immediateSupervisorApproval ? <CheckCircle /> : <Cancel />}
+                                                    />
+                                                    <Chip
+                                                        label={license.personalDepartmentApproval ? 'Aprobado Dpto. Personal' : 'Pendiente Dpto. Personal'}
+                                                        color={license.personalDepartmentApproval ? 'primary' : 'default'}
+                                                        size="small"
+                                                        icon={license.personalDepartmentApproval ? <CheckCircle /> : <Cancel />}
+                                                    />
+                                                </Box>
+                                            </TableCell>
+                                            {user?.role === 'supervisor' && (
+                                                <TableCell>
+                                                    <Button
+                                                        variant="outlined"
+                                                        size="small"
+                                                        startIcon={<Visibility />}
+                                                        onClick={() => handleOpenDialog(license)}
+                                                    >
+                                                        Ver
+                                                    </Button>
+                                                </TableCell>
+                                            )}
+                                        </TableRow>
+                                    ))
+                            ) : (
+                                <TableRow>
+                                    <TableCell colSpan={user?.role === 'supervisor' ? 7 : 6} align="center" sx={{ py: 4 }}>
+                                        <Typography color="textSecondary">
+                                            No se encontraron licencias {searchTerm ? 'con ese filtro' : ''}
+                                        </Typography>
+                                    </TableCell>
+                                </TableRow>
+                            )}
+                        </TableBody>
+                    </Table>
+                    <Alert severity="error" sx={{ my: 3 }}>
+                        {error}
+                    </Alert>
+
+                </TableContainer>
+            )}
             {/* Paginación */}
             <TablePagination
                 rowsPerPageOptions={[5, 10, 25]}

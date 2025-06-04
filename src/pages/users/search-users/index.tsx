@@ -16,6 +16,7 @@ import {
 import axios from 'src/lib/axios';
 import { User } from 'src/interfaces/usertypes';
 import router from 'next/router';
+import { translateRole } from 'src/utils/translateRole';
 
 const SearchUsers = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -123,7 +124,8 @@ const SearchUsers = () => {
               >
                 <MenuItem value="all">Todos los roles</MenuItem>
                 {uniqueRoles.map(role => (
-                  <MenuItem key={role} value={role}>{role}</MenuItem>
+                  <MenuItem key={role} value={role}>{translateRole(role)}</MenuItem>
+
                 ))}
               </Select>
             </FormControl>
@@ -194,14 +196,16 @@ const SearchUsers = () => {
                       </TableCell>
                       <TableCell>
                         <Chip
-                          label={user.role}
+                          label={translateRole(user.role)}
                           color={
                             user.role === 'SUPERVISOR' ? 'primary' :
-                              user.role === 'ADMIN' ? 'secondary' : 'default'
+                              user.role === 'ADMIN' ? 'secondary' :
+                                'default'
                           }
                           size="small"
                         />
                       </TableCell>
+
                       <TableCell>{user.position || '-'}</TableCell>
                       <TableCell>{user.profession?.name || '-'}</TableCell>
                       <TableCell>{user.department?.name || '-'}</TableCell>

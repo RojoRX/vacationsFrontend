@@ -51,23 +51,37 @@ const UserLicenses: AclComponent = () => {
     const [alertMessage, setAlertMessage] = useState<string | null>(null);
     const [alertSeverity, setAlertSeverity] = useState<'success' | 'error'>('success');
 
-    useEffect(() => {
-        if (user) {
-            axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/licenses/user/${user.id}`)
-                .then((response) => {
-                    const sortedLicenses = response.data.sort((a: License, b: License) =>
-                        new Date(b.issuedDate).getTime() - new Date(a.issuedDate).getTime()
-                    );
-                    setLicenses(sortedLicenses);
-                    setFilteredLicenses(sortedLicenses);
-                })
-                .catch(() => {
-                    setError('Error al obtener las licencias');
-                })
-                .finally(() => {
-                    setLoading(false);
-                });
+    const fetchLicenses = async () => {
+        if (!user) return;
+
+        setLoading(true); // Activar loading si deseas mostrar spinner
+
+        try {
+            const response = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/licenses/user/${user.id}`);
+            const sortedLicenses = response.data.sort((a: License, b: License) =>
+                new Date(b.issuedDate).getTime() - new Date(a.issuedDate).getTime()
+            );
+            setLicenses(sortedLicenses);
+            setFilteredLicenses(sortedLicenses);
+            setError('');
+        } catch (error: any) {
+            console.error('Error al obtener licencias:', error);
+
+            const apiMessage = error?.response?.data?.message;
+
+            if (typeof apiMessage === 'string') {
+                setError(apiMessage);
+            } else {
+                setError('Error al obtener las licencias');
+            }
         }
+        finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchLicenses();
     }, [user]);
 
     useEffect(() => {
@@ -181,7 +195,7 @@ const UserLicenses: AclComponent = () => {
         }
     };
 
-    if (loading) {
+    if (loading && licenses.length === 0) {
         return (
             <Box display="flex" justifyContent="center" alignItems="center" minHeight="100vh">
                 <CircularProgress />
@@ -189,15 +203,6 @@ const UserLicenses: AclComponent = () => {
         );
     }
 
-    if (error) {
-        return (
-            <Box>
-                <Typography variant="h6" color="error">
-                    {error}
-                </Typography>
-            </Box>
-        );
-    }
 
     return (
         <Box sx={{ width: '100%' }}>
@@ -332,6 +337,13 @@ const UserLicenses: AclComponent = () => {
                             })}
                         </TableBody>
                     </Table>
+                    {error && (
+                        <Box my={2} textAlign="center" >
+                            <Alert severity="error">
+                                {error}
+                            </Alert>
+                        </Box>
+                    )}
                 </TableContainer>
 
                 <TablePagination
