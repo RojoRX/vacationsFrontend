@@ -37,34 +37,17 @@ import {
     SupervisorAccount as SupervisorIcon
 } from '@mui/icons-material';
 import SuspendVacationDialog from 'src/pages/vacations/vacations-suspend';
+import { VacationRequest } from 'src/interfaces/vacationRequests';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || '';
 
-interface VacationRequest {
-    id: number;
-    position: string | null;
-    requestDate: string;
-    startDate: string;
-    endDate: string;
-    totalDays: number;
-    status: string;
-    postponedDate: string | null;
-    postponedReason: string | null;
-    returnDate: string;
-    approvedByHR: boolean;
-    approvedBySupervisor: boolean;
-    managementPeriodStart: string;
-    managementPeriodEnd: string;
-    reviewDate: string | null;
-    ci: string;
-}
 
 const statusMap = {
     AUTHORIZED: { label: 'Autorizado', color: 'success' },
     SUSPENDED: { label: 'Suspendido', color: 'warning' },
     PENDING: { label: 'Pendiente', color: 'info' },
-    REJECTED: { label: 'Rechazado', color: 'error' },
-    CANCELLED: { label: 'Cancelado', color: 'default' }
+    POSTPONED: { label: 'Pospuesto', color: 'error' },
+    DENIED: { label: 'Denegado', color: 'default' }
 };
 
 const formatDate = (dateString: string) => {
@@ -83,9 +66,10 @@ const getStatusColor = (status: string) => {
 
 interface VacationRequestsTableProps {
     userId: number;
+    reloadRequests: boolean; 
 }
 
-const VacationRequestsTable: React.FC<VacationRequestsTableProps> = ({ userId }) => {
+const VacationRequestsTable: React.FC<VacationRequestsTableProps> = ({ userId, reloadRequests  }) => {
     const router = useRouter();
     const theme = useTheme();
     const [requests, setRequests] = useState<VacationRequest[]>([]);
@@ -96,7 +80,6 @@ const VacationRequestsTable: React.FC<VacationRequestsTableProps> = ({ userId })
     const [openDetailDialog, setOpenDetailDialog] = useState<boolean>(false);
     const [selectedRequest, setSelectedRequest] = useState<VacationRequest | null>(null);
     const [openSuspendDialog, setOpenSuspendDialog] = useState(false);
-
     useEffect(() => {
         const fetchRequests = async () => {
             try {
@@ -114,7 +97,8 @@ const VacationRequestsTable: React.FC<VacationRequestsTableProps> = ({ userId })
         if (userId) {
             fetchRequests();
         }
-    }, [userId]);
+    }, [userId, reloadRequests]); // <-- este cambio permite recargar
+
 
     const handleChangePage = (event: unknown, newPage: number) => {
         setPage(newPage);
@@ -292,7 +276,7 @@ const VacationRequestsTable: React.FC<VacationRequestsTableProps> = ({ userId })
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                                 <DateRangeIcon color="action" />
                                 <Typography variant="body1">
-                                    <strong>Fecha Retorno:</strong> {formatDate(selectedRequest.returnDate)}
+                                    <strong>Fecha Retorno:</strong> {formatDate(selectedRequest.returnDate || "")}
                                 </Typography>
                             </Box>
 
@@ -370,7 +354,7 @@ const VacationRequestsTable: React.FC<VacationRequestsTableProps> = ({ userId })
             <SuspendVacationDialog
                 open={openSuspendDialog}
                 onClose={() => setOpenSuspendDialog(false)}
-                request={selectedRequest as unknown as (Omit<VacationRequest, "managementPeriodStart" | "managementPeriodEnd" | "reviewDate"> & { position: string | undefined }) | null}
+                request={selectedRequest as unknown as (Omit<VacationRequest, "managementPeriodStart" | "managementPeriodEnd" | "reviewDate">)}
                 onSuccess={handleSuspendSuccess}
             />
         </Box>

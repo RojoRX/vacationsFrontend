@@ -83,7 +83,9 @@ export default function UserConfigDialog({
     const handleChange = (field: keyof UserConfig, value: string) => {
         let parsed = parseInt(value, 10);
         if (field === 'initialVacationBalance') {
-            parsed = Math.max(0, Math.min(100, parsed));
+            parsed = Math.max(0, Math.min(100, parsed
+                
+            ));
         }
         setConfig((prev) => ({
             ...prev,

@@ -40,6 +40,8 @@ import { CalendarIcon } from '@mui/x-date-pickers';
 import VacationRequestsTable from '../vacations-user';
 import { VacationReportDialog } from 'src/pages/reports/vacationReports';
 import UserConfigDialog from '../userConfig';
+import { PastVacationDialog } from 'src/pages/vacations/createPastVacations';
+import CreatePastVacationDto from 'src/interfaces/createPastVacation.dto';
 
 interface Department {
   id: number;
@@ -80,6 +82,21 @@ const UserInformation: AclComponent = () => {
   const [openChangePassword, setOpenChangePassword] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [openConfig, setOpenConfig] = useState(false);
+  const [openPastVacationDialog, setOpenPastVacationDialog] = useState(false);
+  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
+
+
+  const handleOpenPastVacationDialog = () => setOpenPastVacationDialog(true);
+  const handleClosePastVacationDialog = () => setOpenPastVacationDialog(false);
+  const [reloadRequests, setReloadRequests] = useState(false);
+
+const triggerReload = () => {
+  console.log('Recargando solicitudes...');
+  setReloadRequests(prev => !prev);
+};
+
+
+
   useEffect(() => {
     if (ci) {
       fetchUser(ci as string);
@@ -259,6 +276,7 @@ const UserInformation: AclComponent = () => {
                   </FormControl>
                 </>
               )}
+
               <Button
                 variant="outlined"
                 startIcon={<EditIcon />}
@@ -280,7 +298,7 @@ const UserInformation: AclComponent = () => {
                 setOpenCreate(false);
                 await fetchUser(user.ci);
               }} ci={user.ci} />
-              <Button variant='outlined'  sx={{ mt: 2, ml: 1 }} onClick={() => setOpenConfig(true)}>Configurar Usuario</Button>
+              <Button variant='outlined' sx={{ mt: 2, ml: 1 }} onClick={() => setOpenConfig(true)}>Configurar Usuario</Button>
             </CardContent>
           </Card>
         </Grid>
@@ -437,8 +455,17 @@ const UserInformation: AclComponent = () => {
                   <Button variant="outlined" onClick={() => setDialogOpen(true)}>
                     Generar Reporte de Vacaciones
                   </Button>
-                  <VacationReportDialog open={dialogOpen} onClose={() => setDialogOpen(false)} ci={user.ci} />
-                  <VacationRequestsTable userId={user.id} />
+                  <Button sx={{ ml: 5 }} variant="contained" onClick={handleOpenPastVacationDialog}>
+                    Registrar Vacaciones Pasadas
+                  </Button>
+                  <VacationReportDialog open={dialogOpen}
+                    onClose={() => setDialogOpen(false)}
+                    ci={user.ci}
+                  />
+                  <VacationRequestsTable
+                    userId={user.id}
+                    reloadRequests={reloadRequests}
+                  />
                   {/**  <UserHolidayPeriods userId={user.id} year={new Date().getFullYear()} />*/}
                 </>
               )}
@@ -494,8 +521,24 @@ const UserInformation: AclComponent = () => {
         open={openConfig}
         onClose={() => setOpenConfig(false)}
         userId={user.id}
-         fechaIngreso={user.fecha_ingreso}
+        fechaIngreso={user.fecha_ingreso}
       />
+      <PastVacationDialog
+        open={openPastVacationDialog}
+        onClose={handleClosePastVacationDialog}
+        userId={user.id}
+        userCi={user.ci}
+        onSuccess={triggerReload}
+      />
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={4000}
+        onClose={() => setSnackbar({ ...snackbar, open: false })}
+      >
+        <Alert severity={snackbar.severity as any}>
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
 
       {/* Snackbar para notificaciones */}
       <Snackbar
