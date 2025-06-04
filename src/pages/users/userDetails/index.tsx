@@ -88,11 +88,15 @@ const UserInformation: AclComponent = () => {
 
   const handleOpenPastVacationDialog = () => setOpenPastVacationDialog(true);
   const handleClosePastVacationDialog = () => setOpenPastVacationDialog(false);
-  const [reloadRequests, setReloadRequests] = useState(false);
+const [reloadRequests, setReloadRequests] = useState(false);
 
 const triggerReload = () => {
-  console.log('Recargando solicitudes...');
-  setReloadRequests(prev => !prev);
+    setReloadRequests(prev => !prev); // Alternar el valor para forzar la recarga
+    setSnackbar({
+        open: true,
+        message: 'Vacación pasada agregada correctamente',
+        severity: 'success'
+    });
 };
 
 

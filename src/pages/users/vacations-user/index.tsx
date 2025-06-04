@@ -42,6 +42,7 @@ import SuspendVacationDialog from 'src/pages/vacations/vacations-suspend';
 import { VacationRequest } from 'src/interfaces/vacationRequests';
 import { Delete as DeleteIcon } from '@mui/icons-material';
 import useUser from 'src/hooks/useUser';
+import { formatDate } from 'src/utils/dateUtils';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || '';
 
@@ -52,16 +53,6 @@ const statusMap = {
     PENDING: { label: 'Pendiente', color: 'info' },
     POSTPONED: { label: 'Pospuesto', color: 'error' },
     DENIED: { label: 'Denegado', color: 'default' }
-};
-
-const formatDate = (dateString: string) => {
-    if (!dateString) return 'N/A';
-    const date = new Date(dateString);
-    return date.toLocaleDateString('es-ES', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
-    });
 };
 
 const getStatusColor = (status: string) => {
@@ -90,25 +81,25 @@ const VacationRequestsTable: React.FC<VacationRequestsTableProps> = ({ userId, r
     const [requestToDelete, setRequestToDelete] = useState<VacationRequest | null>(null);
     const [deleteSuccess, setDeleteSuccess] = useState(false);
 
-    useEffect(() => {
-        const fetchRequests = async () => {
-            try {
-                setLoading(true);
-                const response = await axios.get(`${API_BASE_URL}/vacation-requests/user/${userId}`);
-                setRequests(response.data);
-            } catch (err) {
-                setError('Error al cargar las solicitudes de vacaciones');
-                console.error('Error fetching vacation requests:', err);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        if (userId) {
-            fetchRequests();
+useEffect(() => {
+    const fetchRequests = async () => {
+        try {
+            setLoading(true);
+            setError(null);
+            const response = await axios.get(`${API_BASE_URL}/vacation-requests/user/${userId}`);
+            setRequests(response.data);
+        } catch (err) {
+            setError('Error al cargar las solicitudes de vacaciones');
+            console.error('Error fetching vacation requests:', err);
+        } finally {
+            setLoading(false);
         }
-    }, [userId, reloadRequests]); // <-- este cambio permite recargar
+    };
 
+    if (userId) {
+        fetchRequests();
+    }
+}, [userId, reloadRequests]); // Asegúrate de que reloadRequests esté en las dependencias
 
     const handleChangePage = (event: unknown, newPage: number) => {
         setPage(newPage);

@@ -86,7 +86,7 @@ const handleSave = async () => {
   setLoading(true);
   try {
     await axios.post(`${process.env.NEXT_PUBLIC_API_BASE_URL}/vacation-requests/pastVacations`, dto);
-    if (onSuccess) onSuccess();
+     if (onSuccess) onSuccess(); 
     onClose(); // Éxito: cerrar diálogo
   } catch (err: any) {
     const backendMessage =
