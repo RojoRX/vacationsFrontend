@@ -18,7 +18,9 @@ import {
     TableRow,
     TablePagination,
     Typography,
-    useTheme
+    useTheme,
+    Alert,
+    DialogActions
 } from '@mui/material';
 import {
     Info as InfoIcon,
@@ -38,6 +40,8 @@ import {
 } from '@mui/icons-material';
 import SuspendVacationDialog from 'src/pages/vacations/vacations-suspend';
 import { VacationRequest } from 'src/interfaces/vacationRequests';
+import { Delete as DeleteIcon } from '@mui/icons-material';
+import useUser from 'src/hooks/useUser';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || '';
 
@@ -66,10 +70,11 @@ const getStatusColor = (status: string) => {
 
 interface VacationRequestsTableProps {
     userId: number;
-    reloadRequests: boolean; 
+    reloadRequests: boolean;
 }
 
-const VacationRequestsTable: React.FC<VacationRequestsTableProps> = ({ userId, reloadRequests  }) => {
+const VacationRequestsTable: React.FC<VacationRequestsTableProps> = ({ userId, reloadRequests }) => {
+    const currentUser = useUser();
     const router = useRouter();
     const theme = useTheme();
     const [requests, setRequests] = useState<VacationRequest[]>([]);
@@ -80,6 +85,11 @@ const VacationRequestsTable: React.FC<VacationRequestsTableProps> = ({ userId, r
     const [openDetailDialog, setOpenDetailDialog] = useState<boolean>(false);
     const [selectedRequest, setSelectedRequest] = useState<VacationRequest | null>(null);
     const [openSuspendDialog, setOpenSuspendDialog] = useState(false);
+    // Nuevos estados agregados:
+    const [openDeleteConfirmDialog, setOpenDeleteConfirmDialog] = useState(false);
+    const [requestToDelete, setRequestToDelete] = useState<VacationRequest | null>(null);
+    const [deleteSuccess, setDeleteSuccess] = useState(false);
+
     useEffect(() => {
         const fetchRequests = async () => {
             try {
@@ -130,6 +140,29 @@ const VacationRequestsTable: React.FC<VacationRequestsTableProps> = ({ userId, r
             setOpenSuspendDialog(false);
         } catch (error) {
             console.error('Error al actualizar las solicitudes:', error);
+        }
+    };
+    // Nuevo método para eliminar solicitud
+    const handleForceDelete = async () => {
+        if (!requestToDelete) return;
+
+        try {
+            await axios.delete(`${API_BASE_URL}/vacation-requests/${requestToDelete.id}/force`);
+            setDeleteSuccess(true);
+            setOpenDeleteConfirmDialog(false);
+            setOpenDetailDialog(false);
+
+            // Recargar las solicitudes
+            const response = await axios.get(`${API_BASE_URL}/vacation-requests/user/${userId}`);
+            const updatedRequests = response.data;
+
+            // Ajustar la página si es necesario
+            const maxPage = Math.ceil(updatedRequests.length / rowsPerPage) - 1;
+            setPage((prevPage) => Math.min(prevPage, maxPage));
+
+            setRequests(updatedRequests);
+        } catch (err) {
+            console.error('Error al eliminar la solicitud:', err);
         }
     };
 
@@ -192,14 +225,14 @@ const VacationRequestsTable: React.FC<VacationRequestsTableProps> = ({ userId, r
                                                     onClick={() => handleOpenDetailDialog(request)}
                                                     color="primary"
                                                 >
-                                                    <VisibilityIcon />
+                                                    <EditIcon />
                                                 </IconButton>
                                                 <IconButton
                                                     size="small"
                                                     onClick={() => handleEditRequest(request.id)}
                                                     color="secondary"
                                                 >
-                                                    <EditIcon />
+                                                    <VisibilityIcon />
                                                 </IconButton>
                                             </Box>
                                         </TableCell>
@@ -348,7 +381,45 @@ const VacationRequestsTable: React.FC<VacationRequestsTableProps> = ({ userId, r
                             )}
                         </Box>
                     )}
+                    {selectedRequest && !selectedRequest.deleted && (
+                        <Box sx={{ mt: 2, display: 'flex', justifyContent: 'flex-end' }}>
+                            <Button
+                                variant="contained"
+                                color="error"
+                                startIcon={<DeleteIcon />}
+                                onClick={() => {
+                                    setRequestToDelete(selectedRequest);
+                                    setOpenDeleteConfirmDialog(true);
+                                }}
+                            >
+                                Eliminar Solicitud
+                            </Button>
+                        </Box>
+                    )}
+
+                    {deleteSuccess && (
+                        <Alert severity="success" sx={{ mt: 2 }}>
+                            La solicitud ha sido eliminada correctamente.
+                        </Alert>
+                    )}
                 </DialogContent>
+            </Dialog>
+
+            <Dialog open={openDeleteConfirmDialog} onClose={() => setOpenDeleteConfirmDialog(false)}>
+                <DialogTitle>Confirmar eliminación</DialogTitle>
+                <DialogContent>
+                    <Typography>
+                        ¿Estás seguro de que deseas eliminar la solicitud #{requestToDelete?.id}? Esta acción no se puede deshacer.
+                    </Typography>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setOpenDeleteConfirmDialog(false)} color="inherit">
+                        Cancelar
+                    </Button>
+                    <Button onClick={handleForceDelete} color="error" variant="contained">
+                        Eliminar
+                    </Button>
+                </DialogActions>
             </Dialog>
             {/* Diálogo de suspensión (componente reutilizable) */}
             <SuspendVacationDialog
@@ -357,6 +428,7 @@ const VacationRequestsTable: React.FC<VacationRequestsTableProps> = ({ userId, r
                 request={selectedRequest as unknown as (Omit<VacationRequest, "managementPeriodStart" | "managementPeriodEnd" | "reviewDate">)}
                 onSuccess={handleSuspendSuccess}
             />
+
         </Box>
     );
 };

@@ -96,7 +96,6 @@ const triggerReload = () => {
 };
 
 
-
   useEffect(() => {
     if (ci) {
       fetchUser(ci as string);
@@ -469,7 +468,6 @@ const triggerReload = () => {
                   {/**  <UserHolidayPeriods userId={user.id} year={new Date().getFullYear()} />*/}
                 </>
               )}
-
             </CardContent>
           </Card>
         </Grid>
