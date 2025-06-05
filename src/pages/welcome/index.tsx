@@ -41,15 +41,23 @@ const WelcomeDashboard = () => {
     reason: '',
     loading: true
   });
+  // NUEVO ESTADO para la validación de licencias
+  const [licenseRequestStatus, setLicenseRequestStatus] = useState({
+    canRequest: true,
+    reason: '',
+    loading: true
+  });
 
   useEffect(() => {
     const fetchData = async () => {
       if (!user?.ci) {
-        setRequestStatus(prev => ({ ...prev, loading: false })); // Stop loading if user.ci is not available
+        setRequestStatus(prev => ({ ...prev, loading: false }));
+        setLicenseRequestStatus(prev => ({ ...prev, loading: false })); // Detener loading para licencia también
         return;
       }
 
       try {
+        // --- Lógica para Vacaciones ---
         // Obtener días disponibles
         const endDate = getTodayIsoDate();
         const debtResponse = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/vacations/accumulated-debt`, {
@@ -60,16 +68,27 @@ const WelcomeDashboard = () => {
         });
         setVacationDebt(debtResponse.data.resumenGeneral.diasDisponiblesActuales);
 
-        // Verificar estado de última solicitud
-        const statusResponse = await axios.get(
+        // Verificar estado de última solicitud de vacaciones
+        const vacationStatusResponse = await axios.get(
           `${process.env.NEXT_PUBLIC_API_BASE_URL}/vacation-requests/check-status/${user.ci}`
         );
 
         setRequestStatus({
-          canRequest: statusResponse.data.canRequest,
-          reason: statusResponse.data.reason || '',
+          canRequest: vacationStatusResponse.data.canRequest,
+          reason: vacationStatusResponse.data.reason || '',
           loading: false
         });
+
+        // --- Lógica para Licencias (NUEVO) ---
+        const licenseValidationResponse = await axios.get(
+          `${process.env.NEXT_PUBLIC_API_BASE_URL}/licenses-validation/can-request/${user.ci}`
+        );
+        setLicenseRequestStatus({
+          canRequest: licenseValidationResponse.data.canRequest,
+          reason: licenseValidationResponse.data.reason || '',
+          loading: false
+        });
+
       } catch (error) {
         console.error('Error fetching data:', error);
         let errorMessage = 'Error al verificar disponibilidad';
@@ -85,20 +104,26 @@ const WelcomeDashboard = () => {
           reason: errorMessage,
           loading: false
         });
+        // Asegurar que el estado de licencia también se actualice en caso de error general
+        setLicenseRequestStatus({
+          canRequest: false,
+          reason: errorMessage,
+          loading: false
+        });
       }
     };
 
     fetchData();
   }, [user?.ci]); // Dependency array: re-run effect if user.ci changes
 
-  // Determinar si el botón debe estar deshabilitado
+  // Determinar si el botón de Vacaciones debe estar deshabilitado
   const isVacationButtonDisabled =
     requestStatus.loading ||
     !requestStatus.canRequest ||
     (vacationDebt !== null && vacationDebt <= 0);
 
-  // Mensaje para el tooltip
-  const getTooltipMessage = () => {
+  // Mensaje para el tooltip de Vacaciones
+  const getVacationTooltipMessage = () => {
     if (requestStatus.loading) return 'Verificando disponibilidad...';
     if (!requestStatus.canRequest) return requestStatus.reason;
     if (vacationDebt !== null && vacationDebt <= 0) return 'No tienes días de vacaciones disponibles';
@@ -113,145 +138,200 @@ const WelcomeDashboard = () => {
     return 'Disponible';
   };
 
-return (
-  <ApexChartWrapper>
-    <Grid container spacing={6}>
-      {/* Bienvenida */}
-      <Grid item xs={12}>
-        <Card
-          sx={{
-            background: theme => theme.palette.background.default,
-            border: theme => `1px solid ${theme.palette.divider}`,
-            boxShadow: 'none',
-          }}
-        >
-          <CardContent>
-            <Typography variant="h5" gutterBottom sx={{ fontWeight: 600 }}>
-              Bienvenido, {user ? user.fullName : 'Usuario'}!
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              Sistema de gestión de vacaciones y permisos. Aquí puedes:
-            </Typography>
-            <Box component="ul" sx={{ pl: 4, mt: 2, mb: 0 }}>
-              <li>Solicitar días de vacaciones</li>
-              <li>Solicitar permisos</li>
-              <li>Revisar el estado de tus solicitudes</li>
-              {user?.role === 'supervisor' && <li>Revisar solicitudes pendientes de tu equipo</li>}
-            </Box>
-          </CardContent>
-        </Card>
-      </Grid>
+  // --- NUEVO: Lógica para el botón de Licencias ---
+  const isLicenseButtonDisabled =
+    licenseRequestStatus.loading ||
+    !licenseRequestStatus.canRequest;
 
-      {/* Tarjetas Vacaciones y Licencias */}
-      <Grid item xs={12} md={6}>
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-          <CardStatisticsVertical
-            stats="Solicitar Vacaciones"
-            color="primary"
-            icon={<Icon icon="mdi:beach" />}
-            title="Vacaciones"
-            chipText={
-              vacationDebt !== null
-                ? `${vacationDebt} días disponibles de vacaciones`
-                : '...'
-            }
-            trendNumber={getVacationStatusText()}
-          />
-          {requestStatus.loading && (
-            <CircularProgress
-              size={24}
-              sx={{
-                alignSelf: 'flex-end',
-                color: 'primary.main',
-              }}
-            />
-          )}
-          <Collapse in={!requestStatus.loading && !requestStatus.canRequest}>
-            <Alert severity="warning" sx={{ mt: 2 }}>
-              <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-                No puedes solicitar vacaciones porque:
-              </Typography>
-              <Typography variant="body2">
-                {requestStatus.reason || 'No hay días disponibles'}
-              </Typography>
-            </Alert>
-          </Collapse>
-          <Collapse in={!requestStatus.loading && vacationDebt !== null && vacationDebt <= 0}>
-            <Alert severity="info" sx={{ mt: 2 }}>
-              <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-                No puedes solicitar vacaciones porque:
-              </Typography>
-              <Typography variant="body2">
-                No tienes días disponibles en este período
-              </Typography>
-            </Alert>
-          </Collapse>
-        </Box>
-      </Grid>
+  const getLicenseTooltipMessage = () => {
+    if (licenseRequestStatus.loading) return 'Verificando disponibilidad...';
+    if (!licenseRequestStatus.canRequest) return licenseRequestStatus.reason;
+    return 'Solicitar licencia';
+  };
 
-      <Grid item xs={12} md={6}>
-        <CardStatisticsVertical
-          stats="Solicitar Licencia"
-          color="secondary"
-          icon={<Icon icon="mdi:briefcase" />}
-          title="Licencia"
-          chipText="Disponible"
-          trendNumber="+1 Solicitud"
-        />
-      </Grid>
+  const getLicenseStatusText = () => {
+    if (licenseRequestStatus.loading) return 'Verificando estado...';
+    if (!licenseRequestStatus.canRequest) return 'No disponible';
+    return 'Disponible';
+  };
 
-      {/* Botones */}
-      <Grid item xs={12} md={6}>
-        <Tooltip title={getTooltipMessage()} arrow>
-          <span>
-            <Button
-              variant="contained"
-              color="primary"
-              startIcon={<Icon icon="mdi:beach" />}
-              fullWidth
-              component={!isVacationButtonDisabled ? Link : 'button'}
-              href="/vacations-form/"
-              disabled={isVacationButtonDisabled}
-              sx={{
-                opacity: isVacationButtonDisabled ? 0.7 : 1,
-                transition: 'opacity 0.3s ease',
-              }}
-            >
-              Solicitar Vacaciones
-              {requestStatus.loading && (
-                <CircularProgress
-                  size={24}
-                  sx={{ position: 'absolute', right: 16, color: 'inherit' }}
-                />
-              )}
-            </Button>
-          </span>
-        </Tooltip>
-      </Grid>
 
-      <Grid item xs={12} md={6}>
-        <Button
-          variant="contained"
-          color="secondary"
-          startIcon={<Icon icon="mdi:briefcase" />}
-          fullWidth
-          onClick={() => setOpenDialog(true)}
-        >
-          Solicitar Licencia
-        </Button>
-        <RequestPermissionDialog open={openDialog} onClose={() => setOpenDialog(false)} />
-      </Grid>
-
-      {/* Tarjeta exclusiva para el supervisor */}
-      {user?.role === 'supervisor' && (
+  return (
+    <ApexChartWrapper>
+      <Grid container spacing={6}>
+        {/* Bienvenida */}
         <Grid item xs={12}>
-          <SupervisorPendingRequestsCard />
+          <Card
+            sx={{
+              background: theme => theme.palette.background.default,
+              border: theme => `1px solid ${theme.palette.divider}`,
+              boxShadow: 'none',
+            }}
+          >
+            <CardContent>
+              <Typography variant="h5" gutterBottom sx={{ fontWeight: 600 }}>
+                Bienvenido, {user ? user.fullName : 'Usuario'}!
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Sistema de gestión de vacaciones y permisos. Aquí puedes:
+              </Typography>
+              <Box component="ul" sx={{ pl: 4, mt: 2, mb: 0 }}>
+                <li>Solicitar días de vacaciones</li>
+                <li>Solicitar permisos</li>
+                <li>Revisar el estado de tus solicitudes</li>
+                {user?.role === 'supervisor' && <li>Revisar solicitudes pendientes de tu equipo</li>}
+              </Box>
+            </CardContent>
+          </Card>
         </Grid>
-      )}
-    </Grid>
-  </ApexChartWrapper>
-);
 
+        {/* Tarjetas Vacaciones y Licencias */}
+        <Grid item xs={12} md={6}>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <CardStatisticsVertical
+              stats="Solicitar Vacaciones"
+              color="primary"
+              icon={<Icon icon="mdi:beach" />}
+              title="Vacaciones"
+              chipText={
+                vacationDebt !== null
+                  ? `${vacationDebt} días disponibles de vacaciones`
+                  : '...'
+              }
+              trendNumber={getVacationStatusText()}
+            />
+            {requestStatus.loading && (
+              <CircularProgress
+                size={24}
+                sx={{
+                  alignSelf: 'flex-end',
+                  color: 'primary.main',
+                }}
+              />
+            )}
+            <Collapse in={!requestStatus.loading && !requestStatus.canRequest}>
+              <Alert severity="warning" sx={{ mt: 2 }}>
+                <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                  No puedes solicitar vacaciones porque:
+                </Typography>
+                <Typography variant="body2">
+                  {requestStatus.reason || 'No hay días disponibles'}
+                </Typography>
+              </Alert>
+            </Collapse>
+            <Collapse in={!requestStatus.loading && vacationDebt !== null && vacationDebt <= 0}>
+              <Alert severity="info" sx={{ mt: 2 }}>
+                <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                  No puedes solicitar vacaciones porque:
+                </Typography>
+                <Typography variant="body2">
+                  No tienes días disponibles en este período
+                </Typography>
+              </Alert>
+            </Collapse>
+          </Box>
+        </Grid>
+
+        {/* NUEVA SECCIÓN para Licencias */}
+        <Grid item xs={12} md={6}>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <CardStatisticsVertical
+              stats="Solicitar Licencia"
+              color="secondary"
+              icon={<Icon icon="mdi:briefcase" />}
+              title="Licencia"
+              chipText={getLicenseStatusText()}
+              trendNumber={getLicenseStatusText()} // Puedes ajustar esto si quieres un número diferente
+            />
+            {licenseRequestStatus.loading && (
+              <CircularProgress
+                size={24}
+                sx={{
+                  alignSelf: 'flex-end',
+                  color: 'secondary.main',
+                }}
+              />
+            )}
+            <Collapse in={!licenseRequestStatus.loading && !licenseRequestStatus.canRequest}>
+              <Alert severity="warning" sx={{ mt: 2 }}>
+                <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                  No puedes solicitar una licencia porque:
+                </Typography>
+                <Typography variant="body2">
+                  {licenseRequestStatus.reason || 'No hay licencias disponibles en este momento'}
+                </Typography>
+              </Alert>
+            </Collapse>
+          </Box>
+        </Grid>
+
+        {/* Botones */}
+        <Grid item xs={12} md={6}>
+          <Tooltip title={getVacationTooltipMessage()} arrow>
+            <span>
+              <Button
+                variant="contained"
+                color="primary"
+                startIcon={<Icon icon="mdi:beach" />}
+                fullWidth
+                component={!isVacationButtonDisabled ? Link : 'button'}
+                href="/vacations-form/"
+                disabled={isVacationButtonDisabled}
+                sx={{
+                  opacity: isVacationButtonDisabled ? 0.7 : 1,
+                  transition: 'opacity 0.3s ease',
+                }}
+              >
+                Solicitar Vacaciones
+                {requestStatus.loading && (
+                  <CircularProgress
+                    size={24}
+                    sx={{ position: 'absolute', right: 16, color: 'inherit' }}
+                  />
+                )}
+              </Button>
+            </span>
+          </Tooltip>
+        </Grid>
+
+        {/* NUEVO: Botón de Licencia con lógica de deshabilitación y tooltip */}
+        <Grid item xs={12} md={6}>
+          <Tooltip title={getLicenseTooltipMessage()} arrow>
+            <span>
+              <Button
+                variant="contained"
+                color="secondary"
+                startIcon={<Icon icon="mdi:briefcase" />}
+                fullWidth
+                onClick={() => setOpenDialog(true)}
+                disabled={isLicenseButtonDisabled}
+                sx={{
+                  opacity: isLicenseButtonDisabled ? 0.7 : 1,
+                  transition: 'opacity 0.3s ease',
+                }}
+              >
+                Solicitar Licencia
+                {licenseRequestStatus.loading && (
+                  <CircularProgress
+                    size={24}
+                    sx={{ position: 'absolute', right: 16, color: 'inherit' }}
+                  />
+                )}
+              </Button>
+            </span>
+          </Tooltip>
+          <RequestPermissionDialog open={openDialog} onClose={() => setOpenDialog(false)} />
+        </Grid>
+
+        {/* Tarjeta exclusiva para el supervisor */}
+        {user?.role === 'supervisor' && (
+          <Grid item xs={12}>
+            <SupervisorPendingRequestsCard />
+          </Grid>
+        )}
+      </Grid>
+    </ApexChartWrapper>
+  );
 };
 
 WelcomeDashboard.acl = {
