@@ -28,6 +28,7 @@ import {
 import { License } from 'src/interfaces/licenseTypes';
 import PictureAsPdfIcon from '@mui/icons-material';
 import { generateLicensePdf } from 'src/utils/licensePdfGenerator';
+import { formatDate } from 'src/utils/dateUtils';
 interface AclComponent extends FC {
     acl?: {
         action: string;
@@ -176,15 +177,6 @@ const UserLicenses: AclComponent = () => {
         setStatusFilter('all');
         setYearFilter('');
     };
-
-    const formatDate = (dateString: string) => {
-        return new Date(dateString).toLocaleDateString('es-ES', {
-            day: '2-digit',
-            month: '2-digit',
-            year: 'numeric'
-        });
-    };
-
     const getApprovalStatus = (license: License) => {
         if (license.personalDepartmentApproval && license.immediateSupervisorApproval) {
             return { label: 'Aprobado', color: green[500] };

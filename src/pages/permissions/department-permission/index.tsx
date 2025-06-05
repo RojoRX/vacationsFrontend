@@ -41,6 +41,7 @@ import { User } from 'src/interfaces/usertypes';
 import useUser from 'src/hooks/useUser';
 import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { formatDate } from 'src/utils/dateUtils';
 
 interface DepartmentLicensesProps {
     licenses: License[];
@@ -195,9 +196,6 @@ const DepartmentLicenses: AclComponent = () => {
     };
 
 
-    const formatDate = (dateString: string) => {
-        return format(parseISO(dateString), 'PPP', { locale: es });
-    };
 
     if (loading) {
         return (

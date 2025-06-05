@@ -28,6 +28,7 @@ import Link from 'next/link';
 
 // ** Custom Hooks
 import useUser from 'src/hooks/useUser';
+import { current } from '@reduxjs/toolkit';
 
 // Utilidad para obtener la fecha actual en formato ISO (hasta hoy)
 const getTodayIsoDate = () => new Date().toISOString().split('T')[0];
@@ -45,14 +46,15 @@ const WelcomeDashboard = () => {
   const [licenseRequestStatus, setLicenseRequestStatus] = useState({
     canRequest: true,
     reason: '',
-    loading: true
+    loading: true,
+    availableDays: undefined as number | undefined
   });
 
   useEffect(() => {
     const fetchData = async () => {
       if (!user?.ci) {
         setRequestStatus(prev => ({ ...prev, loading: false }));
-        setLicenseRequestStatus(prev => ({ ...prev, loading: false })); // Detener loading para licencia también
+        setLicenseRequestStatus(prev => ({ ...prev, loading: false }));
         return;
       }
 
@@ -86,6 +88,7 @@ const WelcomeDashboard = () => {
         setLicenseRequestStatus({
           canRequest: licenseValidationResponse.data.canRequest,
           reason: licenseValidationResponse.data.reason || '',
+          availableDays: licenseValidationResponse.data.availableDays, // ¡Asegúrate de que este valor viene del backend!
           loading: false
         });
 
@@ -95,8 +98,8 @@ const WelcomeDashboard = () => {
 
         if (axios.isAxiosError(error)) {
           errorMessage = error.response?.data?.reason ||
-                         error.response?.data?.message ||
-                         error.message;
+            error.response?.data?.message ||
+            error.message;
         }
 
         setRequestStatus({
@@ -108,13 +111,14 @@ const WelcomeDashboard = () => {
         setLicenseRequestStatus({
           canRequest: false,
           reason: errorMessage,
+          availableDays: 0, // En caso de error, puedes establecer 0 días o undefined
           loading: false
         });
       }
     };
 
     fetchData();
-  }, [user?.ci]); // Dependency array: re-run effect if user.ci changes
+  }, [user?.ci]);
 
   // Determinar si el botón de Vacaciones debe estar deshabilitado
   const isVacationButtonDisabled =
@@ -141,21 +145,23 @@ const WelcomeDashboard = () => {
   // --- NUEVO: Lógica para el botón de Licencias ---
   const isLicenseButtonDisabled =
     licenseRequestStatus.loading ||
-    !licenseRequestStatus.canRequest;
+    !licenseRequestStatus.canRequest ||
+    (licenseRequestStatus.availableDays !== undefined && licenseRequestStatus.availableDays <= 0);
 
   const getLicenseTooltipMessage = () => {
     if (licenseRequestStatus.loading) return 'Verificando disponibilidad...';
     if (!licenseRequestStatus.canRequest) return licenseRequestStatus.reason;
+    if (licenseRequestStatus.availableDays !== undefined && licenseRequestStatus.availableDays <= 0) return 'No tienes días de licencia disponibles';
     return 'Solicitar licencia';
   };
 
+  // Esta función ahora solo determina si está "Disponible" o "No disponible",
+  // el número de días lo manejamos directamente en el `chipText`.
   const getLicenseStatusText = () => {
     if (licenseRequestStatus.loading) return 'Verificando estado...';
     if (!licenseRequestStatus.canRequest) return 'No disponible';
     return 'Disponible';
   };
-
-
   return (
     <ApexChartWrapper>
       <Grid container spacing={6}>
@@ -240,8 +246,12 @@ const WelcomeDashboard = () => {
               color="secondary"
               icon={<Icon icon="mdi:briefcase" />}
               title="Licencia"
-              chipText={getLicenseStatusText()}
-              trendNumber={getLicenseStatusText()} // Puedes ajustar esto si quieres un número diferente
+              chipText={
+                licenseRequestStatus.availableDays !== undefined
+                  ? `${licenseRequestStatus.availableDays} días disponibles de licencia (Gestión ${new Date().getFullYear()})` // <-- MODIFIED LINE
+                  : licenseRequestStatus.loading ? '...' : 'No disponible'
+              }
+              trendNumber={getLicenseStatusText()}
             />
             {licenseRequestStatus.loading && (
               <CircularProgress
@@ -252,7 +262,17 @@ const WelcomeDashboard = () => {
                 }}
               />
             )}
-            <Collapse in={!licenseRequestStatus.loading && !licenseRequestStatus.canRequest}>
+            <Collapse in={!licenseRequestStatus.loading && licenseRequestStatus.availableDays !== undefined && licenseRequestStatus.availableDays <= 0}>
+              <Alert severity="info" sx={{ mt: 2 }}>
+                <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                  No puedes solicitar licencia porque:
+                </Typography>
+                <Typography variant="body2">
+                  No tienes días disponibles en este período
+                </Typography>
+              </Alert>
+            </Collapse>
+            <Collapse in={!licenseRequestStatus.loading && !licenseRequestStatus.canRequest && (licenseRequestStatus.availableDays === undefined || licenseRequestStatus.availableDays > 0)}>
               <Alert severity="warning" sx={{ mt: 2 }}>
                 <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
                   No puedes solicitar una licencia porque:
