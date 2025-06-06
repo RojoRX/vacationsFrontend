@@ -42,6 +42,8 @@ import { VacationReportDialog } from 'src/pages/reports/vacationReports';
 import UserConfigDialog from '../userConfig';
 import { PastVacationDialog } from 'src/pages/vacations/createPastVacations';
 import CreatePastVacationDto from 'src/interfaces/createPastVacation.dto';
+import { RoleEnum } from 'src/enum/roleEnum';
+import { translateRole } from 'src/utils/translateRole';
 
 interface Department {
   id: number;
@@ -84,20 +86,22 @@ const UserInformation: AclComponent = () => {
   const [openConfig, setOpenConfig] = useState(false);
   const [openPastVacationDialog, setOpenPastVacationDialog] = useState(false);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
-
+  const [snackbarOpen, setSnackbarOpen] = useState(false);
 
   const handleOpenPastVacationDialog = () => setOpenPastVacationDialog(true);
   const handleClosePastVacationDialog = () => setOpenPastVacationDialog(false);
-const [reloadRequests, setReloadRequests] = useState(false);
+  const [reloadRequests, setReloadRequests] = useState(false);
+  const [snackbarSeverity, setSnackbarSeverity] = useState<'success' | 'error' | 'warning' | 'info'>('success');
 
-const triggerReload = () => {
+
+  const triggerReload = () => {
     setReloadRequests(prev => !prev); // Alternar el valor para forzar la recarga
     setSnackbar({
-        open: true,
-        message: 'Vacación pasada agregada correctamente',
-        severity: 'success'
+      open: true,
+      message: 'Vacación pasada agregada correctamente',
+      severity: 'success'
     });
-};
+  };
 
 
   useEffect(() => {
@@ -122,18 +126,79 @@ const triggerReload = () => {
   };
 
   const handleRoleChange = async (event: SelectChangeEvent<string>) => {
-    const newRole = event.target.value;
-    if (user) {
-      try {
-        await axios.put(`${process.env.NEXT_PUBLIC_API_BASE_URL}/users/${user.id}/role`, { role: newRole });
+    const newRole = event.target.value as RoleEnum; // Asegura que el valor sea del tipo RoleEnum
+
+    if (!user || !user.id) {
+      setSnackbarMessage('Error: No se pudo obtener la información del usuario.');
+      setSnackbarSeverity('error');
+      setSnackbarOpen(true);
+      return;
+    }
+
+    try {
+      // 1. Usa PATCH en lugar de PUT para el endpoint de actualización de rol
+      // 2. Envía el rol en el formato esperado: { role: newRole }
+      const response = await axios.patch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/users/${user.id}/role`, { role: newRole });
+
+      // Si la operación fue exitosa, actualiza el estado del usuario en el contexto
+      // El backend devuelve el usuario actualizado, usa esos datos si están disponibles y completos
+      // Si el backend no devuelve el usuario actualizado, o solo parte de él,
+      // actualiza manualmente solo la propiedad 'role'
+      if (response.data && response.data.role) {
+        setUser({ ...user, role: response.data.role });
+      } else {
+        // Fallback: si el backend no devuelve el usuario actualizado, asume que el cambio fue exitoso
         setUser({ ...user, role: newRole });
-        setSnackbarMessage('Rol actualizado exitosamente.');
-      } catch (error) {
-        setSnackbarMessage('Error al actualizar el rol.');
-        console.error('Error updating role:', error);
       }
+
+
+      setSnackbarMessage('Rol actualizado exitosamente.');
+      setSnackbarSeverity('success');
+      setSnackbarOpen(true);
+
+    } catch (error: any) { // Captura el error para acceder a 'response'
+      console.error('Error al actualizar el rol:', error);
+
+      // Manejo de errores específicos del backend
+      if (error.response) {
+        const statusCode = error.response.status;
+        const errorMessage = error.response.data.message || 'Error desconocido del servidor.';
+
+        switch (statusCode) {
+          case 400: // BadRequestException (ej: límite de admins, usuario sin departamento/unidad)
+            setSnackbarMessage(`Error: ${errorMessage}`);
+            setSnackbarSeverity('error');
+            break;
+          case 404: // NotFoundException (ej: usuario no encontrado)
+            setSnackbarMessage(`Error: ${errorMessage}`);
+            setSnackbarSeverity('error');
+            break;
+          case 409: // ConflictException (ej: ya existe un supervisor, si tuvieras esa excepción sin reemplazo)
+            // Nota: Con la lógica de reemplazo en el backend, esta excepción no debería ocurrir
+            // si el nuevo rol es SUPERVISOR y ya hay uno. Pero si la dejaste en algún caso, se capturaría.
+            setSnackbarMessage(`Conflicto: ${errorMessage}`);
+            setSnackbarSeverity('warning'); // Podría ser warning si indica una situación manejada por el backend
+            break;
+          case 401: // Unauthorized (token inválido/expirado, manejado por AuthProvider globalmente)
+          case 403: // Forbidden (rol no permitido para la acción, manejado por RolesGuard)
+            setSnackbarMessage('No tienes permiso para realizar esta acción o tu sesión ha expirado.');
+            setSnackbarSeverity('error');
+            // Podrías forzar un logout aquí si no lo hace el interceptor de axios global
+            break;
+          default:
+            setSnackbarMessage(`Error del servidor: ${errorMessage}`);
+            setSnackbarSeverity('error');
+            break;
+        }
+      } else {
+        // Errores de red u otros errores que no tienen una respuesta HTTP
+        setSnackbarMessage('Error de red o desconocido al actualizar el rol.');
+        setSnackbarSeverity('error');
+      }
+      setSnackbarOpen(true);
     }
   };
+
 
   const handleHolidaySuccess = async () => {
     setSnackbarMessage('Receso personalizado creado exitosamente');
@@ -207,7 +272,8 @@ const triggerReload = () => {
               </Typography>
 
               <Chip
-                label={user.role}
+                // Aquí es donde usas el traductor:
+                label={translateRole(user.role)} // <--- ¡Aplica la traducción aquí!
                 color={getRoleColor(user.role)}
                 sx={{ mb: 2 }}
               />

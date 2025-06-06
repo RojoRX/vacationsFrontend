@@ -136,6 +136,11 @@ const navigation = (): VerticalNavItemsType => {
           path: '/users/edit-user',
           action: 'update',
         },
+        {
+          title: 'Modificar Roles',
+          path: '/users/role-users',
+          action: 'update',
+        },
       ],
     },
     {
