@@ -1,22 +1,24 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box, TextField, Typography, Container, Alert,
   CircularProgress, Paper, Table, TableBody, TableCell,
   TableContainer, TableHead, TableRow, TablePagination,
   InputAdornment, IconButton, Chip, Toolbar, MenuItem,
-  FormControl, InputLabel, Select
+  FormControl, InputLabel, Select, Button
 } from '@mui/material';
 import {
   Search as SearchIcon,
   Refresh as RefreshIcon,
   Person as PersonIcon,
   Visibility as VisibilityIcon,
+  Description as DescriptionIcon
 } from '@mui/icons-material';
 import axios from 'src/lib/axios';
 import { User } from 'src/interfaces/usertypes';
 import router from 'next/router';
 import { translateRole } from 'src/utils/translateRole';
-import { useDebounce } from 'src/hooks/useDebounce'; // ajusta la ruta
+import { useDebounce } from 'src/hooks/useDebounce';
+import GeneralReportDialog from '../generalReports';
 
 const SearchUsers = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -27,6 +29,7 @@ const SearchUsers = () => {
   const [rowsPerPage, setRowsPerPage] = useState(5);
   const [roleFilter, setRoleFilter] = useState<string>('all');
   const [positionFilter, setPositionFilter] = useState<string>('all');
+  const [openReportDialog, setOpenReportDialog] = useState(false);
 
   // 🔹 Cargar últimos 20 usuarios al inicio
   useEffect(() => {
@@ -35,7 +38,7 @@ const SearchUsers = () => {
         setLoading(true);
         const res = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/users/latest`);
         setUsers(res.data);
-      } catch (err) {
+      } catch {
         setError('Error al cargar los últimos usuarios.');
       } finally {
         setLoading(false);
@@ -47,7 +50,6 @@ const SearchUsers = () => {
   // 🔹 Función de búsqueda dinámica (CI o nombre)
   const fetchUsers = async (term: string) => {
     if (!term.trim()) {
-      // Si no hay búsqueda, traer últimos 20
       try {
         const res = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/users/latest`);
         setUsers(res.data);
@@ -75,12 +77,11 @@ const SearchUsers = () => {
     }
   };
 
-  // 🔹 Debounce para evitar llamadas en cada tecla
-const debouncedSearchTerm = useDebounce(searchTerm, 500);
+  const debouncedSearchTerm = useDebounce(searchTerm, 500);
 
-useEffect(() => {
-  fetchUsers(debouncedSearchTerm);
-}, [debouncedSearchTerm]);
+  useEffect(() => {
+    fetchUsers(debouncedSearchTerm);
+  }, [debouncedSearchTerm]);
 
   const handleReset = () => {
     setSearchTerm('');
@@ -94,16 +95,12 @@ useEffect(() => {
     router.push(`/users/${ci}`);
   };
 
-  const handleChangePage = (_: unknown, newPage: number) => {
-    setPage(newPage);
-  };
-
+  const handleChangePage = (_: unknown, newPage: number) => setPage(newPage);
   const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLInputElement>) => {
     setRowsPerPage(parseInt(event.target.value, 10));
     setPage(0);
   };
 
-  // 🔹 Filtrado adicional por rol y posición
   const filteredUsers = users.filter(user => {
     const matchesRole = roleFilter === 'all' || user.role?.toLowerCase() === roleFilter.toLowerCase();
     const matchesPosition = positionFilter === 'all' ||
@@ -111,7 +108,6 @@ useEffect(() => {
     return matchesRole && matchesPosition;
   });
 
-  // 🔹 Roles y posiciones únicas para filtros
   const uniqueRoles = Array.from(new Set(users.map(user => user.role)));
   const uniquePositions = Array.from(new Set(users.map(user => user.position).filter(Boolean)));
 
@@ -132,12 +128,7 @@ useEffect(() => {
           p: 0,
           mb: 3
         }}>
-          <Box sx={{
-            display: 'flex',
-            gap: 2,
-            width: { xs: '100%', sm: 'auto' },
-            flexWrap: 'wrap'
-          }}>
+          <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', width: { xs: '100%', sm: 'auto' } }}>
             <TextField
               label="Buscar por CI o Nombre"
               variant="outlined"
@@ -156,11 +147,7 @@ useEffect(() => {
 
             <FormControl size="small" sx={{ minWidth: 120 }}>
               <InputLabel>Rol</InputLabel>
-              <Select
-                value={roleFilter}
-                onChange={(e) => setRoleFilter(e.target.value)}
-                label="Rol"
-              >
+              <Select value={roleFilter} onChange={(e) => setRoleFilter(e.target.value)} label="Rol">
                 <MenuItem value="all">Todos los roles</MenuItem>
                 {uniqueRoles.map(role => (
                   <MenuItem key={role} value={role}>{translateRole(role)}</MenuItem>
@@ -170,11 +157,7 @@ useEffect(() => {
 
             <FormControl size="small" sx={{ minWidth: 120 }}>
               <InputLabel>Posición</InputLabel>
-              <Select
-                value={positionFilter}
-                onChange={(e) => setPositionFilter(e.target.value)}
-                label="Posición"
-              >
+              <Select value={positionFilter} onChange={(e) => setPositionFilter(e.target.value)} label="Posición">
                 <MenuItem value="all">Todas las posiciones</MenuItem>
                 {uniquePositions.map(position => (
                   <MenuItem key={position} value={position}>{position}</MenuItem>
@@ -185,14 +168,20 @@ useEffect(() => {
             <IconButton onClick={handleReset} title="Restablecer búsqueda">
               <RefreshIcon />
             </IconButton>
+
+            {/* 🔹 Botón para abrir diálogo de reporte general */}
+            <Button
+              variant="contained"
+              color="primary"
+              startIcon={<DescriptionIcon />}
+              onClick={() => setOpenReportDialog(true)}
+            >
+              Generar Reporte General
+            </Button>
           </Box>
         </Toolbar>
 
-        {error && (
-          <Alert severity="error" sx={{ mb: 3 }}>
-            {error}
-          </Alert>
-        )}
+        {error && <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>}
 
         {loading ? (
           <Box sx={{ display: 'flex', justifyContent: 'center', py: 5 }}>
@@ -218,22 +207,18 @@ useEffect(() => {
                 {filteredUsers.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={9} align="center">
-                      <Typography color="text.secondary">
-                        No se encontraron usuarios.
-                      </Typography>
+                      <Typography color="text.secondary">No se encontraron usuarios.</Typography>
                     </TableCell>
                   </TableRow>
                 ) : (
                   filteredUsers
                     .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                    .map((user) => (
+                    .map(user => (
                       <TableRow key={user.id} hover>
                         <TableCell>{user.ci}</TableCell>
                         <TableCell>
                           <Typography fontWeight="medium">{user.fullName}</Typography>
-                          <Typography variant="body2" color="text.secondary">
-                            @{user.username}
-                          </Typography>
+                          <Typography variant="body2" color="text.secondary">@{user.username}</Typography>
                         </TableCell>
                         <TableCell>
                           <Chip
@@ -280,6 +265,14 @@ useEffect(() => {
             />
           </TableContainer>
         )}
+
+        {/* 🔹 Diálogo de reporte general */}
+        {openReportDialog && (
+          <GeneralReportDialog
+            open={openReportDialog}
+            onClose={() => setOpenReportDialog(false)}
+          />
+        )}
       </Paper>
     </Container>
   );
@@ -290,4 +283,6 @@ SearchUsers.acl = {
   action: 'read',
   subject: 'search-users'
 };
+
 export default SearchUsers;
+
