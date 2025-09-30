@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
-  Box, TextField, Button, Typography, Container, Alert,
+  Box, TextField, Typography, Container, Alert,
   CircularProgress, Paper, Table, TableBody, TableCell,
   TableContainer, TableHead, TableRow, TablePagination,
   InputAdornment, IconButton, Chip, Toolbar, MenuItem,
@@ -11,12 +11,12 @@ import {
   Refresh as RefreshIcon,
   Person as PersonIcon,
   Visibility as VisibilityIcon,
-  FilterList as FilterIcon
 } from '@mui/icons-material';
 import axios from 'src/lib/axios';
 import { User } from 'src/interfaces/usertypes';
 import router from 'next/router';
 import { translateRole } from 'src/utils/translateRole';
+import { useDebounce } from 'src/hooks/useDebounce'; // ajusta la ruta
 
 const SearchUsers = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -28,34 +28,73 @@ const SearchUsers = () => {
   const [roleFilter, setRoleFilter] = useState<string>('all');
   const [positionFilter, setPositionFilter] = useState<string>('all');
 
-  const handleSearch = async () => {
-    setError(null);
+  // 🔹 Cargar últimos 20 usuarios al inicio
+  useEffect(() => {
+    const fetchLatestUsers = async () => {
+      try {
+        setLoading(true);
+        const res = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/users/latest`);
+        setUsers(res.data);
+      } catch (err) {
+        setError('Error al cargar los últimos usuarios.');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchLatestUsers();
+  }, []);
+
+  // 🔹 Función de búsqueda dinámica (CI o nombre)
+  const fetchUsers = async (term: string) => {
+    if (!term.trim()) {
+      // Si no hay búsqueda, traer últimos 20
+      try {
+        const res = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/users/latest`);
+        setUsers(res.data);
+        setError(null);
+      } catch {
+        setUsers([]);
+        setError('Error al cargar los usuarios.');
+      }
+      return;
+    }
+
     setLoading(true);
+    setError(null);
     try {
-      const response = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/users/search-by-ci?ci=${searchTerm}`);
+      const response = await axios.get(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/users/search?term=${term}`
+      );
       setUsers(response.data);
-      setPage(0); // Resetear a la primera página al realizar nueva búsqueda
-    } catch (err) {
+      setPage(0);
+    } catch {
       setUsers([]);
-      setError('No se encontraron usuarios o ocurrió un error.');
+      setError('No se encontraron usuarios.');
     } finally {
       setLoading(false);
     }
   };
 
+  // 🔹 Debounce para evitar llamadas en cada tecla
+const debouncedSearchTerm = useDebounce(searchTerm, 500);
+
+useEffect(() => {
+  fetchUsers(debouncedSearchTerm);
+}, [debouncedSearchTerm]);
+
   const handleReset = () => {
     setSearchTerm('');
     setRoleFilter('all');
     setPositionFilter('all');
-    setUsers([]);
     setError(null);
+    fetchUsers('');
   };
 
   const handleViewDetails = (ci: string) => {
     router.push(`/users/${ci}`);
   };
 
-  const handleChangePage = (event: unknown, newPage: number) => {
+  const handleChangePage = (_: unknown, newPage: number) => {
     setPage(newPage);
   };
 
@@ -64,7 +103,7 @@ const SearchUsers = () => {
     setPage(0);
   };
 
-  // Filtrado adicional por rol y posición
+  // 🔹 Filtrado adicional por rol y posición
   const filteredUsers = users.filter(user => {
     const matchesRole = roleFilter === 'all' || user.role?.toLowerCase() === roleFilter.toLowerCase();
     const matchesPosition = positionFilter === 'all' ||
@@ -72,7 +111,7 @@ const SearchUsers = () => {
     return matchesRole && matchesPosition;
   });
 
-  // Obtener roles y posiciones únicas para los filtros
+  // 🔹 Roles y posiciones únicas para filtros
   const uniqueRoles = Array.from(new Set(users.map(user => user.role)));
   const uniquePositions = Array.from(new Set(users.map(user => user.position).filter(Boolean)));
 
@@ -100,7 +139,7 @@ const SearchUsers = () => {
             flexWrap: 'wrap'
           }}>
             <TextField
-              label="Buscar por CI"
+              label="Buscar por CI o Nombre"
               variant="outlined"
               size="small"
               value={searchTerm}
@@ -125,7 +164,6 @@ const SearchUsers = () => {
                 <MenuItem value="all">Todos los roles</MenuItem>
                 {uniqueRoles.map(role => (
                   <MenuItem key={role} value={role}>{translateRole(role)}</MenuItem>
-
                 ))}
               </Select>
             </FormControl>
@@ -144,16 +182,6 @@ const SearchUsers = () => {
               </Select>
             </FormControl>
 
-            <Button
-              variant="contained"
-              onClick={handleSearch}
-              disabled={loading || !searchTerm}
-              startIcon={loading ? <CircularProgress size={20} /> : <SearchIcon />}
-              sx={{ minWidth: 120 }}
-            >
-              {loading ? 'Buscando...' : 'Buscar'}
-            </Button>
-
             <IconButton onClick={handleReset} title="Restablecer búsqueda">
               <RefreshIcon />
             </IconButton>
@@ -166,7 +194,11 @@ const SearchUsers = () => {
           </Alert>
         )}
 
-        {users.length > 0 && (
+        {loading ? (
+          <Box sx={{ display: 'flex', justifyContent: 'center', py: 5 }}>
+            <CircularProgress />
+          </Box>
+        ) : (
           <TableContainer component={Paper}>
             <Table>
               <TableHead>
@@ -183,49 +215,55 @@ const SearchUsers = () => {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {filteredUsers
-                  .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                  .map((user) => (
-                    <TableRow key={user.id} hover>
-                      <TableCell>{user.ci}</TableCell>
-                      <TableCell>
-                        <Typography fontWeight="medium">{user.fullName}</Typography>
-                        <Typography variant="body2" color="text.secondary">
-                          @{user.username}
-                        </Typography>
-                      </TableCell>
-                      <TableCell>
-                        <Chip
-                          label={translateRole(user.role)}
-                          color={
-                            user.role === 'SUPERVISOR' ? 'primary' :
-                              user.role === 'ADMIN' ? 'secondary' :
-                                'default'
-                          }
-                          
-                          size="small"
-                        />
-                      </TableCell>
-
-                      <TableCell>{user.position || '-'}</TableCell>
-                      <TableCell>{user.profession?.name || '-'}</TableCell>
-                      <TableCell>{user.department?.name || '-'}</TableCell>
-                      <TableCell>{user.academicUnit?.name || '-'}</TableCell>
-                      <TableCell>{new Date(user.fecha_ingreso).toLocaleDateString('es-ES')}</TableCell>
-                      <TableCell>
-                        <Button
-                          variant="outlined"
-                          size="small"
-                          startIcon={<VisibilityIcon />}
-                          onClick={() => handleViewDetails(user.ci)}
-                        >
-                          Ver
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                {filteredUsers.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={9} align="center">
+                      <Typography color="text.secondary">
+                        No se encontraron usuarios.
+                      </Typography>
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  filteredUsers
+                    .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+                    .map((user) => (
+                      <TableRow key={user.id} hover>
+                        <TableCell>{user.ci}</TableCell>
+                        <TableCell>
+                          <Typography fontWeight="medium">{user.fullName}</Typography>
+                          <Typography variant="body2" color="text.secondary">
+                            @{user.username}
+                          </Typography>
+                        </TableCell>
+                        <TableCell>
+                          <Chip
+                            label={translateRole(user.role)}
+                            color={
+                              user.role === 'SUPERVISOR' ? 'primary' :
+                                user.role === 'ADMIN' ? 'secondary' :
+                                  'default'
+                            }
+                            size="small"
+                          />
+                        </TableCell>
+                        <TableCell>{user.position || '-'}</TableCell>
+                        <TableCell>{user.profession?.name || '-'}</TableCell>
+                        <TableCell>{user.department?.name || '-'}</TableCell>
+                        <TableCell>{user.academicUnit?.name || '-'}</TableCell>
+                        <TableCell>{new Date(user.fecha_ingreso).toLocaleDateString('es-ES')}</TableCell>
+                        <TableCell>
+                          <IconButton
+                            color="primary"
+                            size="small"
+                            onClick={() => handleViewDetails(user.ci)}
+                          >
+                            <VisibilityIcon />
+                          </IconButton>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                )}
               </TableBody>
-
             </Table>
             <TablePagination
               rowsPerPageOptions={[5, 10, 25]}
@@ -246,7 +284,8 @@ const SearchUsers = () => {
     </Container>
   );
 };
-// Configurar ACL para dar acceso a empleados
+
+// Configurar ACL
 SearchUsers.acl = {
   action: 'read',
   subject: 'search-users'
