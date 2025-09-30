@@ -18,7 +18,8 @@ import {
   Lock as LockIcon,
   EventNote as LicenseIcon,
   BeachAccess as HolidayIcon,
-  Person as DebtIcon
+  Person as DebtIcon,
+  Apartment as DepartmentIcon
 } from '@mui/icons-material';
 import { TextField } from '@mui/material';
 import axios from 'src/lib/axios';
@@ -117,6 +118,7 @@ const UserInformation: AclComponent = () => {
       // Usar directamente el objeto obtenido
       const ingresoYear = new Date(response.data.fecha_ingreso).getFullYear();
       setSelectedYear(ingresoYear);
+      console.log(response.data)
     } catch (error) {
       //setSnackbarMessage('Error al buscar usuario. Verifique el carnet de identidad.');
       console.error('Error fetching user:', error);
@@ -302,29 +304,35 @@ const UserInformation: AclComponent = () => {
                 </Typography>
 
                 <Typography variant="body1" sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                  <SchoolIcon sx={{ mr: 1, color: 'text.secondary' }} />
+                  <DepartmentIcon sx={{ mr: 1, color: 'text.secondary' }} />
                   <strong>Departamento:</strong> {user.department?.name || 'No registrado'}
                 </Typography>
 
                 <Typography variant="body1" sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                  <LockIcon sx={{ mr: 1, color: 'text.secondary' }} />
+                  <SchoolIcon sx={{ mr: 1, color: 'text.secondary' }} />
+                  <strong>Unidad academica:</strong> {user.academicUnit?.name || 'No registrado'}
+                </Typography>
+
+                <Typography variant="body1" sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                  <PersonIcon sx={{ mr: 1, color: 'text.secondary' }} />
                   <strong>Carnet de Identidad:</strong> {user.ci}
                 </Typography>
 
                 <Typography variant="body1" sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                  <LockIcon sx={{ mr: 1, color: 'text.secondary' }} />
+                  <WorkIcon sx={{ mr: 1, color: 'text.secondary' }} />
                   <strong>Username:</strong> {user.username || 'No registrado'}
                 </Typography>
 
-                <Typography variant="body1" sx={{ display: 'flex', alignItems: 'center' }}>
-                  <LockIcon sx={{ mr: 1, color: 'text.secondary' }} />
+                <Typography variant="body1" sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                  <PhoneIcon sx={{ mr: 1, color: 'text.secondary' }} />
                   <strong>Email:</strong> {user.email || 'No registrado'}
                 </Typography>
 
                 <Typography variant="body1" sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                  <LockIcon sx={{ mr: 1, color: 'text.secondary' }} />
+                  <SchoolIcon sx={{ mr: 1, color: 'text.secondary' }} />
                   <strong>Tipo de Empleado:</strong> {user.tipoEmpleado}
                 </Typography>
+
               </Box>
 
               {currentUser?.role === 'admin' && (
