@@ -200,6 +200,8 @@ const GestionDetailDialog: React.FC<GestionDetailDialogProps> = ({
                                         Deuda Acumulada
                                     </Typography>
                                 </Box>
+
+
                                 <Typography
                                     color={(gestionData.debt?.deudaAcumulativaHastaEstaGestion || 0) > 0 ? 'error' : 'textSecondary'}
                                     sx={{ fontWeight: (gestionData.debt?.deudaAcumulativaHastaEstaGestion || 0) > 0 ? 600 : 'normal' }}
@@ -208,6 +210,39 @@ const GestionDetailDialog: React.FC<GestionDetailDialogProps> = ({
                                 </Typography>
                             </Paper>
                         </Grid>
+                        <Grid item xs={4}>
+                            <Paper
+                                elevation={0}
+                                sx={{
+                                    p: 2,
+                                    borderLeft: '4px solid',
+                                    borderColor: (gestionData.debt?.deudaAcumulativaAnterior || 0) > 0
+                                        ? theme.palette.warning.main  // usamos un color distinto, p.ej. warning
+                                        : theme.palette.divider,
+                                    bgcolor: (gestionData.debt?.deudaAcumulativaAnterior || 0) > 0
+                                        ? theme.palette.warning.light + '20'
+                                        : theme.palette.background.default,
+                                }}
+                            >
+                                <Box display="flex" alignItems="center" mb={1}>
+                                    <EventAvailableIcon
+                                        color={(gestionData.debt?.deudaAcumulativaAnterior || 0) > 0 ? 'warning' : 'disabled'}
+                                        sx={{ mr: 1 }}
+                                    />
+                                    <Typography variant="subtitle1" fontWeight={600}>
+                                        Deuda gestión anterior
+                                    </Typography>
+                                </Box>
+
+                                <Typography
+                                    color={(gestionData.debt?.deudaAcumulativaAnterior || 0) > 0 ? 'warning.main' : 'textSecondary'}
+                                    sx={{ fontWeight: (gestionData.debt?.deudaAcumulativaAnterior || 0) > 0 ? 600 : 'normal' }}
+                                >
+                                    {gestionData.debt?.deudaAcumulativaAnterior || 0} días
+                                </Typography>
+                            </Paper>
+                        </Grid>
+
                     </Grid>
                     <Grid container spacing={3} sx={{ mb: 4 }}>
                         {/* Receso de Invierno */}

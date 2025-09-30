@@ -437,7 +437,7 @@ const VacationDashboard = () => {
                                                 </Box>
 
                                                 <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                                                    <Typography variant="body2">Deuda Acumulada:</Typography>
+                                                    <Typography variant="body2">Deudas Acumulada:</Typography>
                                                     <Typography
                                                         variant="body1"
                                                         color={(detalle.debt.deudaAcumulativaHastaEstaGestion) > 0 ? 'error' : 'text.primary'}
@@ -446,6 +446,18 @@ const VacationDashboard = () => {
                                                         {detalle.debt.deudaAcumulativaHastaEstaGestion}
                                                     </Typography>
                                                 </Box>
+                                                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                                                    <Typography variant="body2">Deuda gestión anterior:</Typography>
+                                                    <Typography
+                                                        variant="body1"
+                                                        fontWeight="bold"
+                                                        color={detalle.debt.deudaAcumulativaAnterior > 0 ? 'red' : 'secondary'}
+                                                    >
+                                                        {detalle.debt.deudaAcumulativaAnterior}
+                                                    </Typography>
+                                                </Box>
+
+
 
                                                 <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
                                                     <Typography variant="body2">Antigüedad:</Typography>
