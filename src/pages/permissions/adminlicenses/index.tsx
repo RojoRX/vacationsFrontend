@@ -44,6 +44,7 @@ import { es } from 'date-fns/locale';
 import ReportDownloadModal from 'src/pages/reports/reportDownloadModal';
 import LicenseDetailDialog from '../detail-dialog';
 import Link from 'next/link';
+import SingleLicenseForm from '../singleLicenseForm';
 
 interface AdminLicensesProps {
     licenses: License[];
@@ -283,7 +284,15 @@ const AdminLicenses: AclComponent = () => {
 
     return (
         <Paper elevation={3} sx={{ p: 3, borderRadius: 2 }}>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+            <Box
+                sx={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    mb: 3
+                }}
+            >
+                {/* Título e info a la izquierda */}
                 <Typography variant="h5" component="h2" sx={{ display: 'flex', alignItems: 'center' }}>
                     <Business sx={{ mr: 1, color: 'primary.main' }} />
                     Gestión General de Permisos
@@ -294,37 +303,46 @@ const AdminLicenses: AclComponent = () => {
                     )}
                 </Typography>
 
+                {/* Botones a la derecha */}
+                <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                    <Tooltip title="Recargar datos">
+                        <IconButton onClick={fetchAllLicenses} color="primary">
+                            <Refresh />
+                        </IconButton>
+                    </Tooltip>
 
-                <Tooltip title="Recargar datos">
-                    <IconButton onClick={fetchAllLicenses} color="primary">
-                        <Refresh />
-                    </IconButton>
-                </Tooltip>
-                <Button
-                    variant="contained"
-                    startIcon={<Add />}
-                    onClick={() => setReportModalOpen(true)}
-                    sx={{ ml: 2 }}
-                >
-                    Generar Reporte
-                </Button>
-                <Button
-                    variant="contained"
-                    color={viewDeleted ? 'success' : 'warning'}
-                    onClick={() => {
-                        if (viewDeleted) {
-                            fetchAllLicenses();
-                        } else {
-                            fetchDeletedLicenses();
-                        }
-                        setViewDeleted(!viewDeleted);
-                    }}
-                    sx={{ ml: 2 }}
-                >
-                    {viewDeleted ? 'Ver Licencias Activas' : 'Ver Licencias Eliminadas'}
-                </Button>
+                    {/* Aquí integramos el BulkLicenseForm */}
+                    <Box sx={{ ml: 2 }}>
+                        <SingleLicenseForm />
+                    </Box>
 
+                    <Button
+                        variant="contained"
+                        startIcon={<Add />}
+                        onClick={() => setReportModalOpen(true)}
+                        sx={{ ml: 2 }}
+                    >
+                        Generar Reporte
+                    </Button>
+
+                    <Button
+                        variant="contained"
+                        color={viewDeleted ? 'success' : 'warning'}
+                        onClick={() => {
+                            if (viewDeleted) {
+                                fetchAllLicenses();
+                            } else {
+                                fetchDeletedLicenses();
+                            }
+                            setViewDeleted(!viewDeleted);
+                        }}
+                        sx={{ ml: 2 }}
+                    >
+                        {viewDeleted ? 'Ver Licencias Activas' : 'Ver Licencias Eliminadas'}
+                    </Button>
+                </Box>
             </Box>
+
 
             {/* Filtros y búsqueda */}
             <Grid container spacing={2} sx={{ mb: 3 }}>
