@@ -49,6 +49,7 @@ import { VacationRequest } from 'src/interfaces/vacationRequests';
 import { formatDate } from 'src/utils/dateUtils';
 import Link from 'next/link';
 import useUser from 'src/hooks/useUser';
+import EditVacationDialog from '../vacations-editDate';
 
 // Tipado de la solicitud de vacaciones
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || '';
@@ -66,6 +67,7 @@ const AdminVacationRequests: FC = () => {
   const [openSuspendDialog, setOpenSuspendDialog] = useState(false);
   const [showDeleted, setShowDeleted] = useState(false);
   const user = useUser();
+  const [openEditDialog, setOpenEditDialog] = useState(false);
 
   const statusMap = {
     PENDING: { label: 'Pendiente', color: 'default' },
@@ -130,8 +132,10 @@ const AdminVacationRequests: FC = () => {
 
   const handleCloseDetailDialog = () => {
     setOpenDetailDialog(false);
-    setSelectedRequest(null);
+    setSelectedRequest(null); // ✅ solo aquí
   };
+
+
 
   const handleSuspendSuccess = async () => {
     try {
@@ -171,6 +175,33 @@ const AdminVacationRequests: FC = () => {
       setFeedbackMessage(error?.response?.data?.message || 'Ocurrió un error al eliminar la solicitud.');
     }
   };
+  const handleOpenEditDialog = (request: VacationRequest) => {
+    setSelectedRequest(request);
+    setOpenEditDialog(true);
+  };
+
+  const handleCloseEditDialog = () => {
+    setOpenEditDialog(false);
+    // ❌ NO poner setSelectedRequest(null) aquí
+  };
+
+
+  const handleEditSuccess = async () => {
+    try {
+      const response = await axios.get(`${API_BASE_URL}/vacation-requests`);
+      setRequests(response.data);
+
+      setFeedbackSeverity('success');
+      setFeedbackMessage('Solicitud actualizada correctamente ✅');
+
+      setTimeout(() => {
+        setFeedbackMessage(null);
+      }, 3000);
+    } catch (error) {
+      console.error('Error al actualizar la lista después de editar:', error);
+    }
+  };
+
 
 
   const getStatusColor = (status: string) => {
@@ -453,7 +484,24 @@ const AdminVacationRequests: FC = () => {
                     <strong>Motivo de postergación:</strong> {selectedRequest.postponedReason}
                   </Typography>
                 </Box>
-              )}{/* Botón para suspender */}
+              )}
+              {selectedRequest?.deleted !== true && (
+                <Grid container spacing={1}>
+                  <Grid item xs={12}>
+                    <Button
+                      variant="contained"
+                      color="primary"
+                      startIcon={<EditIcon />}
+                      onClick={() => setOpenEditDialog(true)}
+                      fullWidth
+                    >
+                      Editar Solicitud
+                    </Button>
+                  </Grid>
+                </Grid>
+              )}
+
+              {/* Botón para suspender */}
               {selectedRequest.status !== 'SUSPENDED' && selectedRequest.deleted !== true && (
                 <Grid container spacing={1}>
                   <Grid item xs={12}>
@@ -494,14 +542,15 @@ const AdminVacationRequests: FC = () => {
             {selectedRequest?.deleted !== true && (
               <Grid item xs={12} sm={6}>
                 <Button
-                  onClick={handleSoftDelete}
-                  color="error"
-                  variant="outlined"
+                  variant="contained"
+                  color="primary"
+                  startIcon={<EditIcon />}
+                  onClick={() => handleOpenEditDialog(selectedRequest!)} // 🔹 pasa la request al hijo
                   fullWidth
-                  startIcon={<CloseIcon />}
                 >
-                  Eliminar solicitud
+                  Editar Solicitud
                 </Button>
+
               </Grid>
             )}
           </Grid>
@@ -516,6 +565,18 @@ const AdminVacationRequests: FC = () => {
         request={selectedRequest}
         onSuccess={handleSuspendSuccess}
       />
+      <EditVacationDialog
+        open={openEditDialog}
+        onClose={handleCloseEditDialog}
+        request={selectedRequest}
+        onSuccess={async () => {
+          await handleEditSuccess();
+          handleCloseDetailDialog(); // 🔹 cerrar el dialogo padre también
+          handleCloseEditDialog();   // 🔹 cerrar el dialogo de edición
+        }}
+      />
+
+
     </Container>
   );
 };
