@@ -275,20 +275,7 @@ const RequestPermissionDialog: AclComponent = ({ open, onClose, onSuccess }) => 
           </Box>
         ) : (
           <form onSubmit={handleSubmit}>
-            <FormControl fullWidth margin="normal">
-              <InputLabel id="startHalfDay-label">Inicio del Día</InputLabel>
-              <Select
-                labelId="startHalfDay-label"
-                name="startHalfDay"
-                value={formData.startHalfDay}
-                onChange={(e) => setFormData(prev => ({ ...prev, startHalfDay: e.target.value as any }))}
-                disabled={loading}
-              >
-                <MenuItem value="Completo">Día Completo</MenuItem>
-                <MenuItem value="Media Mañana">Media Mañana</MenuItem>
-                <MenuItem value="Media Tarde">Media Tarde</MenuItem>
-              </Select>
-            </FormControl>
+
 
             <FormControl fullWidth margin="normal">
               <InputLabel id="timeRequested-label">Tiempo Solicitado *</InputLabel>
@@ -335,7 +322,7 @@ const RequestPermissionDialog: AclComponent = ({ open, onClose, onSuccess }) => 
                 disabled={loading}
               >
                 <MenuItem value="Completo">Día Completo</MenuItem>
-                <MenuItem value="Media Mañana">Media Mañana</MenuItem>
+                {/**<MenuItem value="Media Mañana">Media Mañana</MenuItem> */}
                 <MenuItem value="Media Tarde">Media Tarde</MenuItem>
               </Select>
             </FormControl>
@@ -379,7 +366,7 @@ const RequestPermissionDialog: AclComponent = ({ open, onClose, onSuccess }) => 
             )}
             <Typography variant="caption" color="text.secondary" mt={1} display="block">
               Nota: En licencias de varios días, el último día solo puede seleccionarse Día Completo o Media Mañana.
-              El primer día puede ser Día Completo, Media Mañana o Media Tarde.
+              El primer día puede ser Día Completo o Media Tarde.
               Esto asegura que la licencia sea continua y coherente.
             </Typography>
             {/**            {formData.startDate && formData.endDate && formData.timeRequested === 'Varios Días' && (

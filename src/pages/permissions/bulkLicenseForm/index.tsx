@@ -32,8 +32,9 @@ interface LicenseFormData {
   timeRequested: string;
   startDate: Date | null;
   endDate: Date | null;
+  startHalfDay: 'Completo' | 'Media Mañana' | 'Media Tarde';
+  endHalfDay: 'Completo' | 'Media Mañana' | 'Media Tarde';
 }
-
 interface BulkLicenseFormProps {
   open: boolean;
   onClose: () => void;
@@ -43,13 +44,15 @@ interface BulkLicenseFormProps {
 
 const BulkLicenseForm: React.FC<BulkLicenseFormProps> = ({ open, onClose, userId, onSuccess }) => {
   const theme = useTheme();
-  const [licenses, setLicenses] = useState<LicenseFormData[]>([
-    {
-      timeRequested: 'Día Completo',
-      startDate: null,
-      endDate: null
-    }
-  ]);
+  // Estado inicial
+  const [licenses, setLicenses] = useState<LicenseFormData[]>([{
+    timeRequested: 'Día Completo',
+    startDate: null,
+    endDate: null,
+    startHalfDay: 'Completo',
+    endHalfDay: 'Completo'
+  }]);
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -59,7 +62,9 @@ const BulkLicenseForm: React.FC<BulkLicenseFormProps> = ({ open, onClose, userId
     setLicenses([...licenses, {
       timeRequested: 'Día Completo',
       startDate: null,
-      endDate: null
+      endDate: null,
+      startHalfDay: 'Completo',
+      endHalfDay: 'Completo'
     }]);
   };
 
@@ -79,10 +84,13 @@ const BulkLicenseForm: React.FC<BulkLicenseFormProps> = ({ open, onClose, userId
     newLicenses[index][field] = value;
 
     // Si es Día Completo o Medio Día, sincronizar endDate con startDate
-    if ((field === 'timeRequested' || field === 'startDate') &&
-      (newLicenses[index].timeRequested === 'Día Completo' ||
-        newLicenses[index].timeRequested === 'Medio Día')) {
-      newLicenses[index].endDate = field === 'startDate' ? value : newLicenses[index].startDate;
+    // En handleLicenseChange
+    if (field === 'timeRequested' || field === 'startDate') {
+      if (newLicenses[index].timeRequested !== 'Varios Días') {
+        newLicenses[index].endDate = newLicenses[index].startDate;
+        newLicenses[index].startHalfDay = 'Completo';
+        newLicenses[index].endHalfDay = 'Completo';
+      }
     }
 
     setLicenses(newLicenses);
@@ -126,11 +134,14 @@ const BulkLicenseForm: React.FC<BulkLicenseFormProps> = ({ open, onClose, userId
         return;
       }
 
+      // Al enviar al backend
       const licensesData = licenses.map(l => ({
         licenseType: 'VACACION',
         timeRequested: l.timeRequested,
         startDate: l.startDate?.toISOString().split('T')[0],
-        endDate: l.endDate?.toISOString().split('T')[0]
+        endDate: l.endDate?.toISOString().split('T')[0],
+        startHalfDay: l.startHalfDay,
+        endHalfDay: l.endHalfDay
       }));
 
       const response = await axios.post(`${process.env.NEXT_PUBLIC_API_BASE_URL}/licenses/user/${userId}/multiple`, licensesData);
@@ -157,7 +168,7 @@ const BulkLicenseForm: React.FC<BulkLicenseFormProps> = ({ open, onClose, userId
       setSuccess(true);
       onSuccess();
       onClose();
-      setLicenses([{ timeRequested: 'Día Completo', startDate: null, endDate: null }]); // Reset form
+      setLicenses([{ timeRequested: 'Día Completo', startDate: null, endDate: null, startHalfDay:'Completo', endHalfDay:'Completo' }]); // Reset form
     } catch (err: any) {
       console.error('Error al registrar licencias:', err);
 
@@ -288,6 +299,39 @@ const BulkLicenseForm: React.FC<BulkLicenseFormProps> = ({ open, onClose, userId
                       minDate={license.startDate || undefined}
                       disabled={license.timeRequested !== 'Varios Días'}
                     />
+                    {license.timeRequested === 'Varios Días' && (
+                      <Grid container spacing={2} sx={{ mt: 1 }}>
+                        <Grid item xs={12} sm={6}>
+                          <TextField
+                            select
+                            fullWidth
+                            label="Inicio del día"
+                            value={license.startHalfDay}
+                            onChange={(e) => handleLicenseChange(index, 'startHalfDay', e.target.value)}
+                          >
+                            <MenuItem value="Completo">Día completo</MenuItem>
+                            {/**<MenuItem value="Media Mañana">Media mañana</MenuItem> */}
+                            <MenuItem value="Media Tarde">Media tarde</MenuItem>
+                          </TextField>
+                        </Grid>
+                        <Grid item xs={12} sm={6}>
+                          <TextField
+                            select
+                            fullWidth
+                            label="Fin del día"
+                            value={license.endHalfDay}
+                            onChange={(e) => handleLicenseChange(index, 'endHalfDay', e.target.value)}
+                          >
+                            <MenuItem value="Completo">Día completo</MenuItem>
+                            <MenuItem value="Media Mañana">Media mañana</MenuItem>
+                          </TextField>
+                          <Typography variant="caption" color="text.secondary">
+                            El último día solo permite Media Mañana o Día Completo para mantener la continuidad de la licencia
+                          </Typography>
+                        </Grid>
+                      </Grid>
+                    )}
+
                     {license.startDate && license.endDate && (
                       <Typography variant="body2" sx={{ mt: 1, fontStyle: 'italic' }}>
                         Días hábiles: {getBusinessDays(license.startDate, license.endDate)}
