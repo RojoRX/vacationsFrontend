@@ -24,6 +24,9 @@ interface FormData {
   timeRequested: string;
   startDate: string;
   endDate: string;
+  startHalfDay: 'Completo' | 'Media Mañana' | 'Media Tarde';
+  endHalfDay: 'Completo' | 'Media Mañana' | 'Media Tarde';
+
 }
 
 interface RequestPermissionDialogProps {
@@ -45,8 +48,11 @@ const RequestPermissionDialog: AclComponent = ({ open, onClose, onSuccess }) => 
     licenseType: 'VACACION',
     timeRequested: '',
     startDate: '',
-    endDate: ''
+    endDate: '',
+    startHalfDay: 'Completo',
+    endHalfDay: 'Completo'
   });
+
   const [vacationData, setVacationData] = useState<VacationData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -59,7 +65,15 @@ const RequestPermissionDialog: AclComponent = ({ open, onClose, onSuccess }) => 
     holidays: { year: number; date: string; description: string }[];
     ignoredWeekendHolidays?: { date: string; description: string }[];
   } | null>(null);
+  const todayStr = new Date().toISOString().split('T')[0];
 
+  useEffect(() => {
+    setFormData(prev => ({
+      ...prev,
+      startDate: prev.startDate || todayStr,
+      endDate: prev.endDate || todayStr
+    }));
+  }, [open]);
 
   useEffect(() => {
     const fetchVacationData = async () => {
@@ -112,11 +126,16 @@ const RequestPermissionDialog: AclComponent = ({ open, onClose, onSuccess }) => 
 
   const calculateTotalDays = (): number => {
     if (!formData.startDate || !formData.endDate) return 0;
-    const startDate = new Date(formData.startDate);
-    const endDate = new Date(formData.endDate);
-    const timeDiff = endDate.getTime() - startDate.getTime();
-    return Math.ceil(timeDiff / (1000 * 3600 * 24)) + 1;
+    let totalDays = getBusinessDays(new Date(formData.startDate), new Date(formData.endDate));
+
+    // Ajuste por medios días
+    if (formData.startHalfDay !== 'Completo') totalDays -= 0.5;
+    if (formData.endHalfDay !== 'Completo') totalDays -= 0.5;
+
+    if (totalDays < 0.5) totalDays = 0.5;
+    return totalDays;
   };
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -137,8 +156,11 @@ const RequestPermissionDialog: AclComponent = ({ open, onClose, onSuccess }) => 
         licenseType: formData.licenseType,
         timeRequested: formData.timeRequested,
         startDate: formData.startDate,
-        endDate: formData.endDate || formData.startDate
+        endDate: formData.endDate || formData.startDate,
+        startHalfDay: formData.startHalfDay,
+        endHalfDay: formData.endHalfDay
       });
+
 
       setLicenseInfo({
         startDate: response.data.startDate,
@@ -166,7 +188,9 @@ const RequestPermissionDialog: AclComponent = ({ open, onClose, onSuccess }) => 
       licenseType: 'VACACION',
       timeRequested: '',
       startDate: '',
-      endDate: ''
+      endDate: '',
+      startHalfDay: 'Completo',
+      endHalfDay: 'Completo'
     });
     setError(null);
     setSuccess(false);
@@ -252,15 +276,17 @@ const RequestPermissionDialog: AclComponent = ({ open, onClose, onSuccess }) => 
         ) : (
           <form onSubmit={handleSubmit}>
             <FormControl fullWidth margin="normal">
-              <InputLabel id="licenseType-label">Tipo de Licencia</InputLabel>
+              <InputLabel id="startHalfDay-label">Inicio del Día</InputLabel>
               <Select
-                labelId="licenseType-label"
-                name="licenseType"
-                value={formData.licenseType}
-                onChange={handleSelectChange}
-                disabled
+                labelId="startHalfDay-label"
+                name="startHalfDay"
+                value={formData.startHalfDay}
+                onChange={(e) => setFormData(prev => ({ ...prev, startHalfDay: e.target.value as any }))}
+                disabled={loading}
               >
-                <MenuItem value="VACACION">Vacación</MenuItem>
+                <MenuItem value="Completo">Día Completo</MenuItem>
+                <MenuItem value="Media Mañana">Media Mañana</MenuItem>
+                <MenuItem value="Media Tarde">Media Tarde</MenuItem>
               </Select>
             </FormControl>
 
@@ -299,34 +325,69 @@ const RequestPermissionDialog: AclComponent = ({ open, onClose, onSuccess }) => 
                 ),
               }}
             />
+            <FormControl fullWidth margin="normal">
+              <InputLabel id="startHalfDay-label">Inicio del Día</InputLabel>
+              <Select
+                labelId="startHalfDay-label"
+                name="startHalfDay"
+                value={formData.startHalfDay}
+                onChange={(e) => setFormData(prev => ({ ...prev, startHalfDay: e.target.value as any }))}
+                disabled={loading}
+              >
+                <MenuItem value="Completo">Día Completo</MenuItem>
+                <MenuItem value="Media Mañana">Media Mañana</MenuItem>
+                <MenuItem value="Media Tarde">Media Tarde</MenuItem>
+              </Select>
+            </FormControl>
 
             {formData.timeRequested === 'Varios Días' && (
-              <TextField
-                label="Fecha de Fin *"
-                type="date"
-                name="endDate"
-                value={formData.endDate}
-                onChange={handleEndDateChange}
-                fullWidth
-                margin="normal"
-                InputLabelProps={{ shrink: true }}
-                required
-                disabled={loading}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <EventAvailableIcon color="action" />
-                    </InputAdornment>
-                  ),
-                }}
-              />
+              <>
+                <TextField
+                  label="Fecha de Fin *"
+                  type="date"
+                  name="endDate"
+                  value={formData.endDate}
+                  onChange={handleEndDateChange}
+                  fullWidth
+                  margin="normal"
+                  InputLabelProps={{ shrink: true }}
+                  required
+                  disabled={loading}
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <EventAvailableIcon color="action" />
+                      </InputAdornment>
+                    ),
+                  }}
+                />
+                <FormControl fullWidth margin="normal">
+                  <InputLabel id="endHalfDay-label">Fin del Día</InputLabel>
+                  <Select
+                    labelId="endHalfDay-label"
+                    name="endHalfDay"
+                    value={formData.endHalfDay}
+                    onChange={(e) => setFormData(prev => ({ ...prev, endHalfDay: e.target.value as any }))}
+                    disabled={loading}
+                  >
+                    <MenuItem value="Completo">Día Completo</MenuItem>
+                    <MenuItem value="Media Mañana">Media Mañana</MenuItem>
+                    {/* Eliminamos Media Tarde para mantener coherencia */}
+                  </Select>
+                </FormControl>
+              </>
             )}
-
-            {formData.startDate && formData.endDate && formData.timeRequested === 'Varios Días' && (
+            <Typography variant="caption" color="text.secondary" mt={1} display="block">
+              Nota: En licencias de varios días, el último día solo puede seleccionarse Día Completo o Media Mañana.
+              El primer día puede ser Día Completo, Media Mañana o Media Tarde.
+              Esto asegura que la licencia sea continua y coherente.
+            </Typography>
+            {/**            {formData.startDate && formData.endDate && formData.timeRequested === 'Varios Días' && (
               <Typography variant="body2" color="text.secondary" mt={1}>
                 Total de días hábiles: {getBusinessDays(new Date(formData.startDate), new Date(formData.endDate))}
               </Typography>
-            )}
+            )} */}
+
 
           </form>
         )}
