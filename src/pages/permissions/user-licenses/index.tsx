@@ -376,7 +376,7 @@ const UserLicenses: AclComponent = () => {
 
                         <DialogContent dividers>
                             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-
+                                {/* Tipo de Licencia */}
                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                                     <WorkIcon color="action" />
                                     <Typography variant="body1">
@@ -384,6 +384,7 @@ const UserLicenses: AclComponent = () => {
                                     </Typography>
                                 </Box>
 
+                                {/* Fecha de Inicio */}
                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                                     <EventAvailableIcon color="action" />
                                     <Typography variant="body1">
@@ -391,6 +392,15 @@ const UserLicenses: AclComponent = () => {
                                     </Typography>
                                 </Box>
 
+                                {/* Inicio Medio Día */}
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                                    <EventIcon color="action" />
+                                    <Typography variant="body1">
+                                        <strong>Inicio Medio Día:</strong> {selectedLicense.startHalfDay || 'Completo'}
+                                    </Typography>
+                                </Box>
+
+                                {/* Fecha de Fin */}
                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                                     <EventNoteIcon color="action" />
                                     <Typography variant="body1">
@@ -398,13 +408,37 @@ const UserLicenses: AclComponent = () => {
                                     </Typography>
                                 </Box>
 
+                                {/* Fin Medio Día */}
                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                                    <CalendarIcon color="action" />
+                                    <EventIcon color="action" />
                                     <Typography variant="body1">
-                                        <strong>Días Totales:</strong> {selectedLicense.totalDays}
+                                        <strong>Fin Medio Día:</strong> {selectedLicense.endHalfDay || 'Completo'}
                                     </Typography>
                                 </Box>
 
+                                {/* Días Totales */}
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                                    <CalendarIcon color="action" />
+                                    <Typography variant="body1">
+                                        <strong>Días Totales:</strong> {selectedLicense.totalDays ?? 0}
+                                    </Typography>
+                                </Box>
+
+                                {/* Feriados Detectados */}
+                                {selectedLicense.detectedHolidays?.length ? (
+                                    <Box sx={{ mt: 1 }}>
+                                        <Typography variant="body1"><strong>Feriados Detectados:</strong></Typography>
+                                        <ul style={{ margin: 0, paddingLeft: '1.2rem' }}>
+                                            {selectedLicense.detectedHolidays.map((holiday) => (
+                                                <li key={holiday.date}>
+                                                    {holiday.date} - {holiday.description}
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    </Box>
+                                ) : null}
+
+                                {/* Estado */}
                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                                     <ApprovedIcon color="action" />
                                     <Typography variant="body1">
@@ -420,6 +454,7 @@ const UserLicenses: AclComponent = () => {
                                     </Typography>
                                 </Box>
 
+                                {/* Aprobación Supervisor */}
                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                                     {selectedLicense.immediateSupervisorApproval ? (
                                         <CheckIcon color="success" />
@@ -432,6 +467,7 @@ const UserLicenses: AclComponent = () => {
                                     </Typography>
                                 </Box>
 
+                                {/* Aprobación RRHH */}
                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                                     {selectedLicense.personalDepartmentApproval ? (
                                         <CheckIcon color="success" />
@@ -439,11 +475,12 @@ const UserLicenses: AclComponent = () => {
                                         <PendingIcon color="warning" />
                                     )}
                                     <Typography variant="body1">
-                                        <strong>Aprobación RRHH:</strong>{' '}
+                                        <strong>Aprobación Dpto. Personal:</strong>{' '}
                                         {selectedLicense.personalDepartmentApproval ? 'Aprobado' : 'Pendiente'}
                                     </Typography>
                                 </Box>
                             </Box>
+
                         </DialogContent>
                         <DialogActions>
                             <Button

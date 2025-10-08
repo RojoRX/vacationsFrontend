@@ -28,7 +28,7 @@ import {
   Grid, // <-- Importar Grid
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
-import {PictureAsPdf as PictureAsPdfIcon}  from '@mui/icons-material';
+import { PictureAsPdf as PictureAsPdfIcon } from '@mui/icons-material';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import DeleteIcon from '@mui/icons-material/Delete';
 import CloseIcon from '@mui/icons-material/Close';
@@ -48,28 +48,8 @@ import { format, isValid, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { formatDate } from 'src/utils/dateUtils'; // Asumo que esto funciona bien
 import { generateLicensePdf } from 'src/utils/licensePdfGenerator';
+import { License } from 'src/interfaces/licenseTypes';
 
-interface License {
-  id: number;
-  licenseType: string;
-  timeRequested: string;
-  startDate: string;
-  endDate: string;
-  issuedDate: string;
-  immediateSupervisorApproval: boolean;
-  personalDepartmentApproval: boolean;
-  totalDays: string;
-  userId: number;
-  deleted: boolean;
-  reason?: string;
-  user?: { // Esto es si la licencia ya viene con el usuario anidado (lo cual es posible)
-    id: number;
-    fullName: string;
-  };
-  department?: {
-    name: string;
-  };
-}
 
 // --- NUEVA INTERFAZ PARA DETALLES DE USUARIO ---
 interface UserDetail {
@@ -212,19 +192,23 @@ const UserLicenseList: React.FC<UserLicenseListProps> = ({ userId }) => {
   const handleOpenDetailsDialog = async (licenseId: number) => {
     setSelectedLicenseId(licenseId);
     setOpenDetailsDialog(true);
-    setDialogLoadingDetails(true); // Usamos un estado de carga específico para el diálogo
-    setDialogDetailsError(null);   // Limpiar errores previos del diálogo
-    setDialogSuccess(null);        // Limpiar mensajes de éxito previos
-    setDialogLicenseDetails(null); // Limpiar detalles de licencia previos
-    setDialogUserDetails(null);    // Limpiar detalles de usuario previos
+    setDialogLoadingDetails(true);
+    setDialogDetailsError(null);
+    setDialogSuccess(null);
+    setDialogLicenseDetails(null);
+    setDialogUserDetails(null);
 
     try {
-      const licenseResponse = await axios.get<License>(`${process.env.NEXT_PUBLIC_API_BASE_URL}/licenses/${licenseId}`);
+      const licenseResponse = await axios.get<License>(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/licenses/${licenseId}`
+      );
       setDialogLicenseDetails(licenseResponse.data);
 
       const userIdFromLicense = licenseResponse.data.userId;
       if (userIdFromLicense) {
-        const userResponse = await axios.get<UserDetail>(`${process.env.NEXT_PUBLIC_API_BASE_URL}/users/${userIdFromLicense}`);
+        const userResponse = await axios.get<UserDetail>(
+          `${process.env.NEXT_PUBLIC_API_BASE_URL}/users/${userIdFromLicense}`
+        );
         setDialogUserDetails(userResponse.data);
       } else {
         setDialogDetailsError('ID de usuario no encontrado para esta licencia.');
@@ -238,6 +222,7 @@ const UserLicenseList: React.FC<UserLicenseListProps> = ({ userId }) => {
       setDialogLoadingDetails(false);
     }
   };
+
 
   const handleCloseDetailsDialog = () => {
     setOpenDetailsDialog(false);
@@ -490,7 +475,7 @@ const UserLicenseList: React.FC<UserLicenseListProps> = ({ userId }) => {
 
               {dialogLicenseDetails && dialogUserDetails ? ( // Asegúrate de que ambos objetos existan
                 <Grid container spacing={2}>
-                  <Grid item xs={12} sm={6}>
+                  <Grid item xs={12} sm={6} sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
                     <Typography variant="subtitle1" gutterBottom><strong>Información de la Licencia</strong></Typography>
                     <Typography sx={{ display: 'flex', alignItems: 'center' }}>
                       <Typography component="span" fontWeight="bold" mr={0.5}>ID:</Typography> {dialogLicenseDetails.id}
@@ -504,12 +489,15 @@ const UserLicenseList: React.FC<UserLicenseListProps> = ({ userId }) => {
                     </Typography>
                     <Typography sx={{ display: 'flex', alignItems: 'center' }}>
                       <EventIcon sx={{ mr: 0.5 }} />
-                      <Typography component="span" fontWeight="bold" mr={0.5}>Inicio:</Typography> {formatDate(dialogLicenseDetails.startDate)}
+                      <Typography component="span" fontWeight="bold" mr={0.5}>Inicio:</Typography>
+                      {formatDate(dialogLicenseDetails.startDate)} ({dialogLicenseDetails.startHalfDay || 'Completo'})
                     </Typography>
                     <Typography sx={{ display: 'flex', alignItems: 'center' }}>
                       <EventIcon sx={{ mr: 0.5 }} />
-                      <Typography component="span" fontWeight="bold" mr={0.5}>Fin:</Typography> {formatDate(dialogLicenseDetails.endDate)}
+                      <Typography component="span" fontWeight="bold" mr={0.5}>Fin:</Typography>
+                      {formatDate(dialogLicenseDetails.endDate)} ({dialogLicenseDetails.endHalfDay || 'Completo'})
                     </Typography>
+
                     <Typography sx={{ display: 'flex', alignItems: 'center' }}>
                       <Typography component="span" fontWeight="bold" mr={0.5}>Días Totales:</Typography> {dialogLicenseDetails.totalDays}
                     </Typography>
@@ -517,6 +505,19 @@ const UserLicenseList: React.FC<UserLicenseListProps> = ({ userId }) => {
                       <EventIcon sx={{ mr: 0.5 }} />
                       <Typography component="span" fontWeight="bold" mr={0.5}>Emisión:</Typography> {formatDate(dialogLicenseDetails.issuedDate)}
                     </Typography>
+                    {dialogLicenseDetails.detectedHolidays?.length ? (
+                      <Box mt={1}>
+                        <Typography variant="subtitle2"><strong>Feriados detectados:</strong></Typography>
+                        <ul style={{ margin: 0, paddingLeft: '1.2rem' }}>
+                          {dialogLicenseDetails.detectedHolidays.map((h) => (
+                            <li key={h.date}>
+                              {h.date} - {h.description}
+                            </li>
+                          ))}
+                        </ul>
+                      </Box>
+                    ) : null}
+
                   </Grid>
                   <Grid item xs={12} sm={6}>
                     <Typography variant="subtitle1" gutterBottom><strong>Información del Solicitante</strong></Typography>

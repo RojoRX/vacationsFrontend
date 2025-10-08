@@ -17,13 +17,14 @@ import { PictureAsPdf, Business, CheckCircle, Cancel, Close, Delete } from '@mui
 import axios from 'src/lib/axios';
 import { License } from 'src/interfaces/licenseTypes';
 import { generateLicensePdf } from 'src/utils/licensePdfGenerator';
-import {formatDate} from 'src/utils/dateUtils';
+import { formatDate } from 'src/utils/dateUtils';
 interface LicenseDetailDialogProps {
     open: boolean;
     onClose: () => void;
     license: License;
     userDetails: {
         [key: string]: {
+            academicUnit: string;
             name: string;
             ci: string;
             celular: string;
@@ -158,11 +159,31 @@ const LicenseDetailDialog: React.FC<LicenseDetailDialogProps> = ({
                         <Typography variant="subtitle1" gutterBottom><strong>Información de la Licencia</strong></Typography>
                         <Typography><strong>ID:</strong> {license.id}</Typography>
                         <Typography><strong>Tipo:</strong> {license.licenseType}</Typography>
-                        <Typography><strong>Inicio:</strong> {formatDate(license.startDate)}</Typography>
-                        <Typography><strong>Fin:</strong> {formatDate(license.endDate)}</Typography>
+                        <Typography>
+                            <strong>Inicio:</strong> {formatDate(license.startDate)} ({license.startHalfDay || 'Completo'})
+                        </Typography>
+                        <Typography>
+                            <strong>Fin:</strong> {formatDate(license.endDate)} ({license.endHalfDay || 'Completo'})
+                        </Typography>
                         <Typography><strong>Tipo:</strong> {license.timeRequested}</Typography>
                         <Typography><strong>Tiempo Solicitado:</strong> {license.totalDays}</Typography>
                         <Typography><strong>Emisión:</strong> {formatDate(license.issuedDate)}</Typography>
+
+                        {(license.detectedHolidays || []).length > 0 && (
+                            <Box mt={1}>
+                                <Typography variant="subtitle2"><strong>Feriados Detectados:</strong></Typography>
+                                <ul style={{ margin: 0, paddingLeft: '1.2rem' }}>
+                                    {(license.detectedHolidays || []).map((h) => (
+                                        <li key={h.date}>
+                                            {h.date} - {h.description}
+                                        </li>
+                                    ))}
+                                </ul>
+                            </Box>
+                        )}
+
+
+
                     </Grid>
                     <Grid item xs={12} sm={6} mt={4}>
                         <Typography variant="subtitle1" gutterBottom><strong>Información del Solicitante</strong></Typography>
@@ -170,6 +191,8 @@ const LicenseDetailDialog: React.FC<LicenseDetailDialogProps> = ({
                         <Typography><strong>CI:</strong> {userDetails[license.userId]?.ci || 'N/A'}</Typography>
                         <Typography><strong>Celular:</strong> {userDetails[license.userId]?.celular || 'N/A'}</Typography>
                         <Typography><strong>Departamento:</strong> {userDetails[license.userId]?.department || 'N/A'}</Typography>
+                        <Typography><strong>Unidad Académica:</strong> {userDetails[license.userId]?.academicUnit || 'N/A'}</Typography>
+
                     </Grid>
                     <Grid item xs={12}>
                         <Box display="flex" justifyContent="space-around" mt={2} p={2} borderRadius={1}>

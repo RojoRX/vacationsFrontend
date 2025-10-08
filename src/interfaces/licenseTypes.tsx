@@ -1,15 +1,28 @@
 // src/types/licenseTypes.ts
-export interface License {
+export interface  License {
+  id: number;
+  licenseType: string;
+  timeRequested: string;
+  startDate: string;
+  endDate: string;
+  issuedDate: string;
+  immediateSupervisorApproval: boolean;
+  personalDepartmentApproval: boolean;
+  totalDays: string | number;
+  userId: number;
+  deleted: boolean;
+  reason?: string;
+  user?: {
     id: number;
-    licenseType: string;
-    timeRequested: string;
-    startDate: string;
-    endDate: string;
-    issuedDate: string;
-    immediateSupervisorApproval: boolean;
-    personalDepartmentApproval: boolean;
-    totalDays: string;
-    userId:number;
-    deleted:boolean;
-    // Puedes agregar más campos según sea necesario
+    fullName: string;
+  };
+  department?: { name: string };
+  // 🔹 NUEVOS CAMPOS
+  startHalfDay?: string;
+  endHalfDay?: string;
+  detectedHolidays?: {
+    date: string;
+    year: number;
+    description: string;
+  }[];
 }

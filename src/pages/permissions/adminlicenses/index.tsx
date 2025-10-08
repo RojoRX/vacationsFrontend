@@ -92,7 +92,14 @@ const AdminLicenses: AclComponent = () => {
         setLoading(true);
         axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/licenses`)
             .then((response) => {
-                const licensesData = response.data;
+                const licensesData: License[] = response.data.map((lic: any) => ({
+                    ...lic,
+                    totalDays: lic.totalDays ?? 0,
+                    startHalfDay: lic.startHalfDay ?? 'Completo',
+                    endHalfDay: lic.endHalfDay ?? 'Completo',
+                    timeRequested: lic.timeRequested ?? '-',
+                    detectedHolidays: lic.detectedHolidays ?? [],
+                }));
                 const sortedLicenses = licensesData.sort((a: License, b: License) => b.id - a.id);
                 setLicenses(sortedLicenses);
                 const userRequests = sortedLicenses.map((license: License) =>
