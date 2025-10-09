@@ -11,7 +11,8 @@ import {
   Refresh as RefreshIcon,
   Person as PersonIcon,
   Visibility as VisibilityIcon,
-  Description as DescriptionIcon
+  Description as DescriptionIcon,
+  Assignment as AssignmentAddIcon, // 🔹 Agregar este ícono
 } from '@mui/icons-material';
 import axios from 'src/lib/axios';
 import { User } from 'src/interfaces/usertypes';
@@ -19,9 +20,12 @@ import router from 'next/router';
 import { translateRole } from 'src/utils/translateRole';
 import { useDebounce } from 'src/hooks/useDebounce';
 import GeneralReportDialog from '../generalReports';
+import BulkLicenseForm from 'src/pages/permissions/bulkLicenseForm';
 
 const SearchUsers = () => {
   const [searchTerm, setSearchTerm] = useState('');
+  const [openBulkDialog, setOpenBulkDialog] = useState(false); // 🔹 Nuevo estado
+  const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -100,6 +104,22 @@ const SearchUsers = () => {
     setRowsPerPage(parseInt(event.target.value, 10));
     setPage(0);
   };
+
+  const handleOpenBulkDialog = (userId: number) => {
+    setSelectedUserId(userId);
+    setOpenBulkDialog(true);
+  };
+
+  const handleCloseBulkDialog = () => {
+    setOpenBulkDialog(false);
+    setSelectedUserId(null);
+  };
+
+  const handleBulkSuccess = () => {
+    handleCloseBulkDialog();
+    fetchUsers(searchTerm); // 🔹 recarga la tabla tras crear licencias
+  };
+
 
   const filteredUsers = users.filter(user => {
     const matchesRole = roleFilter === 'all' || user.role?.toLowerCase() === roleFilter.toLowerCase();
@@ -241,8 +261,19 @@ const SearchUsers = () => {
                             color="primary"
                             size="small"
                             onClick={() => handleViewDetails(user.ci)}
+                            title="Ver detalles"
                           >
                             <VisibilityIcon />
+                          </IconButton>
+
+                          {/* 🔹 Nuevo botón para crear múltiples licencias */}
+                          <IconButton
+                            color="secondary"
+                            size="small"
+                            onClick={() => handleOpenBulkDialog(user.id)}
+                            title="Crear múltiples licencias"
+                          >
+                            <AssignmentAddIcon />
                           </IconButton>
                         </TableCell>
                       </TableRow>
@@ -264,6 +295,15 @@ const SearchUsers = () => {
               }
             />
           </TableContainer>
+        )}
+        {/* 🔹 Diálogo de licencias múltiples */}
+        {openBulkDialog && selectedUserId && (
+          <BulkLicenseForm
+            open={openBulkDialog}
+            onClose={handleCloseBulkDialog}
+            userId={selectedUserId}
+            onSuccess={handleBulkSuccess}
+          />
         )}
 
         {/* 🔹 Diálogo de reporte general */}

@@ -49,7 +49,7 @@ const RequestPermissionDialog: AclComponent = ({ open, onClose, onSuccess }) => 
     timeRequested: '',
     startDate: '',
     endDate: '',
-    startHalfDay: 'Completo',
+    startHalfDay: 'Media Tarde',
     endHalfDay: 'Completo'
   });
 
@@ -152,16 +152,17 @@ const RequestPermissionDialog: AclComponent = ({ open, onClose, onSuccess }) => 
     setDaysCount(totalDays);
 
     try {
+      const isHalfDay = formData.timeRequested === 'Medio Día';
+      console.log(formData)
       const response = await axios.post(`${process.env.NEXT_PUBLIC_API_BASE_URL}/licenses/${user?.id}`, {
         licenseType: formData.licenseType,
         timeRequested: formData.timeRequested,
         startDate: formData.startDate,
-        endDate: formData.endDate || formData.startDate,
-        startHalfDay: formData.startHalfDay,
-        endHalfDay: formData.endHalfDay
+        endDate: isHalfDay ? formData.startDate : (formData.endDate || formData.startDate),
+        startHalfDay: isHalfDay ? formData.startHalfDay : 'Completo',
+        endHalfDay: isHalfDay ? formData.startHalfDay : formData.endHalfDay
       });
-
-
+      
       setLicenseInfo({
         startDate: response.data.startDate,
         endDate: response.data.endDate,
@@ -312,23 +313,41 @@ const RequestPermissionDialog: AclComponent = ({ open, onClose, onSuccess }) => 
                 ),
               }}
             />
-            <FormControl fullWidth margin="normal">
-              <InputLabel id="startHalfDay-label">Inicio del Día</InputLabel>
-              <Select
-                labelId="startHalfDay-label"
-                name="startHalfDay"
-                value={formData.startHalfDay}
-                onChange={(e) => setFormData(prev => ({ ...prev, startHalfDay: e.target.value as any }))}
-                disabled={loading}
-              >
-                <MenuItem value="Completo">Día Completo</MenuItem>
-                {/**<MenuItem value="Media Mañana">Media Mañana</MenuItem> */}
-                <MenuItem value="Media Tarde">Media Tarde</MenuItem>
-              </Select>
-            </FormControl>
+            {formData.timeRequested === 'Medio Día' && (
+              <FormControl fullWidth margin="normal">
+                <InputLabel id="halfDayShift-label">Turno *</InputLabel>
+                <Select
+                  labelId="halfDayShift-label"
+                  name="startHalfDay"
+                  value={formData.startHalfDay}
+                  onChange={(e) => setFormData(prev => ({ ...prev, startHalfDay: e.target.value as any }))}
+                  required
+                  disabled={loading}
+                >
+                  <MenuItem value="Media Mañana"> Mañana</MenuItem>
+                  <MenuItem value="Media Tarde"> Tarde</MenuItem>
+                </Select>
+              </FormControl>
+            )}
+
 
             {formData.timeRequested === 'Varios Días' && (
               <>
+
+                <FormControl fullWidth margin="normal">
+                  <InputLabel id="startHalfDay-label">Inicio del Día</InputLabel>
+                  <Select
+                    labelId="startHalfDay-label"
+                    name="startHalfDay"
+                    value={formData.startHalfDay}
+                    onChange={(e) => setFormData(prev => ({ ...prev, startHalfDay: e.target.value as any }))}
+                    disabled={loading}
+                  >
+                    <MenuItem value="Completo">Día Completo</MenuItem>
+                    {/**<MenuItem value="Media Mañana">Media Mañana</MenuItem> */}
+                    <MenuItem value="Media Tarde">Media Tarde</MenuItem>
+                  </Select>
+                </FormControl>
                 <TextField
                   label="Fecha de Fin *"
                   type="date"

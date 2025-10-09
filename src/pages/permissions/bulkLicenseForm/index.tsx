@@ -125,16 +125,16 @@ const BulkLicenseForm: React.FC<BulkLicenseFormProps> = ({ open, onClose, userId
     return isValid;
   };
 
+  const [successDialogOpen, setSuccessDialogOpen] = useState(false); // Nuevo estado para diálogo de éxito
   const handleSubmit = async () => {
     try {
       setLoading(true);
       setError(null);
 
-      if (!validateLicenses()) {
-        return;
-      }
+      // Validación local antes de enviar
+      if (!validateLicenses()) return;
 
-      // Al enviar al backend
+      // Preparar datos para el backend
       const licensesData = licenses.map(l => ({
         licenseType: 'VACACION',
         timeRequested: l.timeRequested,
@@ -144,54 +144,54 @@ const BulkLicenseForm: React.FC<BulkLicenseFormProps> = ({ open, onClose, userId
         endHalfDay: l.endHalfDay
       }));
 
-      const response = await axios.post(`${process.env.NEXT_PUBLIC_API_BASE_URL}/licenses/user/${userId}/multiple`, licensesData);
+      const response = await axios.post(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/licenses/user/${userId}/multiple`,
+        licensesData
+      );
 
-      if (response.data?.details?.errors) {
-        const backendErrors = response.data.details.errors.reduce((acc: Record<number, string>, err: any) => {
+      // Manejo de errores puntuales del backend
+      if (response.data?.details?.errors && response.data.details.errors.length > 0) {
+        const backendErrors: Record<number, string> = {};
+
+        response.data.details.errors.forEach((err: any) => {
           const match = err.message.match(/Licencia (\d+):/);
           if (match) {
-            const index = parseInt(match[1]) - 1;
-            acc[index] = err.message.replace(`Licencia ${match[1]}: `, '');
+            const index = parseInt(match[1], 10) - 1; // Ajustar índice a 0-based
+            backendErrors[index] = err.message.replace(`Licencia ${match[1]}: `, '');
           } else {
-            // Manejar errores que no están asociados a una licencia específica (opcional)
+            // Error general que no corresponde a una licencia específica
             setError(err.message);
           }
-          return acc;
-        }, {});
-        setValidationErrors(backendErrors);
-        return;
+        });
+
+        setValidationErrors(backendErrors); // Mostrar errores puntuales en cada licencia
+        return; // ⚠️ No abrimos diálogo de éxito si hay errores
       }
 
+      // ✅ Todo OK: abrir diálogo de éxito
+      setValidationErrors({}); // Limpiar errores anteriores
+      setError(null);
+      setSuccessDialogOpen(true);
 
-
-
-      setSuccess(true);
-      onSuccess();
-      onClose();
-      setLicenses([{ timeRequested: 'Día Completo', startDate: null, endDate: null, startHalfDay:'Completo', endHalfDay:'Completo' }]); // Reset form
     } catch (err: any) {
       console.error('Error al registrar licencias:', err);
 
+      // Manejo de errores generales del backend
       if (err.response?.data?.details && Array.isArray(err.response.data.details)) {
         const backendErrors: Record<number, string> = {};
         err.response.data.details.forEach((detail: any) => {
-          // El backend proporciona el índice comenzando desde 1,
-          // mientras que el array 'licenses' está indexado desde 0.
-          // Ajustamos el índice restando 1.
           backendErrors[detail.index - 1] = detail.message;
         });
         setValidationErrors(backendErrors);
-        setError(null); // Limpiar el error general si hay errores específicos
-        return; // Importante salir para evitar mostrar el error general
+        setError(null); // Limpiar error general
       } else {
-        // Si la respuesta del backend no tiene la estructura esperada de 'details',
-        // mostramos un mensaje de error general.
         setError(err.response?.data?.message || 'Error al registrar las licencias');
       }
     } finally {
       setLoading(false);
     }
   };
+
 
   const handleCloseSnackbar = () => {
     setSuccess(false);
@@ -277,6 +277,21 @@ const BulkLicenseForm: React.FC<BulkLicenseFormProps> = ({ open, onClose, userId
                     />
                   </LocalizationProvider>
                 </Grid>
+                {/* Turno Medio Día */}
+                {license.timeRequested === 'Medio Día' && (
+                  <Grid item xs={12} sm={6}>
+                    <TextField
+                      select
+                      fullWidth
+                      label="Turno"
+                      value={license.startHalfDay}
+                      onChange={(e) => handleLicenseChange(index, 'startHalfDay', e.target.value)}
+                    >
+                      <MenuItem value="Media Mañana">Mañana</MenuItem>
+                      <MenuItem value="Media Tarde">Tarde</MenuItem>
+                    </TextField>
+                  </Grid>
+                )}
                 <Grid item xs={12} sm={6}>
                   <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={esLocale}>
                     <DatePicker
@@ -365,6 +380,37 @@ const BulkLicenseForm: React.FC<BulkLicenseFormProps> = ({ open, onClose, userId
             disabled={loading}
           >
             {loading ? 'Registrando...' : 'Registrar Licencias'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+      <Dialog
+        open={successDialogOpen}
+        onClose={() => setSuccessDialogOpen(false)}
+        maxWidth="xs"
+        fullWidth
+      >
+        <DialogTitle>¡Éxito!</DialogTitle>
+        <DialogContent>
+          <Typography>
+            Las licencias se registraron correctamente.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={() => {
+              setSuccessDialogOpen(false);
+              setLicenses([{
+                timeRequested: 'Día Completo',
+                startDate: null,
+                endDate: null,
+                startHalfDay: 'Completo',
+                endHalfDay: 'Completo'
+              }]); // Reseteamos formulario solo al cerrar el diálogo
+              onClose(); // Cerramos el formulario principal
+            }}
+            variant="contained"
+          >
+            Aceptar
           </Button>
         </DialogActions>
       </Dialog>
