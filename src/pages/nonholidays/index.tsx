@@ -24,7 +24,8 @@ const NonHolidayManager: React.FC = () => {
   const [nonHolidays, setNonHolidays] = useState<NonHoliday[]>([]);
   const [filteredNonHolidays, setFilteredNonHolidays] = useState<NonHoliday[]>([]);
   const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(5);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+
   const [open, setOpen] = useState(false);
   const [currentNonHoliday, setCurrentNonHoliday] = useState<NonHoliday | null>(null);
   const [snackbarOpen, setSnackbarOpen] = useState(false);
@@ -41,8 +42,11 @@ const NonHolidayManager: React.FC = () => {
   const fetchNonHolidays = async () => {
     try {
       const response = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/non-holidays`);
-      setNonHolidays(response.data);
-      setFilteredNonHolidays(response.data);
+      // 🔽 Ordenar descendente por fecha o id (según prefieras)
+      const sortedData = [...response.data].sort((a, b) => b.id - a.id);
+
+      setNonHolidays(sortedData);
+      setFilteredNonHolidays(sortedData);
     } catch (error) {
       setSnackbarSeverity('error');
       setSnackbarMessage('Error al cargar los días no hábiles');

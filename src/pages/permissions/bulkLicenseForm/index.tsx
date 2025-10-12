@@ -172,6 +172,8 @@ const BulkLicenseForm: React.FC<BulkLicenseFormProps> = ({ open, onClose, userId
       setValidationErrors({}); // Limpiar errores anteriores
       setError(null);
       setSuccessDialogOpen(true);
+      // 🔹 Llamar al callback del padre para refrescar datos
+      if (onSuccess) onSuccess();
 
     } catch (err: any) {
       console.error('Error al registrar licencias:', err);

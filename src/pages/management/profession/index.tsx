@@ -24,7 +24,7 @@ const ProfessionManager: React.FC = () => {
     const [name, setName] = useState('');
     const [searchTerm, setSearchTerm] = useState('');
     const [page, setPage] = useState(0);
-    const [rowsPerPage, setRowsPerPage] = useState(5);
+    const [rowsPerPage, setRowsPerPage] = useState(10);
 
     const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
     const [professionToDelete, setProfessionToDelete] = useState<number | null>(null);

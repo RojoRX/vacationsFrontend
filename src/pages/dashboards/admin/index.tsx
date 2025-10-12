@@ -424,13 +424,7 @@ const AdminDashboard = () => {
               </Button>
             </span>
           </Tooltip>
-          {/*
-          ¡¡ESTA ES LA LÍNEA QUE CAUSA EL ERROR!!
-          El RequestPermissionDialog NO debe ser un hermano directo del Tooltip.
-          Mueve esta línea fuera de este Grid item, preferiblemente al final del componente,
-          después de todos los Grid contenedores.
-        */}
-          {/* <RequestPermissionDialog open={openDialog} onClose={() => setOpenDialog(false)} /> */}
+          <RequestPermissionDialog open={openDialog} onClose={() => setOpenDialog(false)} /> 
         </Grid>
 
       </Grid>
