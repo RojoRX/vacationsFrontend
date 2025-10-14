@@ -158,11 +158,14 @@ const RequestPermissionDialog: AclComponent = ({ open, onClose, onSuccess }) => 
         licenseType: formData.licenseType,
         timeRequested: formData.timeRequested,
         startDate: formData.startDate,
-        endDate: isHalfDay ? formData.startDate : (formData.endDate || formData.startDate),
-        startHalfDay: isHalfDay ? formData.startHalfDay : 'Completo',
-        endHalfDay: isHalfDay ? formData.startHalfDay : formData.endHalfDay
+        endDate: formData.timeRequested === 'Medio Día'
+          ? formData.startDate
+          : (formData.endDate || formData.startDate),
+        startHalfDay: formData.startHalfDay, // 🔹 usar siempre el valor real
+        endHalfDay: formData.endHalfDay      // 🔹 usar siempre el valor real
       });
-      
+
+
       setLicenseInfo({
         startDate: response.data.startDate,
         endDate: response.data.endDate,

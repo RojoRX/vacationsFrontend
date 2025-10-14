@@ -193,7 +193,7 @@ const UserVacationDebt: React.FC<UserVacationDebtProps> = ({ ci, fechaIngreso, s
                         <TableRow>
                             <TableCell>Gestión</TableCell>
                             <TableCell align="right">Días Vacación (Antigüedad)</TableCell>
-                            {/*<TableCell align="right">Deuda Gestión</TableCell>*/}
+                            <TableCell align="right">Deuda Gestión</TableCell>
                             <TableCell align="right">Deuda Acumulada (Saldo)</TableCell>
                             <TableCell align="right">Días Disponibles</TableCell>
                         </TableRow>
@@ -208,14 +208,14 @@ const UserVacationDebt: React.FC<UserVacationDebtProps> = ({ ci, fechaIngreso, s
                                 <TableCell align="right">
                                     <Typography fontWeight="bold">{detail.diasDeVacacion}</Typography>
                                 </TableCell>
-                                {/*    <TableCell align="right">
+                                  <TableCell align="right">
                                     <Typography
                                         fontWeight="bold"
-                                        color={detail.deuda > 0 ? 'error' : 'success'}
+                                        color={detail.deudaAcumulativaAnterior > 0 ? 'error' : 'success'}
                                     >
-                                        {detail.deuda}
+                                        {detail.deudaAcumulativaAnterior}
                                     </Typography>
-                                </TableCell>*/}
+                                </TableCell>
                                 <TableCell align="right">
                                     <Typography
                                         color={detail.deudaAcumulativaHastaEstaGestion > 0 ? 'error' : 'success'}
