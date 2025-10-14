@@ -485,21 +485,6 @@ const AdminVacationRequests: FC = () => {
                   </Typography>
                 </Box>
               )}
-              {selectedRequest?.deleted !== true && (
-                <Grid container spacing={1}>
-                  <Grid item xs={12}>
-                    <Button
-                      variant="contained"
-                      color="primary"
-                      startIcon={<EditIcon />}
-                      onClick={() => setOpenEditDialog(true)}
-                      fullWidth
-                    >
-                      Editar Solicitud
-                    </Button>
-                  </Grid>
-                </Grid>
-              )}
 
               {/* Botón para suspender */}
               {selectedRequest.status !== 'SUSPENDED' && selectedRequest.deleted !== true && (

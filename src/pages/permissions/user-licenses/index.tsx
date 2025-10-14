@@ -380,7 +380,13 @@ const UserLicenses: AclComponent = () => {
                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                                     <WorkIcon color="action" />
                                     <Typography variant="body1">
-                                        <strong>Tipo de Licencia:</strong> {selectedLicense.licenseType}
+                                        <strong>Licencia a cuenta:</strong> {selectedLicense.licenseType}
+                                    </Typography>
+                                </Box>
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                                    <WorkIcon color="action" />
+                                    <Typography variant="body1">
+                                        <strong>Tipo:</strong> {selectedLicense.timeRequested}
                                     </Typography>
                                 </Box>
 

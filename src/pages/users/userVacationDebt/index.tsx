@@ -91,8 +91,9 @@ const UserVacationDebt: React.FC<UserVacationDebtProps> = ({ ci, fechaIngreso, s
                             endDate
                         }
                     }
-                );
 
+                );
+                console.log(response.data)
 
                 setData(response.data);
             } catch (err) {
@@ -192,8 +193,8 @@ const UserVacationDebt: React.FC<UserVacationDebtProps> = ({ ci, fechaIngreso, s
                         <TableRow>
                             <TableCell>Gestión</TableCell>
                             <TableCell align="right">Días Vacación (Antigüedad)</TableCell>
-                            <TableCell align="right">Deuda Gestión</TableCell>
-                            <TableCell align="right">Deuda Acumulada</TableCell>
+                            {/*<TableCell align="right">Deuda Gestión</TableCell>*/}
+                            <TableCell align="right">Deuda Acumulada (Saldo)</TableCell>
                             <TableCell align="right">Días Disponibles</TableCell>
                         </TableRow>
                     </TableHead>
@@ -207,16 +208,18 @@ const UserVacationDebt: React.FC<UserVacationDebtProps> = ({ ci, fechaIngreso, s
                                 <TableCell align="right">
                                     <Typography fontWeight="bold">{detail.diasDeVacacion}</Typography>
                                 </TableCell>
-                                <TableCell align="right">
+                                {/*    <TableCell align="right">
                                     <Typography
                                         fontWeight="bold"
                                         color={detail.deuda > 0 ? 'error' : 'success'}
                                     >
                                         {detail.deuda}
                                     </Typography>
-                                </TableCell>
+                                </TableCell>*/}
                                 <TableCell align="right">
-                                    <Typography fontWeight="bold">
+                                    <Typography
+                                        color={detail.deudaAcumulativaHastaEstaGestion > 0 ? 'error' : 'success'}
+                                        fontWeight="bold">
                                         {detail.deudaAcumulativaHastaEstaGestion}
                                     </Typography>
                                 </TableCell>
