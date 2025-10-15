@@ -85,6 +85,8 @@ const WelcomeDashboard = () => {
         const licenseValidationResponse = await axios.get(
           `${process.env.NEXT_PUBLIC_API_BASE_URL}/licenses-validation/can-request/${user.ci}`
         );
+        console.log('Available days from backend:', licenseValidationResponse.data.availableDays);
+
         setLicenseRequestStatus({
           canRequest: licenseValidationResponse.data.canRequest,
           reason: licenseValidationResponse.data.reason || '',
@@ -248,9 +250,10 @@ const WelcomeDashboard = () => {
               title="Licencia"
               chipText={
                 licenseRequestStatus.availableDays !== undefined
-                  ? `${licenseRequestStatus.availableDays} días disponibles de licencia (Gestión ${new Date().getFullYear()})` // <-- MODIFIED LINE
+                  ? `${licenseRequestStatus.availableDays} días disponibles`
                   : licenseRequestStatus.loading ? '...' : 'No disponible'
               }
+
               trendNumber={getLicenseStatusText()}
             />
             {licenseRequestStatus.loading && (
