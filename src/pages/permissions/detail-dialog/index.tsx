@@ -58,7 +58,6 @@ const LicenseDetailDialog: React.FC<LicenseDetailDialogProps> = ({
         try {
             await axios.patch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/licenses/${license.id}/personal-approval`, {
                 approval: newApprovalState,
-                userId: currentUser.id
             });
 
             const res = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/licenses/${license.id}`);

@@ -27,6 +27,7 @@ import {
   MenuItem,
   Grid, // <-- Importar Grid
 } from '@mui/material';
+import HourglassEmptyIcon from '@mui/icons-material/HourglassEmpty';
 import SearchIcon from '@mui/icons-material/Search';
 import { PictureAsPdf as PictureAsPdfIcon } from '@mui/icons-material';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
@@ -315,7 +316,70 @@ const UserLicenseList: React.FC<UserLicenseListProps> = ({ userId }) => {
 
   const noLicensesFound = licenses.length === 0 && !error;
   const noFilteredResults = filteredLicenses.length === 0 && (filterDate || filterSupervisorApproval !== 'all' || filterDepartmentApproval !== 'all');
+  const handlePersonalApproval = async () => {
+    if (!dialogLicenseDetails) return;
+    const newApprovalState = !dialogLicenseDetails.personalDepartmentApproval;
+    try {
+      setDialogLoadingDetails(true);
+      setDialogSuccess(null);
+      setDialogDetailsError(null);
 
+      await axios.patch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/licenses/${dialogLicenseDetails.id}/personal-approval`, {
+        approval: newApprovalState,
+      });
+
+      setDialogLicenseDetails(prev =>
+        prev ? { ...prev, personalDepartmentApproval: true } : prev
+      );
+
+      setDialogSuccess('Licencia aprobada correctamente.');
+      fetchLicenses();
+    } catch (err: any) {
+      console.error('Error aprobando licencia:', err);
+      setDialogDetailsError(
+        axios.isAxiosError(err) && err.response?.data?.message
+          ? err.response.data.message
+          : 'Error desconocido al aprobar la licencia.'
+      );
+    } finally {
+      setDialogLoadingDetails(false);
+    }
+  };
+
+
+  // 🔹 Helper para mostrar estado
+  const renderApprovalChip = (value: boolean | null) => {
+    if (value === null) {
+      return (
+        <Chip
+          label="Pendiente"
+          color="warning"
+          size="small"
+          icon={<HourglassEmptyIcon />}
+        />
+      );
+    }
+
+    if (value === true) {
+      return (
+        <Chip
+          label="Aprobado"
+          color="success"
+          size="small"
+          icon={<CheckCircleIcon />}
+        />
+      );
+    }
+
+    return (
+      <Chip
+        label="Rechazado"
+        color="error"
+        size="small"
+        icon={<CancelIcon />}
+      />
+    );
+  };
   return (
     <Box sx={{ mt: 2 }}>
       {/* Filtros */}
@@ -397,20 +461,10 @@ const UserLicenseList: React.FC<UserLicenseListProps> = ({ userId }) => {
                   <TableCell>{formatDate(license.endDate)}</TableCell>
                   <TableCell>{license.totalDays}</TableCell>
                   <TableCell>
-                    <Chip
-                      label={license.immediateSupervisorApproval ? 'Aprobado' : 'Rechazado'}
-                      color={getStatusColor(license.immediateSupervisorApproval)}
-                      size="small"
-                      icon={license.immediateSupervisorApproval ? <CheckCircleIcon /> : <CancelIcon />}
-                    />
+                    {renderApprovalChip(license.immediateSupervisorApproval)}
                   </TableCell>
                   <TableCell>
-                    <Chip
-                      label={license.personalDepartmentApproval ? 'Aprobado' : 'Rechazado'}
-                      color={getStatusColor(license.personalDepartmentApproval)}
-                      size="small"
-                      icon={license.personalDepartmentApproval ? <CheckCircleIcon /> : <CancelIcon />}
-                    />
+                    {renderApprovalChip(license.personalDepartmentApproval)}
                   </TableCell>
                   <TableCell>{formatDate(license.issuedDate)}</TableCell>
                   <TableCell>
@@ -557,6 +611,17 @@ const UserLicenseList: React.FC<UserLicenseListProps> = ({ userId }) => {
           )}
         </DialogContent>
         <DialogActions>
+          {dialogLicenseDetails?.personalDepartmentApproval !== true && (
+            <Button
+              onClick={handlePersonalApproval}
+              color="success"
+              startIcon={<CheckCircleIcon />}
+              disabled={dialogLoadingDetails}
+            >
+              Aprobar Licencia
+            </Button>
+          )}
+
           <Button
             onClick={handleDownloadPDF} // <-- Llama a la función de descarga de PDF
             color="info" // Un color distintivo para el PDF
@@ -574,9 +639,9 @@ const UserLicenseList: React.FC<UserLicenseListProps> = ({ userId }) => {
           >
             Eliminar Licencia
           </Button>
-          <Button onClick={handleCloseDetailsDialog} color="primary" disabled={dialogLoadingDetails}>
+          {/** <Button onClick={handleCloseDetailsDialog} color="primary" disabled={dialogLoadingDetails}>
             Cerrar
-          </Button>
+          </Button>*/}
         </DialogActions>
       </Dialog>
     </Box>
