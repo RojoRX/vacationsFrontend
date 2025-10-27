@@ -7,8 +7,11 @@ import {
     DialogContent,
     DialogContentText,
     DialogTitle,
-    Slide
+    Slide,
+    IconButton,
+    InputAdornment
 } from '@mui/material';
+import SearchIcon from '@mui/icons-material/Search';
 import { CheckCircle, PersonAdd, PersonAdd as PersonAddIcon } from '@mui/icons-material';
 import axios from 'src/lib/axios';
 import { useForm, Controller } from 'react-hook-form';
@@ -89,6 +92,50 @@ const CreateUserForm: React.FC = () => {
     });
     const [unidadError, setUnidadError] = useState(false);
     const tipoEmpleado = watch("tipoEmpleado");
+    const [searching, setSearching] = useState(false);
+    const [searchError, setSearchError] = useState<string | null>(null);
+
+    const handleSearchByCI = async () => {
+        const ciValue = watch('ci');
+        if (!ciValue) {
+            setSearchError('Debe ingresar un CI para buscar.');
+            return;
+        }
+
+        setSearching(true);
+        setSearchError(null);
+
+        try {
+            const res = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/external/person`, {
+                params: { ci: ciValue },
+            });
+
+            const person = res.data;
+            if (!person) {
+                setSearchError('No se encontró ninguna persona con ese CI.');
+                return;
+            }
+
+            // Rellenamos los campos del formulario si existen valores
+            if (person.nombres && person.apellidoPaterno) {
+                setValue('fullName', `${person.nombres} ${person.apellidoPaterno} ${person.apellidoMaterno || ''}`.trim());
+            }
+            if (person.correo) setValue('email', person.correo);
+            if (person.telefono) setValue('celular', person.telefono);
+            if (person.profesion) {
+                const found = professions.find(p => p.name.toLowerCase() === person.profesion.toLowerCase());
+                if (found) setValue('profession.id', found.id);
+            }
+
+            // Si la API tiene algún campo adicional útil, puedes mapearlo aquí
+        } catch (err: any) {
+            console.error(err);
+            setSearchError('Error al buscar persona o conexión fallida.');
+        } finally {
+            setSearching(false);
+        }
+    };
+
     useEffect(() => {
         const fetchInitialData = async () => {
             try {
@@ -307,24 +354,44 @@ const CreateUserForm: React.FC = () => {
                     <Grid container spacing={3}>
                         {/* Columna izquierda */}
                         <Grid item xs={12} md={6}>
-                            <Box sx={{ mb: 3 }}>
-                                <Controller
-                                    name="ci"
-                                    control={control}
-                                    render={({ field }) => (
-                                        <TextField
-                                            {...field}
-                                            label="CI"
-                                            fullWidth
-                                            variant="outlined"
-                                            size="small"
-                                            error={!!errors.ci}
-                                            helperText={errors.ci?.message}
-                                            sx={{ mb: 2 }}
-                                        />
-                                    )}
-                                />
-                            </Box>
+                  <Box sx={{ mb: 3 }}>
+  <Controller
+    name="ci"
+    control={control}
+    render={({ field }) => (
+      <TextField
+        {...field}
+        label="CI"
+        fullWidth
+        variant="outlined"
+        size="small"
+        error={!!errors.ci}
+        helperText={errors.ci?.message}
+        InputProps={{
+          endAdornment: (
+            <InputAdornment position="end">
+              <IconButton
+                onClick={handleSearchByCI}
+                disabled={searching}
+                color="primary"
+                edge="end"
+              >
+                <SearchIcon />
+              </IconButton>
+            </InputAdornment>
+          ),
+        }}
+        sx={{ mb: 2 }}
+      />
+    )}
+  />
+  {searchError && (
+    <Typography color="error" variant="body2" sx={{ mt: -1, mb: 2 }}>
+      {searchError}
+    </Typography>
+  )}
+</Box>
+
 
                             <Box sx={{ mb: 3 }}>
                                 <Controller
@@ -337,6 +404,7 @@ const CreateUserForm: React.FC = () => {
                                             fullWidth
                                             variant="outlined"
                                             size="small"
+                                            InputLabelProps={{ shrink: true }}
                                             error={!!errors.fullName}
                                             helperText={errors.fullName?.message}
                                             sx={{ mb: 2 }}
@@ -378,6 +446,7 @@ const CreateUserForm: React.FC = () => {
                                             fullWidth
                                             variant="outlined"
                                             size="small"
+                                            InputLabelProps={{ shrink: true }}
                                             error={!!errors.email}
                                             helperText={errors.email?.message}
                                             sx={{ mb: 2 }}
@@ -397,6 +466,7 @@ const CreateUserForm: React.FC = () => {
                                             fullWidth
                                             variant="outlined"
                                             size="small"
+                                            InputLabelProps={{ shrink: true }}
                                             error={!!errors.celular}
                                             helperText={errors.celular?.message}
                                             sx={{ mb: 2 }}
@@ -521,7 +591,7 @@ const CreateUserForm: React.FC = () => {
                                 )}
 
                                 {unidadError && (
-                                    <Typography variant="body2" color="error" sx={{ mt: 1, ml:1 }}>
+                                    <Typography variant="body2" color="error" sx={{ mt: 1, ml: 1 }}>
                                         Debe seleccionar una Unidad Académica o un Departamento.
                                     </Typography>
                                 )}
