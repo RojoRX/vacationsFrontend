@@ -131,11 +131,11 @@ const navigation = (): VerticalNavItemsType => {
           path: '/users/add-user',
           action: 'create',
         },
-        /*{
-          title: 'Editar Usuario',
-          path: '/users/edit-user',
+        {
+          title: 'Usuarios Eliminados',
+          path: '/users/restore-users',
           action: 'update',
-        },*/
+        },
         {
           title: 'Modificar Roles',
           path: '/users/role-users',

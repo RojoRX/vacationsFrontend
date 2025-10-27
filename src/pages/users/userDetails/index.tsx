@@ -6,7 +6,12 @@ import {
   Alert,
   SelectChangeEvent,
   Tabs,
-  Tab
+  Tab,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle
 } from '@mui/material';
 import {
   Person as PersonIcon,
@@ -94,6 +99,10 @@ const UserInformation: AclComponent = () => {
   const [reloadRequests, setReloadRequests] = useState(false);
   const [snackbarSeverity, setSnackbarSeverity] = useState<'success' | 'error' | 'warning' | 'info'>('success');
 
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deleteResultDialogOpen, setDeleteResultDialogOpen] = useState(false);
+  const [deleteResultMessage, setDeleteResultMessage] = useState('');
+  const [submittingDelete, setSubmittingDelete] = useState(false);
 
   const triggerReload = () => {
     setReloadRequests(prev => !prev); // Alternar el valor para forzar la recarga
@@ -102,6 +111,20 @@ const UserInformation: AclComponent = () => {
       message: 'Vacación pasada agregada correctamente',
       severity: 'success'
     });
+  };
+  const handleDeleteUser = async () => {
+    setSubmittingDelete(true);
+    try {
+      const response = await axios.delete(`${process.env.NEXT_PUBLIC_API_BASE_URL}/users/${user?.id}`);
+      setDeleteResultMessage(response.data.message || 'Usuario eliminado exitosamente');
+      setDeleteResultDialogOpen(true);
+    } catch (err: any) {
+      setDeleteResultMessage(err.response?.data?.message || 'Error al eliminar usuario');
+      setDeleteResultDialogOpen(true);
+    } finally {
+      setSubmittingDelete(false);
+      setDeleteDialogOpen(false);
+    }
   };
 
 
@@ -371,6 +394,15 @@ const UserInformation: AclComponent = () => {
                   Cambiar contraseña
                 </Button>
               )}
+              <Button
+                variant="outlined"
+                color="error"
+                sx={{ mt: 2, ml: 1 }}
+                onClick={() => setDeleteDialogOpen(true)}
+              >
+                Eliminar Usuario
+              </Button>
+
               <CreateCredentialsDialog open={openCreate} onClose={async () => {
                 setOpenCreate(false);
                 await fetchUser(user.ci);
@@ -569,6 +601,52 @@ const UserInformation: AclComponent = () => {
         userCi={user.ci}
         onSuccess={triggerReload}
       />
+      <Dialog
+        open={deleteDialogOpen}
+        onClose={() => setDeleteDialogOpen(false)}
+      >
+        <DialogTitle>Confirmar Eliminación</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            ¿Estás seguro que deseas eliminar al usuario {user.fullName}? Esta acción no se puede deshacer fácilmente.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDeleteDialogOpen(false)}>Cancelar</Button>
+          <Button
+            onClick={handleDeleteUser}
+            color="error"
+            variant="contained"
+            disabled={submittingDelete}
+          >
+            {submittingDelete ? 'Eliminando...' : 'Eliminar'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+      <Dialog
+        open={deleteResultDialogOpen}
+        onClose={() => {
+          setDeleteResultDialogOpen(false);
+          router.push('/users/add-user'); // Redirige al formulario
+        }}
+      >
+        <DialogTitle>Resultado</DialogTitle>
+        <DialogContent>
+          <DialogContentText>{deleteResultMessage}</DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={() => {
+              setDeleteResultDialogOpen(false);
+              router.push('/users/add-user');
+            }}
+          >
+            Cerrar
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+
       <Snackbar
         open={snackbar.open}
         autoHideDuration={4000}
