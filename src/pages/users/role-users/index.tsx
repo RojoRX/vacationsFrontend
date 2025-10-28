@@ -40,6 +40,7 @@ import {
 } from '@mui/icons-material';
 import { RoleEnum } from 'src/enum/roleEnum';
 import { translateRole } from 'src/utils/translateRole';
+import Link from 'next/link';
 
 interface User {
   id: number;
@@ -67,7 +68,7 @@ const SupervisorsAdminsTable: FC = () => {
   const [openRoleDialog, setOpenRoleDialog] = useState(false);
   const [newRole, setNewRole] = useState<RoleEnum>(RoleEnum.USER);
   const [feedback, setFeedback] = useState<{ message: string; severity: 'success' | 'error' } | null>(null);
-  const theme = useTheme();
+
 
   // 1. Centralize the fetch function and make it reusable
   const fetchUsers = async () => {
@@ -254,7 +255,21 @@ const SupervisorsAdminsTable: FC = () => {
                           {user.fullName.charAt(0)}
                         </Avatar>
                         <Box>
-                          <Typography variant="body1">{user.fullName}</Typography>
+                          <Typography
+                            variant="body1"
+                            component={Link}
+                            href={`/users/${user.ci}`}
+                            sx={{
+                              textDecoration: 'none',
+                              fontWeight: 500,
+                              '&:hover': {
+                                textDecoration: 'underline',
+                                cursor: 'pointer',
+                              },
+                            }}
+                          >
+                            {user.fullName}
+                          </Typography>
                           <Typography variant="body2" color="textSecondary">
                             {user.email}
                           </Typography>

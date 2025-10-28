@@ -4,7 +4,8 @@ import {
   CircularProgress, Paper, Table, TableBody, TableCell,
   TableContainer, TableHead, TableRow, TablePagination,
   InputAdornment, IconButton, Chip, Toolbar, MenuItem,
-  FormControl, InputLabel, Select, Button
+  FormControl, InputLabel, Select, Button,
+  useTheme
 } from '@mui/material';
 import {
   Search as SearchIcon,
@@ -21,6 +22,7 @@ import { translateRole } from 'src/utils/translateRole';
 import { useDebounce } from 'src/hooks/useDebounce';
 import GeneralReportDialog from '../generalReports';
 import BulkLicenseForm from 'src/pages/permissions/bulkLicenseForm';
+import Link from 'next/link';
 
 const SearchUsers = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -237,7 +239,22 @@ const SearchUsers = () => {
                       <TableRow key={user.id} hover>
                         <TableCell>{user.ci}</TableCell>
                         <TableCell>
-                          <Typography fontWeight="medium">{user.fullName}</Typography>
+                          <Typography
+                            variant="body1"
+                            component={Link}
+                            href={`/users/${user.ci}`}
+                            sx={{
+                              
+                              textDecoration: 'none',
+                              fontWeight: 500,
+                              '&:hover': {
+                                textDecoration: 'underline',
+                                cursor: 'pointer',
+                              },
+                            }}
+                          >
+                            {user.fullName}
+                          </Typography>
                           <Typography variant="body2" color="text.secondary">@{user.username}</Typography>
                         </TableCell>
                         <TableCell>
