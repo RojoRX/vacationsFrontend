@@ -280,14 +280,7 @@ const DepartmentLicenses: AclComponent = () => {
                                 <TableCell sx={{ fontWeight: 'bold' }}>Estado</TableCell>
                                 {user?.role === 'supervisor' && <TableCell sx={{ fontWeight: 'bold' }}>Acciones</TableCell>}
                             </TableRow>
-                            <TableRow>
-                                <TableCell colSpan={user?.role === 'supervisor' ? 7 : 6} align="center" sx={{ py: 6 }}>
-                                    <Inbox sx={{ fontSize: 48, color: 'text.secondary', mb: 1 }} />
-                                    <Typography color="textSecondary" variant="subtitle1">
-                                        No se encontraron licencias {searchTerm ? 'con ese filtro' : ''}
-                                    </Typography>
-                                </TableCell>
-                            </TableRow>
+
 
                         </TableHead>
                         <TableBody>
@@ -357,9 +350,11 @@ const DepartmentLicenses: AclComponent = () => {
                             )}
                         </TableBody>
                     </Table>
-                    <Alert severity="error" sx={{ my: 3 }}>
-                        {error}
-                    </Alert>
+                    {error && (
+                        <Alert severity="error" sx={{ my: 3 }}>
+                            {error}
+                        </Alert>
+                    )}
 
                 </TableContainer>
             )}

@@ -39,69 +39,80 @@ const AuthProvider = ({ children }: Props) => {
   // ** Hooks
   const router = useRouter()
 
-useEffect(() => {
-  const initAuth = async (): Promise<void> => {
-    const storedToken = window.localStorage.getItem(authConfig.storageTokenKeyName)!
-    console.log('📦 Token en almacenamiento:', storedToken)
+  useEffect(() => {
+    const initAuth = async (): Promise<void> => {
+      const storedToken = window.localStorage.getItem(authConfig.storageTokenKeyName);
+      console.log('📦 Token en almacenamiento:', storedToken);
 
-    if (storedToken) {
-      setLoading(true)
-      await axios
-        .get(authConfig.meEndpoint, {
-          headers: {
-            Authorization: storedToken
+      // Validar token antes de usarlo
+      if (storedToken && storedToken !== 'null' && storedToken !== 'undefined') {
+        setLoading(true);
+        try {
+          const response = await axios.get(authConfig.meEndpoint, {
+            headers: { Authorization: `Bearer ${storedToken}` }
+          });
+          console.log('👤 Usuario autenticado:', response.data.userData);
+          setUser({ ...response.data.userData });
+          setLoading(false);
+        } catch (error: any) {
+          console.error('⚠️ Error durante initAuth:', error?.response || error);
+          localStorage.removeItem('userData');
+          localStorage.removeItem('refreshToken');
+          localStorage.removeItem('accessToken');
+          localStorage.removeItem(authConfig.storageTokenKeyName); // Limpiar token inválido
+          setUser(null);
+          setLoading(false);
+
+          if (!router.pathname.includes('/login')) {
+            router.replace('/login');
           }
-        })
-        .then(async response => {
-          console.log('👤 Usuario autenticado:', response.data.userData)
-          setUser({ ...response.data.userData })
-          setLoading(false)
-        })
-        .catch(error => {
-          console.error('⚠️ Error durante initAuth:', error?.response || error)
-          localStorage.removeItem('userData')
-          localStorage.removeItem('refreshToken')
-          localStorage.removeItem('accessToken')
-          setUser(null)
-          setLoading(false)
-          if (authConfig.onTokenExpiration === 'logout' && !router.pathname.includes('login')) {
-            router.replace('/login')
-          }
-        })
-    } else {
-      console.log('ℹ️ No hay token almacenado')
-      setLoading(false)
+        }
+      } else {
+        console.log('ℹ️ No hay token válido almacenado');
+        localStorage.removeItem(authConfig.storageTokenKeyName); // Limpiar cualquier token corrupto
+        setUser(null);
+        setLoading(false);
+
+        // Solo redirigir si no estamos ya en login o páginas de auth
+        const path = router.pathname;
+        const isAuthPage =
+          path.includes('/login') ||
+          path.includes('/register') ||
+          path.includes('/forgot-password');
+
+        if (!isAuthPage) router.replace('/login');
+      }
     }
+
+
+    initAuth()
+  }, [])
+
+
+  const handleLogin = (params: LoginParams, errorCallback?: ErrCallbackType) => {
+    console.log('🔐 Intentando login con:', params)
+
+    axios
+      .post(authConfig.loginEndpoint, params)
+      .then(async response => {
+        console.log('✅ Login exitoso:', response.data)
+
+        params.rememberMe
+          ? window.localStorage.setItem(authConfig.storageTokenKeyName, response.data.accessToken)
+          : null
+        const returnUrl = router.query.returnUrl
+
+        setUser({ ...response.data.userData })
+        params.rememberMe ? window.localStorage.setItem('userData', JSON.stringify(response.data.userData)) : null
+
+        const redirectURL = returnUrl && returnUrl !== '/' ? returnUrl : '/'
+        router.replace(redirectURL as string)
+      })
+      .catch(err => {
+        console.error('❌ Error durante login:', err?.response || err)
+        if (errorCallback) errorCallback(err)
+      })
   }
-
-  initAuth()
-}, [])
-
-
-const handleLogin = (params: LoginParams, errorCallback?: ErrCallbackType) => {
-  console.log('🔐 Intentando login con:', params)
-
-  axios
-    .post(authConfig.loginEndpoint, params)
-    .then(async response => {
-      console.log('✅ Login exitoso:', response.data)
-
-      params.rememberMe
-        ? window.localStorage.setItem(authConfig.storageTokenKeyName, response.data.accessToken)
-        : null
-      const returnUrl = router.query.returnUrl
-
-      setUser({ ...response.data.userData })
-      params.rememberMe ? window.localStorage.setItem('userData', JSON.stringify(response.data.userData)) : null
-
-      const redirectURL = returnUrl && returnUrl !== '/' ? returnUrl : '/'
-      router.replace(redirectURL as string)
-    })
-    .catch(err => {
-      console.error('❌ Error durante login:', err?.response || err)
-      if (errorCallback) errorCallback(err)
-    })
-}
 
   const handleLogout = () => {
     setUser(null)

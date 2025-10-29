@@ -1,5 +1,5 @@
 // ** React Imports
-import { ReactNode } from 'react'
+import { ReactNode, useEffect } from 'react'
 
 // ** Next Imports
 import Head from 'next/head'
@@ -63,6 +63,7 @@ import 'src/iconify-bundle/icons-bundle-react'
 
 // ** Global css styles
 import '../../styles/globals.css'
+import authConfig from 'src/configs/auth';
 
 // ** Extend App Props with Emotion
 type ExtendedAppProps = AppProps & {
@@ -117,6 +118,16 @@ const App = (props: ExtendedAppProps) => {
   const guestGuard = Component.guestGuard ?? false
 
   const aclAbilities = Component.acl ?? defaultACLObj
+  
+  useEffect(() => {
+    const token = localStorage.getItem(authConfig.storageTokenKeyName);
+    if (!token || token === 'null' || token === 'undefined') {
+      console.warn('🧹 Token inválido o ausente, limpiando localStorage...');
+      localStorage.removeItem(authConfig.storageTokenKeyName);
+      localStorage.removeItem('userData');
+      localStorage.removeItem('refreshToken');
+    }
+  }, []);
 
   return (
     <Provider store={store}>
