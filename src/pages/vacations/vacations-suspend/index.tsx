@@ -11,8 +11,6 @@ import { Pause as SuspendIcon } from '@mui/icons-material';
 import axios from 'src/lib/axios';
 import { VacationRequest } from 'src/interfaces/vacationRequests';
 
-
-
 interface SuspendVacationDialogProps {
   open: boolean;
   onClose: () => void;
@@ -29,6 +27,7 @@ const SuspendVacationDialog: React.FC<SuspendVacationDialogProps> = ({
   const [formData, setFormData] = useState({
     startDate: '',
     endDate: '',
+    postponedReason: '', // NUEVO
   });
 
   useEffect(() => {
@@ -36,6 +35,7 @@ const SuspendVacationDialog: React.FC<SuspendVacationDialogProps> = ({
       setFormData({
         startDate: request.startDate || '',
         endDate: request.endDate || '',
+        postponedReason: '', // Inicializa vacío
       });
     }
   }, [request]);
@@ -56,7 +56,7 @@ const SuspendVacationDialog: React.FC<SuspendVacationDialogProps> = ({
         {
           startDate: formData.startDate,
           endDate: formData.endDate,
-          status: 'SUSPENDED'
+          postponedReason: formData.postponedReason?.trim() || undefined, // SOLO si hay texto
         }
       );
       onSuccess(response.data);
@@ -67,7 +67,6 @@ const SuspendVacationDialog: React.FC<SuspendVacationDialogProps> = ({
       setErrorMessage(message);
     }
   };
-
 
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
@@ -97,10 +96,23 @@ const SuspendVacationDialog: React.FC<SuspendVacationDialogProps> = ({
           margin="normal"
           InputLabelProps={{ shrink: true }}
         />
+        {/* NUEVO CAMPO OPCIONAL */}
+        <TextField
+          label="Razón de suspensión (opcional)"
+          name="postponedReason"
+          value={formData.postponedReason}
+          onChange={handleChange}
+          fullWidth
+          margin="normal"
+          multiline
+          rows={3}
+          placeholder="Opcional: describe la razón de la suspensión (max. 300 caracteres)"
+          inputProps={{ maxLength: 300 }}
+        />
+
         {errorMessage && (
           <p style={{ color: 'red', marginTop: 8 }}>{errorMessage}</p>
         )}
-
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose}>Cancelar</Button>
