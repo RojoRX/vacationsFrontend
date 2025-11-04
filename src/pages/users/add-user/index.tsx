@@ -23,7 +23,7 @@ import Department from 'src/interfaces/departments';
 import { Profession, AcademicUnit } from 'src/interfaces/user.interface';
 import { TransitionProps } from '@mui/material/transitions';
 import { ErrorOutline } from '@mui/icons-material';
-import { CreateCredentialsDialog } from 'src/pages/credentials/userCredentials';
+import { CreateCredentialsDialog } from 'src/components/userCredentials';
 // Transition para el diálogo
 interface CreateUserForm {
     ci: string;
@@ -82,14 +82,17 @@ const CreateUserForm: React.FC = () => {
     const [credentialsDialogOpen, setCredentialsDialogOpen] = useState(false);
 
     const [createdUser, setCreatedUser] = useState<UserResponse | null>(null);
+    // Antes: fechaIngreso: new Date().toISOString().split('T')[0],
     const { control, handleSubmit, formState: { errors }, reset, watch, setValue } = useForm<CreateUserForm>({
         resolver: yupResolver(schema),
         defaultValues: {
             tipoEmpleado: 'DOCENTE',
-            fechaIngreso: new Date().toISOString().split('T')[0],
+            // remitimos la fecha por defecto: la dejamos vacía para evitar falsos datos
+            fechaIngreso: '',
             profession: { id: undefined },
         },
     });
+
     const [unidadError, setUnidadError] = useState(false);
     const tipoEmpleado = watch("tipoEmpleado");
     const [searching, setSearching] = useState(false);
@@ -105,36 +108,69 @@ const CreateUserForm: React.FC = () => {
         setSearching(true);
         setSearchError(null);
 
+        const parseToISODate = (raw: any): string | null => {
+            if (!raw) return null;
+            // Si ya viene en formato ISO yyyy-mm-dd (o con hora), extraer yyyy-mm-dd
+            if (typeof raw === 'string' && /^\d{4}-\d{2}-\d{2}/.test(raw)) {
+                return raw.slice(0, 10);
+            }
+            // Si viene como dd/mm/yyyy -> convertir
+            if (typeof raw === 'string' && /^\d{2}\/\d{2}\/\d{4}$/.test(raw)) {
+                const [d, m, y] = raw.split('/');
+                return `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
+            }
+            // Si viene como dd-mm-yyyy
+            if (typeof raw === 'string' && /^\d{2}-\d{2}-\d{4}$/.test(raw)) {
+                const [d, m, y] = raw.split('-');
+                return `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
+            }
+            // si no se reconoce, no asignar
+            return null;
+        };
+
         try {
-            const res = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/external/person`, {
-                params: { ci: ciValue },
+            const res = await fetch(`https://swservice.uatf.edu.bo/api/persons/${ciValue}`, {
+                headers: {
+                    'Authorization-d4t4': 'd4t4C3nt73r25k'
+                }
             });
 
-            const person = res.data;
-            if (!person) {
-                setSearchError('No se encontró ninguna persona con ese CI.');
-                return;
-            }
+            const data = await res.json();
 
-            // Rellenamos los campos del formulario si existen valores
-            if (person.nombres && person.apellidoPaterno) {
-                setValue('fullName', `${person.nombres} ${person.apellidoPaterno} ${person.apellidoMaterno || ''}`.trim());
-            }
-            if (person.correo) setValue('email', person.correo);
-            if (person.telefono) setValue('celular', person.telefono);
-            if (person.profesion) {
-                const found = professions.find(p => p.name.toLowerCase() === person.profesion.toLowerCase());
-                if (found) setValue('profession.id', found.id);
-            }
+            if (data.status === 'success' && data.data) {
+                const person = data.data;
 
-            // Si la API tiene algún campo adicional útil, puedes mapearlo aquí
-        } catch (err: any) {
+                // Rellenar los campos solo si vienen desde la API
+                const fullName = `${person.nombres ?? ''} ${person.apellido_paterno ?? ''} ${person.apellido_materno ?? ''}`.trim();
+                if (fullName) setValue('fullName', fullName);
+                if (person.correo_electronico) setValue('email', person.correo_electronico);
+                if (person.celular) setValue('celular', person.celular);
+
+                // Fecha de ingreso: solo si la API la proporciona y se puede parsear
+                const possibleDate = person.fecha_ingreso ?? person.fechaIngreso ?? person.fechaIngresoStr ?? null;
+                const parsed = parseToISODate(possibleDate);
+                if (parsed) {
+                    setValue('fechaIngreso', parsed);
+                } else {
+                    // NO asignamos fechaIngreso si la API no la devuelve o viene en formato desconocido
+                    // (no seteamos la fecha actual para evitar falsos positivos)
+                }
+
+                setSearchError(null);
+            } else if (data.status === 'error') {
+                setSearchError(data.message || 'No se encontró ninguna persona con ese CI.');
+            } else {
+                setSearchError('Respuesta inesperada del servicio externo.');
+            }
+        } catch (err) {
             console.error(err);
-            setSearchError('Error al buscar persona o conexión fallida.');
+            setSearchError('Error al conectar con el servicio externo.');
         } finally {
             setSearching(false);
         }
     };
+
+
 
     useEffect(() => {
         const fetchInitialData = async () => {
@@ -354,43 +390,43 @@ const CreateUserForm: React.FC = () => {
                     <Grid container spacing={3}>
                         {/* Columna izquierda */}
                         <Grid item xs={12} md={6}>
-                  <Box sx={{ mb: 3 }}>
-  <Controller
-    name="ci"
-    control={control}
-    render={({ field }) => (
-      <TextField
-        {...field}
-        label="CI"
-        fullWidth
-        variant="outlined"
-        size="small"
-        error={!!errors.ci}
-        helperText={errors.ci?.message}
-        InputProps={{
-          endAdornment: (
-            <InputAdornment position="end">
-              <IconButton
-                onClick={handleSearchByCI}
-                disabled={searching}
-                color="primary"
-                edge="end"
-              >
-                <SearchIcon />
-              </IconButton>
-            </InputAdornment>
-          ),
-        }}
-        sx={{ mb: 2 }}
-      />
-    )}
-  />
-  {searchError && (
-    <Typography color="error" variant="body2" sx={{ mt: -1, mb: 2 }}>
-      {searchError}
-    </Typography>
-  )}
-</Box>
+                            <Box sx={{ mb: 3 }}>
+                                <Controller
+                                    name="ci"
+                                    control={control}
+                                    render={({ field }) => (
+                                        <TextField
+                                            {...field}
+                                            label="CI"
+                                            fullWidth
+                                            variant="outlined"
+                                            size="small"
+                                            error={!!errors.ci}
+                                            helperText={errors.ci?.message}
+                                            InputProps={{
+                                                endAdornment: (
+                                                    <InputAdornment position="end">
+                                                        <IconButton
+                                                            onClick={handleSearchByCI}
+                                                            disabled={searching}
+                                                            color="primary"
+                                                            edge="end"
+                                                        >
+                                                            <SearchIcon />
+                                                        </IconButton>
+                                                    </InputAdornment>
+                                                ),
+                                            }}
+                                            sx={{ mb: 2 }}
+                                        />
+                                    )}
+                                />
+                                {searchError && (
+                                    <Typography color="error" variant="body2" sx={{ mt: -1, mb: 2 }}>
+                                        {searchError}
+                                    </Typography>
+                                )}
+                            </Box>
 
 
                             <Box sx={{ mb: 3 }}>
