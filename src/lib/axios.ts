@@ -3,7 +3,7 @@ import authConfig from 'src/configs/auth';
 
 // 1. Crear la instancia base
 const axiosInstance = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api',
+  baseURL: process.env.NEXT_PUBLIC_API_URL,
 }) as AxiosInstance & {
   isAxiosError: AxiosStatic['isAxiosError'];
 };
