@@ -115,7 +115,7 @@ const VacationRequestList: VacationRequestsComponent = () => {
     });
     const handleUpdate = (updatedRequest: VacationRequest) => {
         // aquí actualizas tu lista de solicitudes, por ejemplo
-        console.log('Solicitud actualizada:', updatedRequest);
+        //console.log('Solicitud actualizada:', updatedRequest);
     };
     useEffect(() => {
         const fetchRequests = async () => {

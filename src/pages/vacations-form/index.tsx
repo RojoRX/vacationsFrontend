@@ -94,7 +94,7 @@ const VacationRequestSubmissionForm = () => {
     // Formatear la fecha resultante
     const formattedMonth = String(ingresoMonth).padStart(2, '0');
     const formattedDay = String(ingresoDay).padStart(2, '0');
-    console.log("Informacion del hook" + " " + user?.fecha_ingreso);
+    //console.log("Informacion del hook" + " " + user?.fecha_ingreso);
     return `${anniversaryYear}-${formattedMonth}-${formattedDay}`;
 
 
@@ -118,7 +118,7 @@ const VacationRequestSubmissionForm = () => {
           }
         );
         setData(response.data);
-        console.log(data)
+        //console.log(data)
         const availablePeriod = response.data.detalles.find(d => d.diasDisponibles > 0);
         if (availablePeriod) {
           setSelectedPeriod(availablePeriod);
@@ -143,14 +143,7 @@ const VacationRequestSubmissionForm = () => {
     try {
       setRequestError(null);
       setRequestSuccess(false);
-      console.log('Datos enviados:', {
-        carnetIdentidad: user?.ci,
-        startDate: selectedStartDate.toISOString().split('T')[0],
-        managementPeriod: {
-          startPeriod: selectedPeriod.startDate.split('T')[0],
-          endPeriod: selectedPeriod.endDate.split('T')[0],
-        }
-      });
+
 
       const response = await axios.post(
         `${process.env.NEXT_PUBLIC_API_BASE_URL}/vacation-requests`,

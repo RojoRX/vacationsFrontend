@@ -85,7 +85,7 @@ const WelcomeDashboard = () => {
         const licenseValidationResponse = await axios.get(
           `${process.env.NEXT_PUBLIC_API_BASE_URL}/licenses-validation/can-request/${user.ci}`
         );
-        console.log('Available days from backend:', licenseValidationResponse.data.availableDays);
+        //console.log('Available days from backend:', licenseValidationResponse.data.availableDays);
 
         setLicenseRequestStatus({
           canRequest: licenseValidationResponse.data.canRequest,

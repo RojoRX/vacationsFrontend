@@ -148,7 +148,7 @@ const VacationRequestDetailsInfo = () => {
         timeout: 5000,
       });
 
-      console.log('Respuesta completa del servidor:', response.data);
+      //console.log('Respuesta completa del servidor:', response.data);
 
       // Verificar si hay detalles en la respuesta
       if (!response.data.detalles || !Array.isArray(response.data.detalles)) {
@@ -192,7 +192,7 @@ const VacationRequestDetailsInfo = () => {
         return;
       }
 
-      console.log('Datos encontrados para la gestión:', gestionDebt);
+      //console.log('Datos encontrados para la gestión:', gestionDebt);
       setDebtData(gestionDebt);
 
     } catch (err) {

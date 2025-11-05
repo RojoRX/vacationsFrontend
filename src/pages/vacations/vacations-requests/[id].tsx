@@ -155,8 +155,8 @@ const VacationRequestDetails = () => {
           response.data.managementPeriodEnd,
           response.data.ci || ""
         );
-        console.log(response.data.managementPeriodStart)
-        console.log(response.data.managementPeriodEnd)
+        //console.log(response.data.managementPeriodStart)
+        //console.log(response.data.managementPeriodEnd)
       }
     } catch (err) {
       handleFetchError(err);
@@ -172,9 +172,9 @@ const VacationRequestDetails = () => {
         timeout: 5000,
       });
 
-      console.log('Respuesta completa del servidor:', response.data);
+      //console.log('Respuesta completa del servidor:', response.data);
       setDeudaData(response.data);
-      console.log(`datos de deuda data ${deudaData?.diasDisponiblesActuales}`)
+      //console.log(`datos de deuda data ${deudaData?.diasDisponiblesActuales}`)
       // Verificar si hay detalles en la respuesta
       if (!response.data.detalles || !Array.isArray(response.data.detalles)) {
         console.error('Formato de datos inesperado: detalles no es un array');
@@ -217,7 +217,7 @@ const VacationRequestDetails = () => {
         return;
       }
 
-      console.log('Datos encontrados para la gestión:', gestionDebt);
+      //console.log('Datos encontrados para la gestión:', gestionDebt);
       setDebtData(gestionDebt);
 
     } catch (err) {

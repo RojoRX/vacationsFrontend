@@ -19,7 +19,7 @@ axiosInstance.interceptors.request.use(config => {
       config.headers = config.headers || {};
       config.headers.Authorization = `Bearer ${token}`;
       if (process.env.NODE_ENV === 'development') {
-        console.log('✅ Token agregado al header:', token);
+        //console.log('✅ Token agregado al header:', token);
       }
     }
   }

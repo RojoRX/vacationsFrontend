@@ -89,13 +89,13 @@ const VacationDashboard = () => {
 
         const fetchAllData = async () => {
             try {
-                console.log(`🔍 Obteniendo gestiones para: ${user.ci}`);
+                //console.log(`🔍 Obteniendo gestiones para: ${user.ci}`);
                 const gestionesRes = await axios.get<Gestion[]>(
                     `${process.env.NEXT_PUBLIC_API_BASE_URL}/gestion-periods/gestions/${user.ci}`
                 );
 
                 const gestionesList = gestionesRes.data || [];
-                console.log('📅 Gestiones obtenidas:', gestionesList);
+                //console.log('📅 Gestiones obtenidas:', gestionesList);
                 setGestiones(gestionesList);
 
                 if (gestionesList.length === 0) {
@@ -123,7 +123,7 @@ const VacationDashboard = () => {
                         { params }
                     );
 
-                    console.log('💰 Deuda acumulada recibida:', debtRes.data);
+                    //console.log('💰 Deuda acumulada recibida:', debtRes.data);
 
                     const promises = gestionesList.map(async (gestion: Gestion) => {
                         try {
@@ -159,7 +159,7 @@ const VacationDashboard = () => {
                                     },
                                 }
                             );
-                            console.log("Enviando a /vacations" + " " + gestionStart, gestionEnd)
+                            //console.log("Enviando a /vacations" + " " + gestionStart, gestionEnd)
                             return {
                                 key: `${gestion.startDate}-${gestion.endDate}`,
                                 data: vacRes.data,

@@ -93,7 +93,7 @@ const UserVacationDebt: React.FC<UserVacationDebtProps> = ({ ci, fechaIngreso, s
                     }
 
                 );
-                console.log(response.data)
+                //console.log(response.data)
 
                 setData(response.data);
             } catch (err) {

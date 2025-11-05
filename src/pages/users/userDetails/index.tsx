@@ -141,7 +141,7 @@ const UserInformation: AclComponent = () => {
       // Usar directamente el objeto obtenido
       const ingresoYear = new Date(response.data.fecha_ingreso).getFullYear();
       setSelectedYear(ingresoYear);
-      console.log(response.data)
+      //console.log(response.data)
     } catch (error) {
       //setSnackbarMessage('Error al buscar usuario. Verifique el carnet de identidad.');
       console.error('Error fetching user:', error);

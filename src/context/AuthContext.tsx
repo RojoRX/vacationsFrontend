@@ -42,7 +42,7 @@ const AuthProvider = ({ children }: Props) => {
   useEffect(() => {
     const initAuth = async (): Promise<void> => {
       const storedToken = window.localStorage.getItem(authConfig.storageTokenKeyName);
-      console.log('📦 Token en almacenamiento:', storedToken);
+      //console.log('📦 Token en almacenamiento:', storedToken);
 
       // Validar token antes de usarlo
       if (storedToken && storedToken !== 'null' && storedToken !== 'undefined') {
@@ -51,7 +51,7 @@ const AuthProvider = ({ children }: Props) => {
           const response = await axios.get(authConfig.meEndpoint, {
             headers: { Authorization: `Bearer ${storedToken}` }
           });
-          console.log('👤 Usuario autenticado:', response.data.userData);
+          //console.log('👤 Usuario autenticado:', response.data.userData);
           setUser({ ...response.data.userData });
           setLoading(false);
         } catch (error: any) {
@@ -68,7 +68,7 @@ const AuthProvider = ({ children }: Props) => {
           }
         }
       } else {
-        console.log('ℹ️ No hay token válido almacenado');
+        //console.log('ℹ️ No hay token válido almacenado');
         localStorage.removeItem(authConfig.storageTokenKeyName); // Limpiar cualquier token corrupto
         setUser(null);
         setLoading(false);
@@ -90,12 +90,12 @@ const AuthProvider = ({ children }: Props) => {
 
 
   const handleLogin = (params: LoginParams, errorCallback?: ErrCallbackType) => {
-    console.log('🔐 Intentando login con:', params)
+    //console.log('🔐 Intentando login con:', params)
 
     axios
       .post(authConfig.loginEndpoint, params)
       .then(async response => {
-        console.log('✅ Login exitoso:', response.data)
+        //console.log('✅ Login exitoso:', response.data)
 
         params.rememberMe
           ? window.localStorage.setItem(authConfig.storageTokenKeyName, response.data.accessToken)

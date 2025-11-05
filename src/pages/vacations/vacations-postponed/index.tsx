@@ -34,7 +34,7 @@ const PostponeVacationRequestForm: React.FC<{
         }
       );
 
-      console.log('Solicitud de vacaciones pospuesta', response.data);
+      //console.log('Solicitud de vacaciones pospuesta', response.data);
 
       // Aquí llamamos a onRequestUpdate con la respuesta actualizada
       onRequestUpdate(response.data); // Asumiendo que response.data contiene la información actualizada

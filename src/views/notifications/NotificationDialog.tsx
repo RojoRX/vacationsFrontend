@@ -124,7 +124,7 @@ const NotificationDialog = ({ open, onClose, notification }: Props) => {
   };
 
   const renderNotification = (n: NotificationsType) => {
-    console.log('Notificación:', n); // ✅ ahora sí podés depurar
+    //console.log('Notificación:', n); // ✅ ahora sí podés depurar
 
     return (
       <Box

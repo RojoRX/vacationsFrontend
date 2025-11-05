@@ -186,7 +186,7 @@ const GeneralHolidayCalendar: AclComponent = () => {
             const startDateStr = period.startDate.split('T')[0];
             const endDateStr = period.endDate.split('T')[0];
 
-            console.log(`[DEBUG] Comparando: ${currentDateStr} con rango ${startDateStr} a ${endDateStr}`);
+            //console.log(`[DEBUG] Comparando: ${currentDateStr} con rango ${startDateStr} a ${endDateStr}`);
 
             return currentDateStr >= startDateStr && currentDateStr <= endDateStr;
         });

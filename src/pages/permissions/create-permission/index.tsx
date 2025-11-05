@@ -153,7 +153,7 @@ const RequestPermissionDialog: AclComponent = ({ open, onClose, onSuccess }) => 
 
     try {
       const isHalfDay = formData.timeRequested === 'Medio Día';
-      console.log(formData)
+      //console.log(formData)
       const response = await axios.post(`${process.env.NEXT_PUBLIC_API_BASE_URL}/licenses/${user?.id}`, {
         licenseType: formData.licenseType,
         timeRequested: formData.timeRequested,

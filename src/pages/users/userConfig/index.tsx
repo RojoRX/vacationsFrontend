@@ -63,12 +63,12 @@ export default function UserConfigDialog({
         setMessage(null);
         try {
             const res = await axios.get(`${API_URL}/user-config/${userId}`);
-            console.log('✅ Configuración obtenida:', res.data);
+            //console.log('✅ Configuración obtenida:', res.data);
             setConfig(res.data);
             setIsNewConfig(false);
         } catch (err: any) {
             if (err.response?.status === 404) {
-                console.log('ℹ️ No se encontró configuración previa, se preparará para crear.');
+                //console.log('ℹ️ No se encontró configuración previa, se preparará para crear.');
                 setConfig({});
                 setIsNewConfig(true);
             } else {
@@ -110,13 +110,13 @@ export default function UserConfigDialog({
 
         try {
             if (isNewConfig) {
-                console.log('📤 Creando nueva configuración:', config);
+                //console.log('📤 Creando nueva configuración:', config);
                 await axios.post(`${API_URL}/user-config`, {
                     ...config,
                     userId,
                 });
             } else {
-                console.log('🔧 Actualizando configuración existente:', config);
+                //console.log('🔧 Actualizando configuración existente:', config);
                 await axios.patch(`${API_URL}/user-config/${userId}`, config);
             }
 
