@@ -5,11 +5,12 @@ FROM node:20-alpine AS builder
 WORKDIR /app
 
 COPY package*.json ./
-RUN npm install
+RUN npm install --legacy-peer-deps
 
-# ⚠️ Recibe la variable y la exporta al entorno del build
-ARG NEXT_PUBLIC_API_BASE_URL
-ENV NEXT_PUBLIC_API_BASE_URL=${NEXT_PUBLIC_API_BASE_URL}
+# ✅ Variables de entorno para BUILD
+ENV NEXT_PUBLIC_API_BASE_URL=http://192.168.1.16:3010
+ENV NODE_ENV=production
+ENV PORT=4001
 
 COPY . .
 RUN npm run build
@@ -20,15 +21,16 @@ RUN npm run build
 FROM node:20-alpine
 WORKDIR /app
 
-COPY --from=builder /app ./
-RUN npm install --omit=dev
-
 ENV NODE_ENV=production
 ENV PORT=4001
+# ✅ Variable para RUNTIME (puede ser diferente del build)
+ENV NEXT_PUBLIC_API_BASE_URL=http://192.168.1.16:3010
 
-# ⚠️ Vuelve a exportarla para runtime
-ARG NEXT_PUBLIC_API_BASE_URL
-ENV NEXT_PUBLIC_API_BASE_URL=${NEXT_PUBLIC_API_BASE_URL}
+COPY --from=builder /app/public ./public
+COPY --from=builder /app/.next ./.next
+COPY --from=builder /app/package.json ./
+
+RUN npm install --omit=dev --legacy-peer-deps
 
 EXPOSE 4001
 CMD ["npm", "start"]
