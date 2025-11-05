@@ -1,30 +1,29 @@
+# Etapa de build
 FROM node:20-alpine AS builder
 WORKDIR /app
 
 COPY package*.json ./
+RUN npm ci
 
-# ✅ Alternativa: usar npm install con --legacy-peer-deps
-RUN npm install --legacy-peer-deps
+# 👇 recibe el argumento del compose
+ARG NEXT_PUBLIC_API_BASE_URL
+ENV NEXT_PUBLIC_API_BASE_URL=${NEXT_PUBLIC_API_BASE_URL}
 
 COPY . .
 RUN npm run build
 
-FROM node:20-alpine AS runner
+# Etapa de producción
+FROM node:20-alpine
 WORKDIR /app
+
+COPY --from=builder /app/.next ./.next
+COPY --from=builder /app/public ./public
+COPY --from=builder /app/package*.json ./
+
+RUN npm ci --omit=dev
 
 ENV NODE_ENV=production
 ENV PORT=4001
-
-RUN addgroup -g 1001 -S nodejs
-RUN adduser -S nextjs -u 1001
-
-COPY --from=builder --chown=nextjs:nodejs /app/public ./public
-COPY --from=builder --chown=nextjs:nodejs /app/.next ./.next
-COPY --from=builder --chown=nextjs:nodejs /app/package.json ./
-
-RUN npm install --omit=dev --legacy-peer-deps
-
-USER nextjs
-
 EXPOSE 4001
+
 CMD ["npm", "start"]
