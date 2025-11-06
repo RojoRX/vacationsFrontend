@@ -60,6 +60,12 @@ const ProfileTab = () => {
   const [editData, setEditData] = useState<Partial<{ email: string; celular: string }>>({});
   const [saveSuccess, setSaveSuccess] = useState<boolean>(false);
   const [validationErrors, setValidationErrors] = useState<{ email?: string; celular?: string }>({}); // Estado para errores de validación
+  const [passwordDialogOpen, setPasswordDialogOpen] = useState(false);
+  const [oldPassword, setOldPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [passwordError, setPasswordError] = useState<string | null>(null);
+  const [passwordSuccess, setPasswordSuccess] = useState<string | null>(null);
 
   const user = useUser();
   const userId = user?.id;
@@ -111,17 +117,17 @@ const ProfileTab = () => {
         { icon: 'mdi:account-box', property: 'Usuario', value: data.username },
         { icon: 'mdi:phone', property: 'Celular', value: data.celular || 'N/A' },
       ],
-      teams: [],
       overview: [
         { icon: 'mdi:briefcase', property: 'Cargo', value: data.position || 'N/A' },
         { icon: 'mdi:badge-account-horizontal', property: 'Tipo de Empleado', value: data.tipoEmpleado || 'N/A' },
         { icon: 'mdi:briefcase', property: 'Profesión', value: data.profession?.name || 'N/A' },
-        { icon: 'mdi:sitemap', property: 'Rol', value: data.role },
+        { icon: 'mdi:sitemap', property: 'Rol', value: data.role || 'N/A' },
         { icon: 'mdi:office-building', property: 'Departamento', value: data.department?.name || 'N/A' },
         { icon: 'mdi:school', property: 'Unidad Académica', value: data.academicUnit?.name || 'N/A' },
       ],
     };
   };
+
 
   const handleOpenDialog = () => {
     // Asegura que editData siempre se inicialice con los valores actuales de userDataApi para email y celular
@@ -174,6 +180,42 @@ const ProfileTab = () => {
       setSaveSuccess(false); // Asegurarse de que no se muestre el mensaje de éxito
     }
   };
+  const handleChangePassword = async () => {
+  setPasswordError(null);
+  setPasswordSuccess(null);
+
+  if (!oldPassword || !newPassword || !confirmPassword) {
+    setPasswordError("Todos los campos son obligatorios.");
+    return;
+  }
+
+  if (newPassword.length < 6) {
+    setPasswordError("La nueva contraseña debe tener al menos 6 caracteres.");
+    return;
+  }
+
+  if (newPassword !== confirmPassword) {
+    setPasswordError("Las contraseñas no coinciden.");
+    return;
+  }
+
+  try {
+    const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
+    await axios.patch(`${baseUrl}/users/${userId}/change-password`, {
+      oldPassword,
+      newPassword
+    });
+
+    setPasswordSuccess("¡Contraseña cambiada correctamente!");
+    setOldPassword('');
+    setNewPassword('');
+    setConfirmPassword('');
+
+  } catch (err: any) {
+    setPasswordError(err.response?.data?.message || "Error al cambiar la contraseña.");
+  }
+};
+
 
   if (loading) {
     return (
@@ -212,15 +254,13 @@ const ProfileTab = () => {
               <Typography variant="h5" sx={{ mb: 2 }}>
                 Información del Perfil
               </Typography>
-              <AboutOverivew
-                about={transformedDisplayData.about}
-                contacts={transformedDisplayData.contacts}
-                teams={transformedDisplayData.teams}
-                overview={transformedDisplayData.overview}
-              />
               <Button variant="contained" onClick={handleOpenDialog} sx={{ mt: 3 }}>
                 Editar Datos
               </Button>
+              <Button variant="outlined" onClick={() => setPasswordDialogOpen(true)} sx={{ mt: 2 }}>
+                Cambiar Contraseña
+              </Button>
+
               {saveSuccess && (
                 <Alert severity="success" sx={{ mt: 3 }}>
                   ¡Cambios guardados con éxito!
@@ -310,6 +350,48 @@ const ProfileTab = () => {
           </Button>
         </DialogActions>
       </Dialog>
+      <Dialog open={passwordDialogOpen} onClose={() => setPasswordDialogOpen(false)} fullWidth maxWidth="sm">
+  <DialogTitle>Cambiar Contraseña</DialogTitle>
+  <DialogContent dividers>
+
+    {passwordError && <Alert severity="error" sx={{ mb: 2 }}>{passwordError}</Alert>}
+    {passwordSuccess && <Alert severity="success" sx={{ mb: 2 }}>{passwordSuccess}</Alert>}
+
+    <TextField
+      fullWidth
+      label="Contraseña actual"
+      type="password"
+      margin="normal"
+      value={oldPassword}
+      onChange={e => setOldPassword(e.target.value)}
+    />
+
+    <TextField
+      fullWidth
+      label="Nueva contraseña"
+      type="password"
+      margin="normal"
+      value={newPassword}
+      onChange={e => setNewPassword(e.target.value)}
+    />
+
+    <TextField
+      fullWidth
+      label="Confirmar nueva contraseña"
+      type="password"
+      margin="normal"
+      value={confirmPassword}
+      onChange={e => setConfirmPassword(e.target.value)}
+    />
+
+  </DialogContent>
+
+  <DialogActions>
+    <Button onClick={() => setPasswordDialogOpen(false)}>Cancelar</Button>
+    <Button variant="contained" color="primary" onClick={handleChangePassword}>Guardar</Button>
+  </DialogActions>
+</Dialog>
+
     </>
   );
 };
