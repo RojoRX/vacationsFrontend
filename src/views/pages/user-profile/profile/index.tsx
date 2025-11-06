@@ -108,33 +108,27 @@ const ProfileTab = () => {
     fetchUserData();
   }, [fetchUserData]);
 
-  const getTransformedData = (data: UserData) => {
-    return {
-      about: [
-        { icon: 'mdi:account', property: 'Nombre Completo', value: data.fullName },
-        { icon: 'mdi:identification-card', property: 'Carnet de Identidad', value: data.ci },
-        {
-          icon: 'mdi:calendar',
-          property: 'Fecha de Ingreso',
-          value: data.fecha_ingreso ? new Date(data.fecha_ingreso).toLocaleDateString('es-ES') : 'N/A',
-        },
-        { icon: 'mdi:email', property: 'Email', value: data.email || 'N/A' },
-      ],
-      contacts: [
-        { icon: 'mdi:account-box', property: 'Usuario', value: data.username },
-        { icon: 'mdi:phone', property: 'Celular', value: data.celular || 'N/A' },
-      ],
-      overview: [
-        { icon: 'mdi:briefcase', property: 'Cargo', value: data.position || 'N/A' },
-        { icon: 'mdi:badge-account-horizontal', property: 'Tipo de Empleado', value: data.tipoEmpleado || 'N/A' },
-        { icon: 'mdi:briefcase', property: 'Profesión', value: data.profession?.name || 'N/A' },
-        { icon: 'mdi:sitemap', property: 'Rol', value: data.role || 'N/A' },
-        { icon: 'mdi:office-building', property: 'Departamento', value: data.department?.name || 'N/A' },
-        { icon: 'mdi:school', property: 'Unidad Académica', value: data.academicUnit?.name || 'N/A' },
-      ],
+const getTransformedData = (data: UserData) => ({
+  about: [
+    { icon: 'mdi:account', property: 'Nombre Completo', value: data.fullName ?? '' },
+    { icon: 'mdi:identification-card', property: 'Carnet de Identidad', value: data.ci ?? '' },
+    { icon: 'mdi:calendar', property: 'Fecha de Ingreso', value: data.fecha_ingreso ? new Date(data.fecha_ingreso).toLocaleDateString('es-ES') : '' },
+    { icon: 'mdi:email', property: 'Email', value: data.email ?? '' },
+  ],
+  contacts: [
+    { icon: 'mdi:account-box', property: 'Usuario', value: data.username ?? '' },
+    { icon: 'mdi:phone', property: 'Celular', value: data.celular ?? '' },
+  ],
+  overview: [
+    { icon: 'mdi:briefcase', property: 'Cargo', value: data.position ?? '' },
+    { icon: 'mdi:badge-account-horizontal', property: 'Tipo de Empleado', value: data.tipoEmpleado ?? '' },
+    { icon: 'mdi:briefcase', property: 'Profesión', value: data.profession?.name ?? '' },
+    { icon: 'mdi:sitemap', property: 'Rol', value: data.role ?? '' },
+    { icon: 'mdi:office-building', property: 'Departamento', value: data.department?.name ?? '' },
+    { icon: 'mdi:school', property: 'Unidad Académica', value: data.academicUnit?.name ?? '' },
+  ]
+});
 
-    };
-  };
 
 
   const handleOpenDialog = () => {
@@ -369,7 +363,6 @@ const ProfileTab = () => {
           {passwordError && <Alert severity="error" sx={{ mb: 2 }}>{passwordError}</Alert>}
           {passwordSuccess && <Alert severity="success" sx={{ mb: 2 }}>{passwordSuccess}</Alert>}
 
-          // En el TextField de Contraseña Actual:
           <TextField
             fullWidth
             label="Contraseña actual"
@@ -390,8 +383,6 @@ const ProfileTab = () => {
               )
             }}
           />
-
-// En el TextField de Nueva Contraseña:
           <TextField
             fullWidth
             label="Nueva contraseña"
@@ -412,8 +403,6 @@ const ProfileTab = () => {
               )
             }}
           />
-
-// En el TextField de Confirmar Nueva Contraseña:
           <TextField
             fullWidth
             label="Confirmar nueva contraseña"

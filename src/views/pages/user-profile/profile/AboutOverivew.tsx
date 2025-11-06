@@ -20,6 +20,9 @@ interface Props {
 const renderList = (arr: ProfileTabCommonType[]) => {
   if (arr && arr.length) {
     return arr.map((item, index) => {
+      const property = item.property ?? ''
+      const value = item.value ?? ''
+
       return (
         <Box
           key={index}
@@ -33,10 +36,10 @@ const renderList = (arr: ProfileTabCommonType[]) => {
           <Icon icon={item.icon} />
 
           <Typography sx={{ mx: 2, fontWeight: 600, color: 'text.secondary' }}>
-            {`${item.property.charAt(0).toUpperCase() + item.property.slice(1)}:`}
+            {property ? `${property.charAt(0).toUpperCase() + property.slice(1)}:` : ''}
           </Typography>
           <Typography sx={{ color: 'text.secondary' }}>
-            {item.value.charAt(0).toUpperCase() + item.value.slice(1)}
+            {value ? value.charAt(0).toUpperCase() + value.slice(1) : ''}
           </Typography>
         </Box>
       )
@@ -45,6 +48,7 @@ const renderList = (arr: ProfileTabCommonType[]) => {
     return null
   }
 }
+
 
 const renderTeams = (arr: ProfileTeamsType[]) => {
   if (arr && arr.length) {
