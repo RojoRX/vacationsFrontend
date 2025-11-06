@@ -125,6 +125,7 @@ const ProfileTab = () => {
         { icon: 'mdi:office-building', property: 'Departamento', value: data.department?.name || 'N/A' },
         { icon: 'mdi:school', property: 'Unidad Académica', value: data.academicUnit?.name || 'N/A' },
       ],
+
     };
   };
 
@@ -181,40 +182,41 @@ const ProfileTab = () => {
     }
   };
   const handleChangePassword = async () => {
-  setPasswordError(null);
-  setPasswordSuccess(null);
+    setPasswordError(null);
+    setPasswordSuccess(null);
 
-  if (!oldPassword || !newPassword || !confirmPassword) {
-    setPasswordError("Todos los campos son obligatorios.");
-    return;
-  }
+    if (!oldPassword || !newPassword || !confirmPassword) {
+      setPasswordError("Todos los campos son obligatorios.");
+      return;
+    }
 
-  if (newPassword.length < 6) {
-    setPasswordError("La nueva contraseña debe tener al menos 6 caracteres.");
-    return;
-  }
+    if (newPassword.length < 6) {
+      setPasswordError("La nueva contraseña debe tener al menos 6 caracteres.");
+      return;
+    }
 
-  if (newPassword !== confirmPassword) {
-    setPasswordError("Las contraseñas no coinciden.");
-    return;
-  }
+    if (newPassword !== confirmPassword) {
+      setPasswordError("Las contraseñas no coinciden.");
+      return;
+    }
 
-  try {
-    const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
-    await axios.patch(`${baseUrl}/users/${userId}/change-password`, {
-      oldPassword,
-      newPassword
-    });
+    try {
+      const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
+      await axios.patch(`${baseUrl}/users/change-password`, {
+        oldPassword,
+        newPassword
+      });
 
-    setPasswordSuccess("¡Contraseña cambiada correctamente!");
-    setOldPassword('');
-    setNewPassword('');
-    setConfirmPassword('');
 
-  } catch (err: any) {
-    setPasswordError(err.response?.data?.message || "Error al cambiar la contraseña.");
-  }
-};
+      setPasswordSuccess("¡Contraseña cambiada correctamente!");
+      setOldPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+
+    } catch (err: any) {
+      setPasswordError(err.response?.data?.message || "Error al cambiar la contraseña.");
+    }
+  };
 
 
   if (loading) {
@@ -254,6 +256,9 @@ const ProfileTab = () => {
               <Typography variant="h5" sx={{ mb: 2 }}>
                 Información del Perfil
               </Typography>
+              <AboutOverivew about={transformedDisplayData.about}
+                contacts={transformedDisplayData.contacts}
+                overview={transformedDisplayData.overview} />
               <Button variant="contained" onClick={handleOpenDialog} sx={{ mt: 3 }}>
                 Editar Datos
               </Button>
@@ -351,46 +356,46 @@ const ProfileTab = () => {
         </DialogActions>
       </Dialog>
       <Dialog open={passwordDialogOpen} onClose={() => setPasswordDialogOpen(false)} fullWidth maxWidth="sm">
-  <DialogTitle>Cambiar Contraseña</DialogTitle>
-  <DialogContent dividers>
+        <DialogTitle>Cambiar Contraseña</DialogTitle>
+        <DialogContent dividers>
 
-    {passwordError && <Alert severity="error" sx={{ mb: 2 }}>{passwordError}</Alert>}
-    {passwordSuccess && <Alert severity="success" sx={{ mb: 2 }}>{passwordSuccess}</Alert>}
+          {passwordError && <Alert severity="error" sx={{ mb: 2 }}>{passwordError}</Alert>}
+          {passwordSuccess && <Alert severity="success" sx={{ mb: 2 }}>{passwordSuccess}</Alert>}
 
-    <TextField
-      fullWidth
-      label="Contraseña actual"
-      type="password"
-      margin="normal"
-      value={oldPassword}
-      onChange={e => setOldPassword(e.target.value)}
-    />
+          <TextField
+            fullWidth
+            label="Contraseña actual"
+            type="password"
+            margin="normal"
+            value={oldPassword}
+            onChange={e => setOldPassword(e.target.value)}
+          />
 
-    <TextField
-      fullWidth
-      label="Nueva contraseña"
-      type="password"
-      margin="normal"
-      value={newPassword}
-      onChange={e => setNewPassword(e.target.value)}
-    />
+          <TextField
+            fullWidth
+            label="Nueva contraseña"
+            type="password"
+            margin="normal"
+            value={newPassword}
+            onChange={e => setNewPassword(e.target.value)}
+          />
 
-    <TextField
-      fullWidth
-      label="Confirmar nueva contraseña"
-      type="password"
-      margin="normal"
-      value={confirmPassword}
-      onChange={e => setConfirmPassword(e.target.value)}
-    />
+          <TextField
+            fullWidth
+            label="Confirmar nueva contraseña"
+            type="password"
+            margin="normal"
+            value={confirmPassword}
+            onChange={e => setConfirmPassword(e.target.value)}
+          />
 
-  </DialogContent>
+        </DialogContent>
 
-  <DialogActions>
-    <Button onClick={() => setPasswordDialogOpen(false)}>Cancelar</Button>
-    <Button variant="contained" color="primary" onClick={handleChangePassword}>Guardar</Button>
-  </DialogActions>
-</Dialog>
+        <DialogActions>
+          <Button onClick={() => setPasswordDialogOpen(false)}>Cancelar</Button>
+          <Button variant="contained" color="primary" onClick={handleChangePassword}>Guardar</Button>
+        </DialogActions>
+      </Dialog>
 
     </>
   );

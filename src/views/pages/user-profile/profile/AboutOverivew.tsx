@@ -12,7 +12,6 @@ import Icon from 'src/@core/components/icon'
 import { ProfileTeamsType, ProfileTabCommonType } from 'src/@fake-db/types'
 
 interface Props {
-  teams: ProfileTeamsType[]
   about: ProfileTabCommonType[]
   contacts: ProfileTabCommonType[]
   overview: ProfileTabCommonType[]
@@ -77,7 +76,7 @@ const renderTeams = (arr: ProfileTeamsType[]) => {
 }
 
 const AboutOverivew = (props: Props) => {
-  const { teams, about, contacts, overview } = props
+  const { about, contacts, overview } = props
 
   return (
     <Grid container spacing={6}>
@@ -96,12 +95,6 @@ const AboutOverivew = (props: Props) => {
               </Typography>
               {renderList(contacts)}
             </Box>
-            <div>
-              <Typography variant='body2' sx={{ mb: 4, color: 'text.disabled', textTransform: 'uppercase' }}>
-                Teams
-              </Typography>
-              {renderTeams(teams)}
-            </div>
           </CardContent>
         </Card>
       </Grid>
