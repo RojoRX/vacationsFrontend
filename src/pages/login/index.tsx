@@ -272,18 +272,18 @@ const LoginPage = () => {
               <Box
                 sx={{ mb: 4, display: 'flex', alignItems: 'center', flexWrap: 'wrap', justifyContent: 'space-between' }}
               >
-                {/*<FormControlLabel
-                  label='Remember Me'
+                <FormControlLabel
+                  label='Recuerdame'
                   control={<Checkbox checked={rememberMe} onChange={e => setRememberMe(e.target.checked)} />}
-                />*/}
-                <Typography
+                />
+               {/** <Typography
                   variant='body2'
                   component={Link}
                   href='/forgot-password'
                   sx={{ color: 'primary.main', textDecoration: 'none', marginTop: 2 }}
                 >
                   Olvido su contraseña?
-                </Typography>
+                </Typography>*/} 
               </Box>
               <Button fullWidth size='large' type='submit' variant='contained' sx={{ mb: 7 }}>
                 ENTRAR

@@ -97,7 +97,7 @@ const ProfessionManager: React.FC = () => {
     };
 
     const confirmDelete = async () => {
-        if (!professionToDelete) return;
+        if (professionToDelete === null) return; // ✅ corregido
         try {
             await axios.delete(`${API_URL}/${professionToDelete}`);
             setSnackbar({ open: true, message: 'Profesión eliminada con éxito', severity: 'success' });
@@ -111,6 +111,7 @@ const ProfessionManager: React.FC = () => {
             setProfessionToDelete(null);
         }
     };
+
 
     const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const value = e.target.value;
@@ -213,6 +214,19 @@ const ProfessionManager: React.FC = () => {
                     {snackbar.message}
                 </Alert>
             </Snackbar>
+            {/* Diálogo de confirmación de eliminación - FALTANTE */}
+            <Dialog open={deleteConfirmOpen} onClose={() => setDeleteConfirmOpen(false)}>
+                <DialogTitle>Confirmar Eliminación</DialogTitle>
+                <DialogContent>
+                    ¿Estás seguro de que deseas eliminar esta profesión?
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setDeleteConfirmOpen(false)}>Cancelar</Button>
+                    <Button onClick={confirmDelete} color="error" variant="contained">
+                        Eliminar
+                    </Button>
+                </DialogActions>
+            </Dialog>
         </Box>
     );
 };
