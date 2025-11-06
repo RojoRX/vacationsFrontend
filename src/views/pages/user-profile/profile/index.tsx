@@ -13,6 +13,10 @@ import Alert from '@mui/material/Alert';
 import Typography from '@mui/material/Typography';
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
+import InputAdornment from '@mui/material/InputAdornment';
+import IconButton from '@mui/material/IconButton';
+import Visibility from '@mui/icons-material/Visibility';
+import VisibilityOff from '@mui/icons-material/VisibilityOff';
 
 // ** Demo Components (asegúrate de que AboutOverivew pueda manejar los nuevos datos)
 import AboutOverivew from 'src/views/pages/user-profile/profile/AboutOverivew';
@@ -66,6 +70,9 @@ const ProfileTab = () => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [passwordError, setPasswordError] = useState<string | null>(null);
   const [passwordSuccess, setPasswordSuccess] = useState<string | null>(null);
+  const [showOldPassword, setShowOldPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const user = useUser();
   const userId = user?.id;
@@ -362,31 +369,70 @@ const ProfileTab = () => {
           {passwordError && <Alert severity="error" sx={{ mb: 2 }}>{passwordError}</Alert>}
           {passwordSuccess && <Alert severity="success" sx={{ mb: 2 }}>{passwordSuccess}</Alert>}
 
+          // En el TextField de Contraseña Actual:
           <TextField
             fullWidth
             label="Contraseña actual"
-            type="password"
+            type={showOldPassword ? 'text' : 'password'}
             margin="normal"
             value={oldPassword}
             onChange={e => setOldPassword(e.target.value)}
+            InputProps={{
+              endAdornment: (
+                <InputAdornment position="end">
+                  <IconButton
+                    onClick={() => setShowOldPassword(!showOldPassword)}
+                    edge="end"
+                  >
+                    {showOldPassword ? <VisibilityOff /> : <Visibility />}
+                  </IconButton>
+                </InputAdornment>
+              )
+            }}
           />
 
+// En el TextField de Nueva Contraseña:
           <TextField
             fullWidth
             label="Nueva contraseña"
-            type="password"
+            type={showNewPassword ? 'text' : 'password'}
             margin="normal"
             value={newPassword}
             onChange={e => setNewPassword(e.target.value)}
+            InputProps={{
+              endAdornment: (
+                <InputAdornment position="end">
+                  <IconButton
+                    onClick={() => setShowNewPassword(!showNewPassword)}
+                    edge="end"
+                  >
+                    {showNewPassword ? <VisibilityOff /> : <Visibility />}
+                  </IconButton>
+                </InputAdornment>
+              )
+            }}
           />
 
+// En el TextField de Confirmar Nueva Contraseña:
           <TextField
             fullWidth
             label="Confirmar nueva contraseña"
-            type="password"
+            type={showConfirmPassword ? 'text' : 'password'}
             margin="normal"
             value={confirmPassword}
             onChange={e => setConfirmPassword(e.target.value)}
+            InputProps={{
+              endAdornment: (
+                <InputAdornment position="end">
+                  <IconButton
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    edge="end"
+                  >
+                    {showConfirmPassword ? <VisibilityOff /> : <Visibility />}
+                  </IconButton>
+                </InputAdornment>
+              )
+            }}
           />
 
         </DialogContent>
