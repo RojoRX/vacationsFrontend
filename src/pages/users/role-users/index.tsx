@@ -252,8 +252,9 @@ const SupervisorsAdminsTable: FC = () => {
                     <TableCell>
                       <Box display="flex" alignItems="center">
                         <Avatar sx={{ mr: 2 }}>
-                          {user.fullName.charAt(0)}
+                          {user.fullName?.charAt(0) ?? '?'}
                         </Avatar>
+
                         <Box>
                           <Typography
                             variant="body1"
