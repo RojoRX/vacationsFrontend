@@ -47,26 +47,35 @@ const LicenseDetailDialog: React.FC<LicenseDetailDialogProps> = ({
     const [error, setError] = useState<string | null>(null);
     const [successMessage, setSuccessMessage] = useState<string | null>(null);
     const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
-
     const handlePersonalApprove = async () => {
+        await handlePersonalApprovalChange(true);
+    };
+
+    const handlePersonalReject = async () => {
+        await handlePersonalApprovalChange(false);
+    };
+
+    const handlePersonalApprovalChange = async (approval: boolean) => {
         if (!license || !currentUser) return;
 
-        const newApprovalState = !license.personalDepartmentApproval;
         setLoading(true);
         setError(null);
 
         try {
-            await axios.patch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/licenses/${license.id}/personal-approval`, {
-                approval: newApprovalState,
-            });
+            await axios.patch(
+                `${process.env.NEXT_PUBLIC_API_BASE_URL}/licenses/${license.id}/personal-approval`,
+                { approval }
+            );
 
-            const res = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/licenses/${license.id}`);
+            const res = await axios.get(
+                `${process.env.NEXT_PUBLIC_API_BASE_URL}/licenses/${license.id}`
+            );
             onLicenseUpdate(res.data);
 
             setSuccessMessage(
-                newApprovalState
+                approval
                     ? 'Licencia aprobada correctamente por el Dpto. Personal.'
-                    : 'Aprobación del Dpto. Personal removida.'
+                    : 'Licencia rechazada correctamente por el Dpto. Personal.'
             );
             setTimeout(() => setSuccessMessage(null), 10000);
         } catch (err) {
@@ -75,6 +84,7 @@ const LicenseDetailDialog: React.FC<LicenseDetailDialogProps> = ({
             setLoading(false);
         }
     };
+
 
     const handleDownloadPDF = () => {
         const user = userDetails[license.userId];
@@ -234,28 +244,31 @@ const LicenseDetailDialog: React.FC<LicenseDetailDialogProps> = ({
                 {!license.deleted && (
                     <>
                         {/* Aprobación por personal */}
-                        {currentUser?.role === 'admin' && (
-                            <Button
-                                onClick={handlePersonalApprove}
-                                color={license.personalDepartmentApproval ? 'error' : 'success'}
-                                variant="contained"
-                                startIcon={
-                                    loading ? (
-                                        <CircularProgress size={20} color="inherit" />
-                                    ) : license.personalDepartmentApproval ? (
-                                        <Cancel />
-                                    ) : (
-                                        <CheckCircle />
-                                    )
-                                }
-                                disabled={
-                                    loading ||
-                                    (license.immediateSupervisorApproval && license.personalDepartmentApproval)
-                                }
-                            >
-                                {license.personalDepartmentApproval ? 'Desaprobar' : 'Aprobar'}
-                            </Button>
+                        {currentUser?.role === 'admin' && license.personalDepartmentApproval === null && (
+                            <Box display="flex" gap={2}>
+                                <Button
+                                    onClick={handlePersonalApprove}
+                                    color="success"
+                                    variant="contained"
+                                    startIcon={loading ? <CircularProgress size={20} /> : <CheckCircle />}
+                                    disabled={loading}
+                                >
+                                    Aprobar
+                                </Button>
+
+                                <Button
+                                    onClick={handlePersonalReject}
+                                    color="error"
+                                    variant="contained"
+                                    startIcon={loading ? <CircularProgress size={20} /> : <Cancel />}
+                                    disabled={loading}
+                                >
+                                    Rechazar
+                                </Button>
+                            </Box>
                         )}
+
+
 
                         {/* Botón Eliminar (admin o dueño) */}
                         {(currentUser?.role === 'admin' || currentUser?.id === license.userId) && (

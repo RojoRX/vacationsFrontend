@@ -316,70 +316,50 @@ const UserLicenseList: React.FC<UserLicenseListProps> = ({ userId }) => {
 
   const noLicensesFound = licenses.length === 0 && !error;
   const noFilteredResults = filteredLicenses.length === 0 && (filterDate || filterSupervisorApproval !== 'all' || filterDepartmentApproval !== 'all');
-  const handlePersonalApproval = async () => {
-    if (!dialogLicenseDetails) return;
-    const newApprovalState = !dialogLicenseDetails.personalDepartmentApproval;
-    try {
-      setDialogLoadingDetails(true);
-      setDialogSuccess(null);
-      setDialogDetailsError(null);
+const handlePersonalApproval = async (approval: boolean) => {
+  if (!dialogLicenseDetails || dialogLicenseDetails.personalDepartmentApproval !== null) return;
 
-      await axios.patch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/licenses/${dialogLicenseDetails.id}/personal-approval`, {
-        approval: newApprovalState,
-      });
+  try {
+    setDialogLoadingDetails(true);
+    setDialogSuccess(null);
+    setDialogDetailsError(null);
 
-      setDialogLicenseDetails(prev =>
-        prev ? { ...prev, personalDepartmentApproval: true } : prev
-      );
+    await axios.patch(
+      `${process.env.NEXT_PUBLIC_API_BASE_URL}/licenses/${dialogLicenseDetails.id}/personal-approval`,
+      { approval }
+    );
 
-      setDialogSuccess('Licencia aprobada correctamente.');
-      fetchLicenses();
-    } catch (err: any) {
-      console.error('Error aprobando licencia:', err);
-      setDialogDetailsError(
-        axios.isAxiosError(err) && err.response?.data?.message
-          ? err.response.data.message
-          : 'Error desconocido al aprobar la licencia.'
-      );
-    } finally {
-      setDialogLoadingDetails(false);
-    }
-  };
+    setDialogLicenseDetails(prev =>
+      prev ? { ...prev, personalDepartmentApproval: approval } : prev
+    );
+
+    setDialogSuccess(`Licencia ${approval ? 'aprobada' : 'rechazada'} correctamente.`);
+    fetchLicenses();
+  } catch (err: any) {
+    console.error('Error actualizando licencia:', err);
+    setDialogDetailsError(
+      axios.isAxiosError(err) && err.response?.data?.message
+        ? err.response.data.message
+        : 'Error desconocido al actualizar la licencia.'
+    );
+  } finally {
+    setDialogLoadingDetails(false);
+  }
+};
+
 
 
   // 🔹 Helper para mostrar estado
   const renderApprovalChip = (value: boolean | null) => {
     if (value === null) {
-      return (
-        <Chip
-          label="Pendiente"
-          color="warning"
-          size="small"
-          icon={<HourglassEmptyIcon />}
-        />
-      );
+      return <Chip label="Pendiente" color="warning" size="small" icon={<HourglassEmptyIcon />} />;
     }
-
     if (value === true) {
-      return (
-        <Chip
-          label="Aprobado"
-          color="success"
-          size="small"
-          icon={<CheckCircleIcon />}
-        />
-      );
+      return <Chip label="Aprobado" color="success" size="small" icon={<CheckCircleIcon />} />;
     }
-
-    return (
-      <Chip
-        label="Rechazado"
-        color="error"
-        size="small"
-        icon={<CancelIcon />}
-      />
-    );
+    return <Chip label="Rechazado" color="error" size="small" icon={<CancelIcon />} />;
   };
+
   return (
     <Box sx={{ mt: 2 }}>
       {/* Filtros */}
@@ -585,21 +565,15 @@ const UserLicenseList: React.FC<UserLicenseListProps> = ({ userId }) => {
                   <Grid item xs={12}>
                     <Box display="flex" justifyContent="space-around" mt={2} p={2} borderRadius={1}>
                       <Box textAlign="center">
-                        <Typography variant="body2"><strong>Aprobación Jefe Superior</strong></Typography>
-                        <Chip
-                          label={dialogLicenseDetails.immediateSupervisorApproval ? 'Aprobado' : 'Pendiente'}
-                          color={dialogLicenseDetails.immediateSupervisorApproval ? 'primary' : 'default'}
-                          icon={dialogLicenseDetails.immediateSupervisorApproval ? <CheckCircle /> : <Cancel />}
-                        />
+                        <Typography variant="body2"><strong>Aprobación Dpto. Personal</strong></Typography>
+                        {renderApprovalChip(dialogLicenseDetails.immediateSupervisorApproval)}
                       </Box>
+
                       <Box textAlign="center">
                         <Typography variant="body2"><strong>Aprobación Dpto. Personal</strong></Typography>
-                        <Chip
-                          label={dialogLicenseDetails.personalDepartmentApproval ? 'Aprobado' : 'Pendiente'}
-                          color={dialogLicenseDetails.personalDepartmentApproval ? 'primary' : 'default'}
-                          icon={dialogLicenseDetails.personalDepartmentApproval ? <CheckCircle /> : <Cancel />}
-                        />
+                        {renderApprovalChip(dialogLicenseDetails.personalDepartmentApproval)}
                       </Box>
+
                     </Box>
                   </Grid>
                 </Grid>
@@ -611,16 +585,28 @@ const UserLicenseList: React.FC<UserLicenseListProps> = ({ userId }) => {
           )}
         </DialogContent>
         <DialogActions>
-          {dialogLicenseDetails?.personalDepartmentApproval !== true && (
-            <Button
-              onClick={handlePersonalApproval}
-              color="success"
-              startIcon={<CheckCircleIcon />}
-              disabled={dialogLoadingDetails}
-            >
-              Aprobar Licencia
-            </Button>
+          {dialogLicenseDetails?.personalDepartmentApproval === null && (
+            <Box display="flex" gap={2}>
+              <Button
+                onClick={() => handlePersonalApproval(true)}
+                color="success"
+                startIcon={<CheckCircleIcon />}
+                disabled={dialogLoadingDetails}
+              >
+                Aprobar
+              </Button>
+
+              <Button
+                onClick={() => handlePersonalApproval(false)}
+                color="error"
+                startIcon={<CancelIcon />}
+                disabled={dialogLoadingDetails}
+              >
+                Rechazar
+              </Button>
+            </Box>
           )}
+
 
           <Button
             onClick={handleDownloadPDF} // <-- Llama a la función de descarga de PDF
