@@ -523,12 +523,15 @@ const VacationRequestList: VacationRequestsComponent = () => {
                                 <HumanResourcesIcon color="action" />
                                 <Typography variant="body1">
                                     <strong>Aprobado por Dpto. Personal:</strong>{' '}
-                                    {selectedRequest.approvedByHR ? (
-                                        <CheckIcon color="success" fontSize="small" />
+                                    {selectedRequest.approvedByHR === null ? (
+                                        <Chip label="Pendiente" color="warning" size="small" />
+                                    ) : selectedRequest.approvedByHR ? (
+                                        <Chip label="Aprobado" color="success" size="small" />
                                     ) : (
-                                        <CloseIcon color="error" fontSize="small" />
+                                        <Chip label="Rechazado" color="error" size="small" />
                                     )}
                                 </Typography>
+
                             </Box>
 
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>

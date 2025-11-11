@@ -144,8 +144,8 @@ const VacationRequestDetails = () => {
       const response = await axios.get<VacationRequest>(
         `${process.env.NEXT_PUBLIC_API_BASE_URL}/vacation-requests/${id}/details`
       );
-
       setRequest(response.data);
+      console.log(request?.approvedBy?.username)
       requestId = response.data.id;
       setSelectedStatus(response.data.status);
 
@@ -308,18 +308,21 @@ const VacationRequestDetails = () => {
     setError(errorMessage);
   };
 
-  const toggleApprovedByHR = async () => {
+  const handleHRDecision = async (action: 'APPROVE' | 'REJECT') => {
     if (!request) return;
 
     try {
-      await axios.put(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/vacation-requests/${request.requestId}/toggle-approved-by-hr`
+      const response = await axios.post(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/vacation-requests/${request.requestId}/hr-decision`,
+        { action }
       );
-      setRequest(prev => ({ ...prev!, approvedByHR: !prev!.approvedByHR }));
+
+      setRequest(prev => ({ ...prev!, approvedByHR: action === 'APPROVE' ? true : false }));
     } catch (err) {
       handleStatusUpdateError(err);
     }
   };
+
 
   const getRecessByName = (name: string) => {
     if (!request || !request.recesos) return undefined;
@@ -495,24 +498,57 @@ const VacationRequestDetails = () => {
                   size="small"
                 />
               )}
+
               {renderInfoItem(<TodayIcon color="info" />, "Revisión por Jefe", request?.reviewDate ? formatDate(request.reviewDate) : 'No disponible')}
+
+              {request?.supervisor && request.supervisor.id && renderInfoItem(
+                <PeopleIcon color="info" />,
+                "Revisado por Supervisor",
+                request.supervisor.username || 'No disponible'
+              )}
+
+              {request?.approvedBy && renderInfoItem(
+                <CheckIcon color="success" />,
+                "Revisado Dpto. Personal",
+                request.approvedBy.username || 'No disponible'
+              )}
+
               {request?.postponedDate && renderInfoItem(<EventBusyIcon color="warning" />, "Postergado hasta", formatDate(request.postponedDate))}
             </List>
+
           </Grid>
           <Grid item xs={12} md={6}>
             <List dense>
               {renderInfoItem(
-                request?.approvedByHR ? <CheckIcon color="success" /> : <CancelIcon color="error" />,
-                "Aprobado por Departamento de Personal",
+                request?.approvedByHR === null
+                  ? <PendingActionsIcon color="warning" />
+                  : request?.approvedByHR
+                    ? <CheckIcon color="success" />
+                    : <CancelIcon color="error" />,
+                "Aprobación Dpto. Personal",
                 <Chip
-                  label={request?.approvedByHR ? 'Sí' : 'No'}
-                  color={request?.approvedByHR ? 'success' : 'error'}
+                  label={
+                    request?.approvedByHR === null
+                      ? 'Pendiente'
+                      : request?.approvedByHR
+                        ? 'Aprobado'
+                        : 'Rechazado'
+                  }
+                  color={
+                    request?.approvedByHR === null
+                      ? 'warning'
+                      : request?.approvedByHR
+                        ? 'success'
+                        : 'error'
+                  }
                   size="small"
                 />
               )}
 
+
               {renderInfoItem(<WarningIcon color="info" />, "Días de Deuda", debtData?.deudaAcumulativaHastaEstaGestion ?? 0)}
             </List>
+
           </Grid>
         </Grid>
       </CardContent>
@@ -579,19 +615,45 @@ const VacationRequestDetails = () => {
               Aprobación de Departamento de Personal
             </Typography>
             <Divider sx={{ mb: 2 }} />
-            <Button
-              variant="contained"
-              color={request?.approvedByHR ? 'error' : 'success'}
-              startIcon={request?.approvedByHR ? <CancelIcon /> : <CheckIcon />}
-              onClick={toggleApprovedByHR}
-              fullWidth
-              disabled={request?.approvedByHR === true}
-            >
-              {request?.approvedByHR ? 'Desaprobar' : 'Aprobar'}
-            </Button>
+
+            {request?.approvedByHR === null && (
+              <Box display="flex" gap={2}>
+                <Button
+                  variant="contained"
+                  color="success"
+                  startIcon={<CheckIcon />}
+                  onClick={() => handleHRDecision('APPROVE')}
+                  fullWidth
+                >
+                  Aprobar
+                </Button>
+
+                <Button
+                  variant="outlined"
+                  color="error"
+                  startIcon={<CancelIcon />}
+                  onClick={() => handleHRDecision('REJECT')}
+                  fullWidth
+                >
+                  Rechazar
+                </Button>
+              </Box>
+            )}
+
+            {request?.approvedByHR !== null && request?.approvedByHR !== undefined && (
+              <Alert
+                severity={request?.approvedByHR ? "success" : "error"}
+                sx={{ mt: 2 }}
+              >
+                La solicitud ha sido {request?.approvedByHR ? "Aprobada" : "Rechazada"} por el Dpto. Personal.
+              </Alert>
+            )}
+
           </CardContent>
         </Card>
       )}
+
+
 
     </>
   );

@@ -13,8 +13,8 @@ export interface VacationRequest {
   employeeName?: string;                      // Para compatibilidad
   user?: any;                                 // Para compatibilidad
   userName?: string;  
-  fullname?:string;
-  academicUnit: string;                 // Nombre de usuario (nuevo)
+  fullname?: string;
+  academicUnit?: string;                      // Nombre de usuario (nuevo)
   requestDate: string;
   startDate: string;
   endDate: string;
@@ -34,7 +34,23 @@ export interface VacationRequest {
   diasDeVacacionRestantes?: number;           // Nuevo
   recesos?: Receso[];                         // Nuevo
   gestion?: Gestion;   
-  deleted?:boolean;                       // Nuevo
+  deleted?: boolean;                          // Nuevo
+
+  // Nuevo: usuario que aprobó en Dpto. de Personal
+  approvedBy?: {
+    id: number;
+    ci?: string;
+    fecha_ingreso?: string;
+    username?: string;
+  };
+
+  // Nuevo: supervisor que aprobó la solicitud
+  supervisor?: {
+    id: number;
+    ci?: string;
+    fecha_ingreso?: string;
+    username?: string;
+  };
 
   licenciasAutorizadas?: {
     totalAuthorizedDays: number;
