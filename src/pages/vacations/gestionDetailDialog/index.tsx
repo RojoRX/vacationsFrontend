@@ -423,7 +423,7 @@ const GestionDetailDialog: React.FC<GestionDetailDialogProps> = ({
 
                         {gestionData.data.nonHolidayDaysDetails?.length > 0 ? (
                             <List dense>
-                                {gestionData.data.nonHolidayDaysDetails.map((day: { date: string; description: string | number | boolean | React.ReactElement<any, string | React.JSXElementConstructor<any>> | React.ReactFragment | React.ReactPortal | null | undefined; }, index: React.Key | null | undefined) => (
+                                {gestionData.data.nonHolidayDaysDetails.map((day: { date: string; reason: string | number | boolean | React.ReactElement<any, string | React.JSXElementConstructor<any>> | React.ReactFragment | React.ReactPortal | null | undefined; }, index: React.Key | null | undefined) => (
                                     <ListItem key={index} sx={{ px: 0 }}>
                                         <ListItemIcon>
                                             <EventBusyIcon color="secondary" />
@@ -431,7 +431,7 @@ const GestionDetailDialog: React.FC<GestionDetailDialogProps> = ({
                                         <ListItemText
                                             primary={
                                                 <Typography variant="body2">
-                                                    <strong>{formatedDate(day.date)}:</strong> {day.description}
+                                                    <strong>{formatedDate(day.date)}:</strong> {day.reason}
                                                 </Typography>
                                             }
                                         />
