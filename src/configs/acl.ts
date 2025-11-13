@@ -18,7 +18,6 @@ export type ACLObj = {
  */
 const defineRulesFor = (role: string, subject: string) => {
   const { can, rules } = new AbilityBuilder(AppAbility);
-
   if (role === 'admin') {
     can('manage', 'all'); // Admin tiene control total sobre todas las acciones y sujetos.
     can('manage', 'search-users');
@@ -30,6 +29,7 @@ const defineRulesFor = (role: string, subject: string) => {
     can('manage', 'holiday-periods');
     can('manage', 'create-user');
     can('manage', 'vacation-request-details-info');
+    can('manage', 'admin-management');
 
   } else if (role === 'client') {
     can(['read'], 'welcome-dashboard');

@@ -148,11 +148,18 @@ const navigation = (): VerticalNavItemsType => {
       icon: 'mdi:settings',
       children: [
         {
-          title: 'Administración de Recesos',
+          title: 'Recesos Generales',
           icon: 'mdi:calendar-blank-outline',
           path: '/recesos/management',
           action: 'manage',
         },
+        {
+          title: 'Recesos Administrativos',
+          icon: 'mdi:calendar-blank-outline', // Puedes cambiar el icono si quieres
+          path: '/recesos/admin-management',
+          action: 'manage', // Coincide con el ACL del componente
+        },
+
         {
           title: 'Gestión de Departamentos',
           icon: 'mdi:office-building',
@@ -160,13 +167,13 @@ const navigation = (): VerticalNavItemsType => {
           action: 'manage',
         },
         {
-          title: 'Gestión de Unidades Académicas',
+          title: 'Unidades Académicas',
           icon: 'mdi:school-outline',
           path: '/management/academicUnits',
           action: 'manage',
         },
         {
-          title: 'Gestión de dias no habiles',
+          title: 'Gestión de Feriados',
           icon: 'mdi:office-building',
           path: '/nonholidays',
           action: 'manage',
