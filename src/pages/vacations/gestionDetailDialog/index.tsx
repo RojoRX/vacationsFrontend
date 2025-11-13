@@ -42,7 +42,7 @@ import { useTheme } from '@mui/material/styles';
 import { VacationRequest } from 'src/interfaces/vacationRequests';
 import { useRouter } from 'next/router';
 import { License } from 'src/interfaces/licenseTypes';
-
+import { DateTime } from 'luxon';
 
 interface GestionDetailDialogProps {
     open: boolean;
@@ -58,11 +58,11 @@ const GestionDetailDialog: React.FC<GestionDetailDialogProps> = ({
     gestionData
 }) => {
     const theme = useTheme();
+
     const formatedDate = (dateString: string) => {
-        if (!dateString) return 'Fecha no disponible';
-        const date = new Date(dateString);
-        return date.toLocaleDateString('es-ES');
+        return DateTime.fromISO(dateString, { zone: 'utc' }).toFormat('dd/MM/yyyy');
     };
+
     const [selectedVacationId, setSelectedVacationId] = useState<number | null>(null);
     const [selectedLicenseId, setSelectedLicenseId] = useState<number | null>(null);
     const router = useRouter(); // Asegúrate de importar useRouter de 'next/router
