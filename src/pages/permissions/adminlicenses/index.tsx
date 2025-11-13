@@ -23,18 +23,23 @@ import {
     Chip,
     IconButton,
     Tooltip,
-    Badge
+    Badge,
+    Stack
 } from '@mui/material';
 import {
+    Description as DescriptionIcon,
     Search,
     CheckCircle,
     Cancel,
-    Visibility,
+    Visibility as VisibilityIcon ,
+    VisibilityOff as VisibilityOffIcon ,
+    Refresh as RefreshIcon,
     Person,
     FilterAlt,
     Refresh,
     Business,
-    Add
+    Add,
+    Visibility
 } from '@mui/icons-material';
 import { License } from 'src/interfaces/licenseTypes';
 import { User } from 'src/interfaces/usertypes';
@@ -45,6 +50,7 @@ import ReportDownloadModal from 'src/pages/reports/reportDownloadModal';
 import LicenseDetailDialog from '../detail-dialog';
 import Link from 'next/link';
 import SingleLicenseForm from '../singleLicenseForm';
+import GeneralReportDialog from 'src/pages/users/generalReports';
 
 interface AdminLicensesProps {
     licenses: License[];
@@ -83,7 +89,7 @@ const AdminLicenses: AclComponent = () => {
     const [reportModalOpen, setReportModalOpen] = useState(false);
     const [licenseDialogOpen, setLicenseDialogOpen] = useState(false);
     const [viewDeleted, setViewDeleted] = useState(false);
-
+    const [openReportDialog, setOpenReportDialog] = useState(false);
     useEffect(() => {
         fetchAllLicenses();
     }, []);
@@ -311,43 +317,53 @@ const AdminLicenses: AclComponent = () => {
                 </Typography>
 
                 {/* Botones a la derecha */}
-                <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                <Stack
+                    direction={{ xs: 'column', sm: 'row' }}
+                    spacing={2}
+                    justifyContent="flex-end"
+                    alignItems="center"
+                    sx={{ mb: 2 }}
+                >
+                    {/* Botón recargar */}
                     <Tooltip title="Recargar datos">
-                        <IconButton onClick={fetchAllLicenses} color="primary">
-                            <Refresh />
+                        <IconButton onClick={fetchAllLicenses} color="primary" size="large">
+                            <RefreshIcon />
                         </IconButton>
                     </Tooltip>
 
-                    {/* Aquí integramos el BulkLicenseForm */}
-                    <Box sx={{ ml: 2 }}>
+                    {/* Formulario de licencia individual */}
+                    <Box>
                         <SingleLicenseForm />
                     </Box>
 
+                    {/* Botón de reporte */}
                     <Button
                         variant="contained"
-                        startIcon={<Add />}
-                        onClick={() => setReportModalOpen(true)}
-                        sx={{ ml: 2 }}
+                        color="primary"
+                        startIcon={<DescriptionIcon />}
+                        onClick={() => setOpenReportDialog(true)}
                     >
-                        Generar Reporte
+                        Reporte Permisos
                     </Button>
 
-                    <Button
-                        variant="contained"
-                        color={viewDeleted ? 'success' : 'warning'}
-                        onClick={() => {
-                            if (viewDeleted) {
-                                fetchAllLicenses();
-                            } else {
-                                fetchDeletedLicenses();
-                            }
-                            setViewDeleted(!viewDeleted);
-                        }}
-                        sx={{ ml: 2 }}
-                    >
-                        {viewDeleted ? 'Ver Licencias Activas' : 'Ver Licencias Eliminadas'}
-                    </Button>
-                </Box>
+                    {/* Botón para ver eliminadas / activas con icono */}
+                    <Tooltip title={viewDeleted ? "Ver Licencias Activas" : "Ver Licencias Eliminadas"}>
+                        <IconButton
+                            color={viewDeleted ? 'success' : 'warning'}
+                            onClick={() => {
+                                if (viewDeleted) {
+                                    fetchAllLicenses();
+                                } else {
+                                    fetchDeletedLicenses();
+                                }
+                                setViewDeleted(!viewDeleted);
+                            }}
+                            size="large"
+                        >
+                            {viewDeleted ? <VisibilityIcon /> : <VisibilityOffIcon />}
+                        </IconButton>
+                    </Tooltip>
+                </Stack>
             </Box>
 
 
@@ -527,11 +543,13 @@ const AdminLicenses: AclComponent = () => {
                     onLicenseUpdate={handleLicenseUpdate}
                 />
             )}
-
-            <ReportDownloadModal
-                open={reportModalOpen}
-                onClose={() => setReportModalOpen(false)}
-            />
+            {/* 🔹 Diálogo de reporte general */}
+            {openReportDialog && (
+                <GeneralReportDialog
+                    open={openReportDialog}
+                    onClose={() => setOpenReportDialog(false)}
+                />
+            )}
         </Paper>
     );
 };

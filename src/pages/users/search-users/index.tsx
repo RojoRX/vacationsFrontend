@@ -191,15 +191,7 @@ const SearchUsers = () => {
               <RefreshIcon />
             </IconButton>
 
-            {/* 🔹 Botón para abrir diálogo de reporte general */}
-            <Button
-              variant="contained"
-              color="primary"
-              startIcon={<DescriptionIcon />}
-              onClick={() => setOpenReportDialog(true)}
-            >
-              Generar Reporte General
-            </Button>
+
           </Box>
         </Toolbar>
 
@@ -320,14 +312,6 @@ const SearchUsers = () => {
             onClose={handleCloseBulkDialog}
             userId={selectedUserId}
             onSuccess={handleBulkSuccess}
-          />
-        )}
-
-        {/* 🔹 Diálogo de reporte general */}
-        {openReportDialog && (
-          <GeneralReportDialog
-            open={openReportDialog}
-            onClose={() => setOpenReportDialog(false)}
           />
         )}
       </Paper>

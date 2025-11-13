@@ -24,8 +24,13 @@ import {
   useTheme,
   Alert,
   IconButton,
-  Grid
+  Grid,
+  Stack,
+  Tooltip
 } from '@mui/material';
+import DescriptionIcon from '@mui/icons-material/Description';
+import VisibilityIcon from '@mui/icons-material/Visibility';
+import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import router from 'next/router';
 import { Info as InfoIcon } from '@mui/icons-material';
 import IdentifierIcon from '@mui/icons-material/Numbers';
@@ -42,7 +47,6 @@ import CheckIcon from '@mui/icons-material/Check';
 import CloseIcon from '@mui/icons-material/Close';
 import ArrowRightIcon from '@mui/icons-material/ArrowForward';
 import EditIcon from '@mui/icons-material/Edit';
-
 import { format } from 'date-fns';
 import SuspendVacationDialog from '../vacations-suspend';
 import { VacationRequest } from 'src/interfaces/vacationRequests';
@@ -50,6 +54,8 @@ import { formatDate } from 'src/utils/dateUtils';
 import Link from 'next/link';
 import useUser from 'src/hooks/useUser';
 import EditVacationDialog from '../vacations-editDate';
+import GeneralReportDialog from 'src/pages/users/generalReports';
+import GlobalVacationReportDialog from 'src/components/globalVacationReport';
 
 // Tipado de la solicitud de vacaciones
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || '';
@@ -202,6 +208,7 @@ const AdminVacationRequests: FC = () => {
     }
   };
 
+  const [openReportDialog, setOpenReportDialog] = useState(false);
 
 
   const getStatusColor = (status: string) => {
@@ -257,17 +264,38 @@ const AdminVacationRequests: FC = () => {
         <CircularProgress />
       ) : (
         <>
-          <Button
-            variant="outlined"
-            color={showDeleted ? 'error' : 'primary'}
-            onClick={() => {
-              setLoading(true);
-              setShowDeleted(!showDeleted);
-            }}
+          <Stack
+            direction={{ xs: 'column', sm: 'row' }}
+            spacing={2}
+            justifyContent="flex-end"
+            alignItems="center"
             sx={{ mb: 2 }}
           >
-            {showDeleted ? 'Ver activas' : 'Ver eliminadas'}
-          </Button>
+            {/* Botón icono para ver eliminadas/activas */}
+            <Tooltip title={showDeleted ? "Ver activas" : "Ver eliminadas"}>
+              <IconButton
+                color={showDeleted ? 'error' : 'primary'}
+                onClick={() => {
+                  setLoading(true);
+                  setShowDeleted(!showDeleted);
+                }}
+                size="large"
+              >
+                {showDeleted ? <VisibilityIcon /> : <VisibilityOffIcon />}
+              </IconButton>
+            </Tooltip>
+
+            {/* Botón de reporte */}
+            <Button
+              variant="contained"
+              color="primary"
+              onClick={() => setOpenReportDialog(true)}
+            >
+            Reporte Vacaciones
+            </Button>
+
+          </Stack>
+
 
           <TableContainer component={Paper}>
             <Table>
@@ -559,6 +587,11 @@ const AdminVacationRequests: FC = () => {
           handleCloseDetailDialog(); // 🔹 cerrar el dialogo padre también
           handleCloseEditDialog();   // 🔹 cerrar el dialogo de edición
         }}
+      />
+
+      <GlobalVacationReportDialog
+        open={openReportDialog}
+        onClose={() => setOpenReportDialog(false)}
       />
 
 

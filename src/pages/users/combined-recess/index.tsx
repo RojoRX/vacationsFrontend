@@ -28,9 +28,10 @@ interface HolidayPeriod {
 interface CombinedHolidayPeriodsProps {
     userId: number;
     joinDate: string;
+    tipoEmpleado: 'DOCENTE' | 'ADMINISTRATIVO';
 }
 
-const CombinedHolidayPeriods: React.FC<CombinedHolidayPeriodsProps> = ({ userId, joinDate }) => {
+const CombinedHolidayPeriods: React.FC<CombinedHolidayPeriodsProps> = ({ userId, joinDate, tipoEmpleado }) => {
     const [combinedPeriods, setCombinedPeriods] = useState<HolidayPeriod[]>([]);
     const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
@@ -44,57 +45,62 @@ const CombinedHolidayPeriods: React.FC<CombinedHolidayPeriodsProps> = ({ userId,
     const [snackbarMessage, setSnackbarMessage] = useState<string>('');
     const [openDialog, setOpenDialog] = useState<boolean>(false);
 
-// 1. Define fetchHolidayPeriods como una función fuera del useEffect
-const fetchHolidayPeriods = async () => {
-    try {
-        setLoading(true);
+    const fetchHolidayPeriods = async () => {
+        try {
+            setLoading(true);
 
-        const [generalResponse, personalizedResponse] = await Promise.all([
-            axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/general-holiday-periods`),
-            axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/user-holiday-periods/${userId}`)
-        ]);
+            // Elegir endpoint base según tipo de empleado
+            const baseEndpoint =
+                tipoEmpleado === 'ADMINISTRATIVO'
+                    ? `${process.env.NEXT_PUBLIC_API_BASE_URL}/administrative-holiday-periods`
+                    : `${process.env.NEXT_PUBLIC_API_BASE_URL}/general-holiday-periods`;
 
-        const generalPeriods: HolidayPeriod[] = generalResponse.data.map((p: any) => ({
-            ...p,
-            isPersonalized: false
-        }));
+            const [baseResponse, personalizedResponse] = await Promise.all([
+                axios.get(baseEndpoint),
+                axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/user-holiday-periods/${userId}`)
+            ]);
 
-        const personalizedPeriods: HolidayPeriod[] = personalizedResponse.data.map((p: any) => ({
-            ...p,
-            isPersonalized: true
-        }));
+            const basePeriods: HolidayPeriod[] = baseResponse.data.map((p: any) => ({
+                ...p,
+                isPersonalized: false
+            }));
 
-        const combined = [...generalPeriods];
-        personalizedPeriods.forEach(personalized => {
-            const index = combined.findIndex(
-                g => g.name === personalized.name && g.year === personalized.year
-            );
-            if (index !== -1) {
-                combined[index] = personalized;
-            } else {
-                combined.push(personalized);
-            }
-        });
+            const personalizedPeriods: HolidayPeriod[] = personalizedResponse.data.map((p: any) => ({
+                ...p,
+                isPersonalized: true
+            }));
 
-        combined.sort((a, b) => {
-            if (b.year !== a.year) return b.year - a.year;
-            return a.name.localeCompare(b.name);
-        });
+            // Combinar: personalizados reemplazan los base con mismo nombre/año
+            const combined = [...basePeriods];
+            personalizedPeriods.forEach(personalized => {
+                const index = combined.findIndex(
+                    base => base.name === personalized.name && base.year === personalized.year
+                );
+                if (index !== -1) {
+                    combined[index] = personalized;
+                } else {
+                    combined.push(personalized);
+                }
+            });
 
-        setCombinedPeriods(combined);
-        setLoading(false);
-    } catch (err) {
-        setError('Error al cargar los recesos. Por favor intente nuevamente.');
-        setLoading(false);
-        console.error('Error fetching holiday periods:', err);
-    }
-};
+            // Ordenar por año descendente y nombre
+            combined.sort((a, b) => {
+                if (b.year !== a.year) return b.year - a.year;
+                return a.name.localeCompare(b.name);
+            });
 
-// 2. Llama a fetchHolidayPeriods dentro del useEffect
-useEffect(() => {
-    fetchHolidayPeriods();
-}, [userId]);
+            setCombinedPeriods(combined);
+            setLoading(false);
+        } catch (err) {
+            setError('Error al cargar los recesos. Por favor intente nuevamente.');
+            setLoading(false);
+            console.error('Error fetching holiday periods:', err);
+        }
+    };
 
+    useEffect(() => {
+        fetchHolidayPeriods();
+    }, [userId, tipoEmpleado]);
 
     const handleChangePage = (event: unknown, newPage: number) => setPage(newPage);
     const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -111,27 +117,25 @@ useEffect(() => {
         }
     };
 
-// 3. Llama también a fetchHolidayPeriods dentro de handleEdit
-const handleEdit = async () => {
-    if (selectedHolidayPeriod && editHoliday) {
-        try {
-            await axios.put(
-                `${process.env.NEXT_PUBLIC_API_BASE_URL}/user-holiday-periods/${selectedHolidayPeriod.id}`,
-                editHoliday
-            );
-            setSnackbarMessage('Receso actualizado exitosamente.');
-
-            await fetchHolidayPeriods(); // ✅ Actualiza los datos
-            handleCloseDialog();
-        } catch (error: any) {
-            const errorMessage =
-                error.response?.data?.message ||
-                'Error al actualizar el receso.';
-            setSnackbarMessage(errorMessage);
-            console.error('Error updating holiday period:', error);
+    const handleEdit = async () => {
+        if (selectedHolidayPeriod && editHoliday) {
+            try {
+                await axios.put(
+                    `${process.env.NEXT_PUBLIC_API_BASE_URL}/user-holiday-periods/${selectedHolidayPeriod.id}`,
+                    editHoliday
+                );
+                setSnackbarMessage('Receso actualizado exitosamente.');
+                await fetchHolidayPeriods(); // Actualiza los datos
+                handleCloseDialog();
+            } catch (error: any) {
+                const errorMessage =
+                    error.response?.data?.message || 'Error al actualizar el receso.';
+                setSnackbarMessage(errorMessage);
+                console.error('Error updating holiday period:', error);
+            }
         }
-    }
-}
+    };
+
     const handleOpenDialog = (holidayPeriod: HolidayPeriod) => {
         setSelectedHolidayPeriod(holidayPeriod);
         setEditHoliday({
@@ -149,7 +153,6 @@ const handleEdit = async () => {
     };
 
     const handleGeneralRedirect = () => {
-        // Aquí rediriges o abres una ruta para administrar recesos generales
         router.push("/recesos/management/")
     };
 
@@ -164,18 +167,17 @@ const handleEdit = async () => {
 
     const filteredPeriods = combinedPeriods.filter(period => {
         const joinYear = new Date(joinDate).getFullYear();
-        const isValidGeneral = period.isPersonalized || period.year >= joinYear;
+        const isValidBase = period.isPersonalized || period.year >= joinYear;
         const matchesYear = yearFilter ? period.year.toString().includes(yearFilter) : true;
         const matchesName = nameFilter ? period.name === nameFilter : true;
         const matchesType = typeFilter
             ? (typeFilter === 'Personalizado' ? period.isPersonalized : !period.isPersonalized)
             : true;
 
-        return matchesYear && matchesName && matchesType && isValidGeneral;
+        return matchesYear && matchesName && matchesType && isValidBase;
     });
 
     const uniqueNames = [...new Set(combinedPeriods.map(p => p.name))];
-    const uniqueTypes = ['General', 'Personalizado'];
 
     if (loading) {
         return <Box sx={{ display: 'flex', justifyContent: 'center', padding: 3 }}><CircularProgress /></Box>;
@@ -187,7 +189,7 @@ const handleEdit = async () => {
 
     return (
         <Box sx={{ padding: 3 }}>
-            <Typography variant="h4" gutterBottom>Recesos Personalizados Y Generales</Typography>
+            <Typography variant="h4" gutterBottom>Recesos Personalizados Y Base</Typography>
 
             <Box sx={{ mb: 3, display: 'flex', gap: 2, flexWrap: 'wrap' }}>
                 <TextField
@@ -220,8 +222,10 @@ const handleEdit = async () => {
                         label="Tipo"
                     >
                         <MenuItem value="">Todos</MenuItem>
-                        <MenuItem value="GENERAL">General</MenuItem>
-                        <MenuItem value="Personalizado">Personalizado </MenuItem>
+                        <MenuItem value={tipoEmpleado === 'ADMINISTRATIVO' ? 'Administrativo' : 'General'}>
+                            {tipoEmpleado === 'ADMINISTRATIVO' ? 'Administrativo' : 'General'}
+                        </MenuItem>
+                        <MenuItem value="Personalizado">Personalizado</MenuItem>
                     </Select>
                 </FormControl>
             </Box>
@@ -241,7 +245,7 @@ const handleEdit = async () => {
                     </TableHead>
                     <TableBody>
                         {filteredPeriods.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((period) => (
-                            <TableRow key={`${period.id}-${period.isPersonalized ? 'p' : 'g'}`}>
+                            <TableRow key={`${period.id}-${period.isPersonalized ? 'p' : 'b'}`}>
                                 <TableCell>{period.year}</TableCell>
                                 <TableCell>
                                     <Chip
@@ -254,14 +258,13 @@ const handleEdit = async () => {
                                 <TableCell>{getBusinessDays(new Date(period.startDate), new Date(period.endDate))} (días hábiles)</TableCell>
                                 <TableCell>
                                     <Chip
-                                        label={period.isPersonalized ? 'Personalizado' : 'General'}
+                                        label={period.isPersonalized ? 'Personalizado' : tipoEmpleado === 'ADMINISTRATIVO' ? 'Administrativo' : 'General'}
                                         color={period.isPersonalized ? 'warning' : 'info'}
                                     />
                                 </TableCell>
                                 <TableCell>
                                     {period.isPersonalized ? (
                                         <>
-
                                             <IconButton
                                                 onClick={() => handleOpenDialog(period)}
                                                 color="primary"
@@ -276,7 +279,6 @@ const handleEdit = async () => {
                                             >
                                                 <Delete />
                                             </IconButton>
-
                                         </>
                                     ) : (
                                         <IconButton onClick={handleGeneralRedirect}>
@@ -301,11 +303,10 @@ const handleEdit = async () => {
                 labelRowsPerPage="Filas por página:"
                 labelDisplayedRows={({ from, to, count }) => `${from}-${to} de ${count}`}
             />
+
             {/* Diálogo de edición */}
             <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
-                <DialogTitle>
-                    {selectedHolidayPeriod ? 'Editar Receso' : 'Nuevo Receso'}
-                </DialogTitle>
+                <DialogTitle>{selectedHolidayPeriod ? 'Editar Receso' : 'Nuevo Receso'}</DialogTitle>
                 <DialogContent dividers>
                     <TextField
                         label="Tipo de Receso"
@@ -336,15 +337,10 @@ const handleEdit = async () => {
                         onChange={(e) => setEditHoliday({ ...editHoliday!, endDate: e.target.value })}
                         InputLabelProps={{ shrink: true }}
                     />
-
                 </DialogContent>
                 <DialogActions>
-                    <Button onClick={handleCloseDialog} color="inherit">
-                        Cancelar
-                    </Button>
-                    <Button onClick={handleEdit} color="primary" variant="contained">
-                        Guardar Cambios
-                    </Button>
+                    <Button onClick={handleCloseDialog} color="inherit">Cancelar</Button>
+                    <Button onClick={handleEdit} color="primary" variant="contained">Guardar Cambios</Button>
                 </DialogActions>
             </Dialog>
 

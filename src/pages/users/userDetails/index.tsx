@@ -481,7 +481,7 @@ const UserInformation: AclComponent = () => {
                     </Button>
 
                   </Box>
-                  <CombinedHolidayPeriods userId={user.id} joinDate={user.fecha_ingreso} />
+                  <CombinedHolidayPeriods userId={user.id} joinDate={user.fecha_ingreso} tipoEmpleado={user.tipoEmpleado} />
                 </>
               )}
 
