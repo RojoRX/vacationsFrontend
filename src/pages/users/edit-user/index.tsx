@@ -6,7 +6,7 @@ import {
     InputLabel,
     Select
 } from '@mui/material';
-import { useForm, Controller } from 'react-hook-form';
+import { useForm, Controller, useWatch } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
 import { TipoEmpleadoEnum } from 'src/utils/enums/typeEmployees';
@@ -24,11 +24,10 @@ export interface UpdateUserDto {
     fecha_ingreso: string;
     position?: string;
     tipoEmpleado?: TipoEmpleadoEnum;
-    departmentId?: number;
-    professionId?: number;
-    academicUnitId?: number;
+    departmentId?: number | null;
+    professionId?: number | null;
+    academicUnitId?: number | null;
 }
-
 
 interface Props {
     open: boolean;
@@ -40,7 +39,6 @@ interface Props {
         academicUnit?: { id: number; name: string };
     };
 }
-
 
 const schema = yup.object().shape({
     ci: yup.string()
@@ -61,23 +59,24 @@ const schema = yup.object().shape({
     departmentId: yup.number().nullable().notRequired(),
 });
 
-
 const EditUserForm: React.FC<Props> = ({ open, onClose, onSave, initialData }) => {
+
     const {
         control,
         handleSubmit,
-        getValues,
+        setValue,
         formState: { errors }
     } = useForm<UpdateUserDto>({
         defaultValues: {
             ...initialData,
-            departmentId: initialData.department?.id || undefined,
-            professionId: initialData.profession?.id || undefined,
-            academicUnitId: initialData.academicUnit?.id || undefined,
+            departmentId: initialData.department?.id || null,
+            professionId: initialData.profession?.id || null,
+            academicUnitId: initialData.academicUnit?.id || null,
         },
         resolver: yupResolver(schema)
     });
 
+    const tipoEmpleado = useWatch({ control, name: "tipoEmpleado" });
 
     const [departments, setDepartments] = useState<Department[]>([]);
     const [profesiones, setProfesiones] = useState([]);
@@ -113,24 +112,42 @@ const EditUserForm: React.FC<Props> = ({ open, onClose, onSave, initialData }) =
         fetchDepartments();
     }, []);
 
+    // Limpia valores incompatibles según tipoEmpleado
+    React.useEffect(() => {
+        if (!tipoEmpleado) return;
+
+        if (tipoEmpleado === TipoEmpleadoEnum.DOCENTE) {
+            setValue("departmentId", null);
+        }
+
+        if (tipoEmpleado === TipoEmpleadoEnum.ADMINISTRATIVO) {
+            setValue("academicUnitId", null);
+        }
+    }, [tipoEmpleado, setValue]);
+
+
+
     const handleFormSubmit = async (data: UpdateUserDto) => {
         try {
             setSubmitError(null);
+
+            // Sanitización antes de enviar
+            if (data.tipoEmpleado === TipoEmpleadoEnum.DOCENTE) {
+                data.departmentId = null;
+            } else if (data.tipoEmpleado === TipoEmpleadoEnum.ADMINISTRATIVO) {
+                data.academicUnitId = null;
+            }
 
             const response = await axios.put(
                 `${process.env.NEXT_PUBLIC_API_BASE_URL}/users/${initialData.id}`,
                 data
             );
 
-            const updatedCI = data.ci;
-            const previousCI = initialData.ci;
-
             onSave(response.data);
             onClose();
 
-            if (updatedCI !== previousCI) {
-                router.push(`/users/${updatedCI}`);
-
+            if (data.ci !== initialData.ci) {
+                router.push(`/users/${data.ci}`);
             }
 
         } catch (error: any) {
@@ -144,14 +161,16 @@ const EditUserForm: React.FC<Props> = ({ open, onClose, onSave, initialData }) =
         }
     };
 
-
-
+    const convertToNull = (v: any) =>
+        v === "" || v === undefined ? null : Number(v);
 
     return (
         <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
             <DialogTitle>Editar Información del Usuario</DialogTitle>
             <DialogContent dividers>
                 <Grid container spacing={2}>
+
+                    {/* CI */}
                     <Grid item xs={6}>
                         <Controller
                             name="ci"
@@ -162,12 +181,13 @@ const EditUserForm: React.FC<Props> = ({ open, onClose, onSave, initialData }) =
                                     label="CI"
                                     fullWidth
                                     error={!!errors.ci}
-                                    helperText={errors.ci?.message} // Aquí mostramos el mensaje de error
+                                    helperText={errors.ci?.message}
                                 />
                             )}
                         />
                     </Grid>
 
+                    {/* Usuario */}
                     <Grid item xs={6}>
                         <TextField
                             label="Usuario"
@@ -177,6 +197,7 @@ const EditUserForm: React.FC<Props> = ({ open, onClose, onSave, initialData }) =
                         />
                     </Grid>
 
+                    {/* Nombre */}
                     <Grid item xs={12}>
                         <Controller
                             name="fullName"
@@ -187,12 +208,13 @@ const EditUserForm: React.FC<Props> = ({ open, onClose, onSave, initialData }) =
                                     label="Nombre completo"
                                     fullWidth
                                     error={!!errors.fullName}
-                                    helperText={errors.fullName?.message} // Aquí mostramos el mensaje de error
+                                    helperText={errors.fullName?.message}
                                 />
                             )}
                         />
                     </Grid>
 
+                    {/* Celular */}
                     <Grid item xs={6}>
                         <Controller
                             name="celular"
@@ -209,6 +231,7 @@ const EditUserForm: React.FC<Props> = ({ open, onClose, onSave, initialData }) =
                         />
                     </Grid>
 
+                    {/* Email */}
                     <Grid item xs={6}>
                         <Controller
                             name="email"
@@ -225,6 +248,7 @@ const EditUserForm: React.FC<Props> = ({ open, onClose, onSave, initialData }) =
                         />
                     </Grid>
 
+                    {/* Profesión */}
                     <Grid item xs={6}>
                         <Controller
                             name="professionId"
@@ -235,8 +259,12 @@ const EditUserForm: React.FC<Props> = ({ open, onClose, onSave, initialData }) =
                                     <Select
                                         {...field}
                                         label="Profesión"
-                                        value={field.value || ''}
+                                        value={field.value ?? ""}
+                                        onChange={(e) =>
+                                            field.onChange(convertToNull(e.target.value))
+                                        }
                                     >
+                                        <MenuItem value="">Ninguno</MenuItem>
                                         {profesiones.map((prof: any) => (
                                             <MenuItem key={prof.id} value={prof.id}>
                                                 {prof.name}
@@ -248,18 +276,26 @@ const EditUserForm: React.FC<Props> = ({ open, onClose, onSave, initialData }) =
                         />
                     </Grid>
 
+                    {/* Unidad Académica */}
                     <Grid item xs={6}>
                         <Controller
                             name="academicUnitId"
                             control={control}
                             render={({ field }) => (
-                                <FormControl fullWidth>
+                                <FormControl
+                                    fullWidth
+                                    disabled={tipoEmpleado !== TipoEmpleadoEnum.DOCENTE}
+                                >
                                     <InputLabel>Unidad Académica</InputLabel>
                                     <Select
                                         {...field}
                                         label="Unidad Académica"
-                                        value={field.value || ''}
+                                        value={field.value ?? ""}
+                                        onChange={(e) =>
+                                            field.onChange(convertToNull(e.target.value))
+                                        }
                                     >
+                                        <MenuItem value="">Ninguno</MenuItem>
                                         {academicUnits.map((unit: any) => (
                                             <MenuItem key={unit.id} value={unit.id}>
                                                 {unit.name}
@@ -271,7 +307,7 @@ const EditUserForm: React.FC<Props> = ({ open, onClose, onSave, initialData }) =
                         />
                     </Grid>
 
-
+                    {/* Posición */}
                     <Grid item xs={6}>
                         <Controller
                             name="position"
@@ -288,6 +324,7 @@ const EditUserForm: React.FC<Props> = ({ open, onClose, onSave, initialData }) =
                         />
                     </Grid>
 
+                    {/* Fecha ingreso */}
                     <Grid item xs={6}>
                         <Controller
                             name="fecha_ingreso"
@@ -306,6 +343,7 @@ const EditUserForm: React.FC<Props> = ({ open, onClose, onSave, initialData }) =
                         />
                     </Grid>
 
+                    {/* Tipo empleado */}
                     <Grid item xs={6}>
                         <Controller
                             name="tipoEmpleado"
@@ -319,18 +357,26 @@ const EditUserForm: React.FC<Props> = ({ open, onClose, onSave, initialData }) =
                         />
                     </Grid>
 
+                    {/* Departamento */}
                     <Grid item xs={6}>
                         <Controller
                             name="departmentId"
                             control={control}
                             render={({ field }) => (
-                                <FormControl fullWidth>
+                                <FormControl
+                                    fullWidth
+                                    disabled={tipoEmpleado !== TipoEmpleadoEnum.ADMINISTRATIVO}
+                                >
                                     <InputLabel>Departamento</InputLabel>
                                     <Select
                                         {...field}
                                         label="Departamento"
-                                        value={field.value || ''}
+                                        value={field.value ?? ""}
+                                        onChange={(e) =>
+                                            field.onChange(convertToNull(e.target.value))
+                                        }
                                     >
+                                        <MenuItem value="">Ninguno</MenuItem>
                                         {departments.map((dept) => (
                                             <MenuItem key={dept.id} value={dept.id}>
                                                 {dept.name}
@@ -341,14 +387,14 @@ const EditUserForm: React.FC<Props> = ({ open, onClose, onSave, initialData }) =
                             )}
                         />
                     </Grid>
+
                 </Grid>
+
                 {submitError && (
                     <div style={{ color: 'red', marginTop: '1rem' }}>
                         {submitError}
                     </div>
                 )}
-
-
             </DialogContent>
 
             <DialogActions>
