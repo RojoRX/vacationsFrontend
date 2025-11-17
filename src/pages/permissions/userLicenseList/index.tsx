@@ -25,11 +25,13 @@ import {
   InputLabel,
   Select,
   MenuItem,
-  Grid, // <-- Importar Grid
+  Grid
+  // <-- Importar Grid
 } from '@mui/material';
 import HourglassEmptyIcon from '@mui/icons-material/HourglassEmpty';
 import SearchIcon from '@mui/icons-material/Search';
 import { PictureAsPdf as PictureAsPdfIcon } from '@mui/icons-material';
+import { Edit as EditIcon } from '@mui/icons-material';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import DeleteIcon from '@mui/icons-material/Delete';
 import CloseIcon from '@mui/icons-material/Close';
@@ -50,6 +52,7 @@ import { es } from 'date-fns/locale';
 import { formatDate } from 'src/utils/dateUtils'; // Asumo que esto funciona bien
 import { generateLicensePdf } from 'src/utils/licensePdfGenerator';
 import { License } from 'src/interfaces/licenseTypes';
+import EditLicenseDialog from '../editLicenses';
 
 
 // --- NUEVA INTERFAZ PARA DETALLES DE USUARIO ---
@@ -99,6 +102,10 @@ const UserLicenseList: React.FC<UserLicenseListProps> = ({ userId }) => {
   const [dialogLoadingDetails, setDialogLoadingDetails] = useState(false); // <-- Estado de carga para los detalles del diálogo
   const [dialogDetailsError, setDialogDetailsError] = useState<string | null>(null); // <-- Estado de error para los detalles del diálogo
   const [dialogSuccess, setDialogSuccess] = useState<string | null>(null);
+  // Estado para abrir/cerrar el diálogo de edición
+  const [openEditLicenseDialog, setOpenEditLicenseDialog] = useState(false);
+  const [selectedLicenseToEdit, setSelectedLicenseToEdit] = useState<License | null>(null);
+
 
 
   // --- Función para cargar las licencias (reutilizable) ---
@@ -189,42 +196,6 @@ const UserLicenseList: React.FC<UserLicenseListProps> = ({ userId }) => {
     return approved ? 'success' : 'error';
   };
 
-  // --- handleOpenDetailsDialog: Carga la licencia y luego el usuario ---
-  const handleOpenDetailsDialog = async (licenseId: number) => {
-    setSelectedLicenseId(licenseId);
-    setOpenDetailsDialog(true);
-    setDialogLoadingDetails(true);
-    setDialogDetailsError(null);
-    setDialogSuccess(null);
-    setDialogLicenseDetails(null);
-    setDialogUserDetails(null);
-
-    try {
-      const licenseResponse = await axios.get<License>(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/licenses/${licenseId}`
-      );
-      setDialogLicenseDetails(licenseResponse.data);
-
-      const userIdFromLicense = licenseResponse.data.userId;
-      if (userIdFromLicense) {
-        const userResponse = await axios.get<UserDetail>(
-          `${process.env.NEXT_PUBLIC_API_BASE_URL}/users/${userIdFromLicense}`
-        );
-        setDialogUserDetails(userResponse.data);
-      } else {
-        setDialogDetailsError('ID de usuario no encontrado para esta licencia.');
-      }
-    } catch (err: any) {
-      console.error('Error fetching details for dialog:', err);
-      setDialogDetailsError('Error al cargar los detalles de la licencia o del usuario.');
-      setDialogLicenseDetails(null);
-      setDialogUserDetails(null);
-    } finally {
-      setDialogLoadingDetails(false);
-    }
-  };
-
-
   const handleCloseDetailsDialog = () => {
     setOpenDetailsDialog(false);
     setSelectedLicenseId(null);
@@ -262,6 +233,57 @@ const UserLicenseList: React.FC<UserLicenseListProps> = ({ userId }) => {
       setDialogLoadingDetails(false);
     }
   };
+  const handleOpenEditLicenseDialog = (license: License) => {
+    setSelectedLicenseToEdit(license);
+    setOpenEditLicenseDialog(true);
+    // Cerrar el diálogo de detalles si está abierto
+    setOpenDetailsDialog(false);
+  };
+  const handleOpenDetailsDialog = async (licenseId: number) => {
+    setSelectedLicenseId(licenseId);
+    setOpenDetailsDialog(true);
+    // Cerrar el diálogo de edición si está abierto
+    setOpenEditLicenseDialog(false);
+
+    setDialogLoadingDetails(true);
+    setDialogDetailsError(null);
+    setDialogSuccess(null);
+    setDialogLicenseDetails(null);
+    setDialogUserDetails(null);
+
+    try {
+      const licenseResponse = await axios.get<License>(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/licenses/${licenseId}`
+      );
+      setDialogLicenseDetails(licenseResponse.data);
+
+      const userIdFromLicense = licenseResponse.data.userId;
+      if (userIdFromLicense) {
+        const userResponse = await axios.get<UserDetail>(
+          `${process.env.NEXT_PUBLIC_API_BASE_URL}/users/${userIdFromLicense}`
+        );
+        setDialogUserDetails(userResponse.data);
+      } else {
+        setDialogDetailsError('ID de usuario no encontrado para esta licencia.');
+      }
+    } catch (err: any) {
+      console.error('Error fetching details for dialog:', err);
+      setDialogDetailsError('Error al cargar los detalles de la licencia o del usuario.');
+      setDialogLicenseDetails(null);
+      setDialogUserDetails(null);
+    } finally {
+      setDialogLoadingDetails(false);
+    }
+  };
+  const handleEditLicenseSuccess = (updatedLicense: License) => {
+    // Actualiza ambos estados: licenses y filteredLicenses
+    setLicenses(prev => prev.map(l => (l.id === updatedLicense.id ? updatedLicense : l)));
+    setFilteredLicenses(prev => prev.map(l => (l.id === updatedLicense.id ? updatedLicense : l)));
+    setOpenEditLicenseDialog(false);
+
+    // Opcional: Cerrar también el diálogo de detalles si está abierto
+    setOpenDetailsDialog(false);
+  };
 
   // --- Función para obtener el icono según el tipo de licencia ---
   const getLicenseTypeIcon = (licenseType: string) => {
@@ -298,6 +320,7 @@ const UserLicenseList: React.FC<UserLicenseListProps> = ({ userId }) => {
     setTimeout(() => setDialogSuccess(null), 3000); // Limpiar mensaje de éxito después de 3 segundos
   };
 
+
   if (loading) {
     return (
       <Box display="flex" justifyContent="center" py={4}>
@@ -316,36 +339,36 @@ const UserLicenseList: React.FC<UserLicenseListProps> = ({ userId }) => {
 
   const noLicensesFound = licenses.length === 0 && !error;
   const noFilteredResults = filteredLicenses.length === 0 && (filterDate || filterSupervisorApproval !== 'all' || filterDepartmentApproval !== 'all');
-const handlePersonalApproval = async (approval: boolean) => {
-  if (!dialogLicenseDetails || dialogLicenseDetails.personalDepartmentApproval !== null) return;
+  const handlePersonalApproval = async (approval: boolean) => {
+    if (!dialogLicenseDetails || dialogLicenseDetails.personalDepartmentApproval !== null) return;
 
-  try {
-    setDialogLoadingDetails(true);
-    setDialogSuccess(null);
-    setDialogDetailsError(null);
+    try {
+      setDialogLoadingDetails(true);
+      setDialogSuccess(null);
+      setDialogDetailsError(null);
 
-    await axios.patch(
-      `${process.env.NEXT_PUBLIC_API_BASE_URL}/licenses/${dialogLicenseDetails.id}/personal-approval`,
-      { approval }
-    );
+      await axios.patch(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/licenses/${dialogLicenseDetails.id}/personal-approval`,
+        { approval }
+      );
 
-    setDialogLicenseDetails(prev =>
-      prev ? { ...prev, personalDepartmentApproval: approval } : prev
-    );
+      setDialogLicenseDetails(prev =>
+        prev ? { ...prev, personalDepartmentApproval: approval } : prev
+      );
 
-    setDialogSuccess(`Licencia ${approval ? 'aprobada' : 'rechazada'} correctamente.`);
-    fetchLicenses();
-  } catch (err: any) {
-    console.error('Error actualizando licencia:', err);
-    setDialogDetailsError(
-      axios.isAxiosError(err) && err.response?.data?.message
-        ? err.response.data.message
-        : 'Error desconocido al actualizar la licencia.'
-    );
-  } finally {
-    setDialogLoadingDetails(false);
-  }
-};
+      setDialogSuccess(`Licencia ${approval ? 'aprobada' : 'rechazada'} correctamente.`);
+      fetchLicenses();
+    } catch (err: any) {
+      console.error('Error actualizando licencia:', err);
+      setDialogDetailsError(
+        axios.isAxiosError(err) && err.response?.data?.message
+          ? err.response.data.message
+          : 'Error desconocido al actualizar la licencia.'
+      );
+    } finally {
+      setDialogLoadingDetails(false);
+    }
+  };
 
 
 
@@ -448,13 +471,28 @@ const handlePersonalApproval = async (approval: boolean) => {
                   </TableCell>
                   <TableCell>{formatDate(license.issuedDate)}</TableCell>
                   <TableCell>
-                    <IconButton
-                      aria-label="acciones"
-                      onClick={() => handleOpenDetailsDialog(license.id)}
-                      size="small"
-                    >
-                      <MoreVertIcon />
-                    </IconButton>
+                    <Box sx={{ display: 'flex', gap: 1 }}>
+                      <IconButton
+                        aria-label="editar"
+                        onClick={(e) => {
+                          e.stopPropagation(); // 🔹 IMPORTANTE: Evita que se propague al padre
+                          handleOpenEditLicenseDialog(license);
+                        }}
+                        size="small"
+                        color="primary"
+                      >
+                        <EditIcon />
+                      </IconButton>
+
+                      <IconButton
+                        aria-label="detalles"
+                        onClick={() => handleOpenDetailsDialog(license.id)}
+                        size="small"
+                        color="info"
+                      >
+                        <MoreVertIcon />
+                      </IconButton>
+                    </Box>
                   </TableCell>
                 </TableRow>
               ))}
@@ -630,6 +668,16 @@ const handlePersonalApproval = async (approval: boolean) => {
           </Button>*/}
         </DialogActions>
       </Dialog>
+      {selectedLicenseToEdit && (
+        <EditLicenseDialog
+          open={openEditLicenseDialog}
+          onClose={() => setOpenEditLicenseDialog(false)}
+          license={selectedLicenseToEdit}
+          refreshList={fetchLicenses}   // <-- ENVIAMOS ESTO
+        />
+
+      )}
+
     </Box>
   );
 };

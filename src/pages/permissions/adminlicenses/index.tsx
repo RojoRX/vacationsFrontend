@@ -4,10 +4,6 @@ import {
     Box,
     Button,
     CircularProgress,
-    Dialog,
-    DialogActions,
-    DialogContent,
-    DialogTitle,
     Paper,
     Table,
     TableBody,
@@ -18,39 +14,32 @@ import {
     TablePagination,
     Typography,
     TextField,
-    Grid,
-    Avatar,
     Chip,
     IconButton,
+    Stack,
     Tooltip,
-    Badge,
-    Stack
+    MenuItem,
+    Grid
 } from '@mui/material';
 import {
     Description as DescriptionIcon,
     Search,
-    CheckCircle,
-    Cancel,
-    Visibility as VisibilityIcon ,
-    VisibilityOff as VisibilityOffIcon ,
     Refresh as RefreshIcon,
-    Person,
-    FilterAlt,
-    Refresh,
     Business,
-    Add,
-    Visibility
+    Edit as EditIcon,
+    Visibility as VisibilityIcon,
+    Delete as DeleteIcon,
+    RestoreFromTrash as RestoreIcon
 } from '@mui/icons-material';
 import { License } from 'src/interfaces/licenseTypes';
 import { User } from 'src/interfaces/usertypes';
 import useUser from 'src/hooks/useUser';
 import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
-import ReportDownloadModal from 'src/pages/reports/reportDownloadModal';
 import LicenseDetailDialog from '../detail-dialog';
-import Link from 'next/link';
-import SingleLicenseForm from '../singleLicenseForm';
+import EditLicenseDialog from '../editLicenses';
 import GeneralReportDialog from 'src/pages/users/generalReports';
+import Link from 'next/link';
 
 interface AdminLicensesProps {
     licenses: License[];
@@ -72,24 +61,17 @@ const AdminLicenses: AclComponent = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [selectedLicense, setSelectedLicense] = useState<License | null>(null);
-    const [userDetails, setUserDetails] = useState<{
-        [key: string]: {
-            name: string;
-            ci: string;
-            celular: string;
-            department: string;
-            academicUnit: string
-        }
-    }>({});
+    const [editLicense, setEditLicense] = useState<License | null>(null);
+    const [userDetails, setUserDetails] = useState<{ [key: string]: any }>({});
     const [page, setPage] = useState(0);
     const [rowsPerPage, setRowsPerPage] = useState(10);
     const [searchTerm, setSearchTerm] = useState('');
-    const [filterApproval, setFilterApproval] = useState<'all' | 'approved' | 'pending'>('all');
-    const [filterType, setFilterType] = useState<'all' | 'supervisor' | 'personal'>('all');
-    const [reportModalOpen, setReportModalOpen] = useState(false);
-    const [licenseDialogOpen, setLicenseDialogOpen] = useState(false);
+    const [filterApproval, setFilterApproval] = useState<'all' | 'approved' | 'rejected' | 'pending'>('all');
     const [viewDeleted, setViewDeleted] = useState(false);
     const [openReportDialog, setOpenReportDialog] = useState(false);
+    const [licenseDialogOpen, setLicenseDialogOpen] = useState(false);
+    const [editDialogOpen, setEditDialogOpen] = useState(false);
+
     useEffect(() => {
         fetchAllLicenses();
     }, []);
@@ -108,104 +90,66 @@ const AdminLicenses: AclComponent = () => {
                 }));
                 const sortedLicenses = licensesData.sort((a: License, b: License) => b.id - a.id);
                 setLicenses(sortedLicenses);
+
                 const userRequests = sortedLicenses.map((license: License) =>
                     axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/users/${license.userId}`)
                         .then(userResponse => ({
                             userId: license.userId,
-                            userName: userResponse.data.fullName,
-                            userCi: userResponse.data.ci,
+                            name: userResponse.data.fullName,
+                            ci: userResponse.data.ci,
                             celular: userResponse.data.celular || 'N/A',
                             department: userResponse.data.department?.name || 'Sin departamento',
-                            academicUnit: userResponse.data.academicUnit?.name || 'Sin Unidad academica'
+                            academicUnit: userResponse.data.academicUnit?.name || 'Sin Unidad académica'
                         }))
                 );
 
-                return Promise.all(userRequests)
+                return Promise.all(userRequests);
             })
             .then(userDetailsArray => {
-                const userDetailsMap: {
-                    [key: string]: {
-                        name: string;
-                        ci: string;
-                        celular: string;
-                        department: string;
-                        academicUnit: string;
-                    };
-                } = {};
-                userDetailsArray.forEach(user => {
-                    userDetailsMap[user.userId] = {
-                        name: user.userName,
-                        ci: user.userCi,
-                        celular: user.celular,
-                        department: user.department,
-                        academicUnit: user.academicUnit
-                    };
-                });
+                const userDetailsMap: { [key: string]: any } = {};
+                userDetailsArray.forEach(u => { userDetailsMap[u.userId] = u; });
                 setUserDetails(userDetailsMap);
-                applyFilters(licenses, userDetailsMap, searchTerm, filterApproval, filterType);
+                applyFilters(licenses, userDetailsMap, searchTerm, filterApproval);
             })
-            .catch(() => {
-                setError('Error al obtener las licencias');
-            })
-            .finally(() => {
-                setLoading(false);
-            });
+            .catch(() => setError('Error al obtener las licencias'))
+            .finally(() => setLoading(false));
     };
+
     const fetchDeletedLicenses = () => {
         setLoading(true);
         axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/licenses/deleted`)
             .then((response) => {
                 const deletedLicenses = response.data.sort((a: License, b: License) => b.id - a.id);
                 setLicenses(deletedLicenses);
+
                 const userRequests = deletedLicenses.map((license: License) =>
                     axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/users/${license.userId}`)
                         .then(userResponse => ({
                             userId: license.userId,
-                            userName: userResponse.data.fullName,
-                            userCi: userResponse.data.ci,
+                            name: userResponse.data.fullName,
+                            ci: userResponse.data.ci,
                             celular: userResponse.data.celular || 'N/A',
                             department: userResponse.data.department?.name || 'Sin departamento',
-                            academicUnit: userResponse.data.academicUnit?.name || 'Sin Unidad academica'
+                            academicUnit: userResponse.data.academicUnit?.name || 'Sin Unidad académica'
                         }))
                 );
                 return Promise.all(userRequests);
             })
             .then(userDetailsArray => {
-                const userDetailsMap: {
-                    [key: string]: {
-                        name: string;
-                        ci: string;
-                        celular: string;
-                        department: string;
-                        academicUnit: string;
-                    };
-                } = {};
-                userDetailsArray.forEach(user => {
-                    userDetailsMap[user.userId] = {
-                        name: user.userName,
-                        ci: user.userCi,
-                        celular: user.celular,
-                        department: user.department,
-                        academicUnit: user.academicUnit
-                    };
-                });
+                const userDetailsMap: { [key: string]: any } = {};
+                userDetailsArray.forEach(u => { userDetailsMap[u.userId] = u; });
                 setUserDetails(userDetailsMap);
-                applyFilters(licenses, userDetailsMap, searchTerm, filterApproval, filterType);
+                applyFilters(licenses, userDetailsMap, searchTerm, filterApproval);
             })
-            .catch(() => {
-                setError('Error al obtener licencias eliminadas');
-            })
-            .finally(() => {
-                setLoading(false);
-            });
+            .catch(() => setError('Error al obtener licencias eliminadas'))
+            .finally(() => setLoading(false));
     };
 
     const applyFilters = (
         licenses: License[],
         details: any,
         term: string,
-        approvalFilter: string,
-        typeFilter: string
+        approvalFilter: string
     ) => {
         let filtered = [...licenses];
 
@@ -216,96 +160,59 @@ const AdminLicenses: AclComponent = () => {
                 return (
                     userDetail.name.toLowerCase().includes(term.toLowerCase()) ||
                     userDetail.ci.toLowerCase().includes(term.toLowerCase()) ||
-                    userDetail.department.toLowerCase().includes(term.toLowerCase())
+                    userDetail.department.toLowerCase().includes(term.toLowerCase()) ||
+                    userDetail.academicUnit.toLowerCase().includes(term.toLowerCase())
                 );
             });
         }
 
         if (approvalFilter === 'approved') {
-            filtered = filtered.filter(license => license.personalDepartmentApproval);
+            filtered = filtered.filter(license => license.personalDepartmentApproval === true);
+        } else if (approvalFilter === 'rejected') {
+            filtered = filtered.filter(license => license.personalDepartmentApproval === false);
         } else if (approvalFilter === 'pending') {
-            filtered = filtered.filter(license => !license.personalDepartmentApproval);
+            filtered = filtered.filter(license => license.personalDepartmentApproval === null);
         }
 
-        if (typeFilter === 'supervisor') {
-            filtered = filtered.filter(license => !license.immediateSupervisorApproval);
-        } else if (typeFilter === 'personal') {
-            filtered = filtered.filter(license => !license.personalDepartmentApproval);
-        }
 
         setFilteredLicenses(filtered);
         setPage(0);
     };
 
     useEffect(() => {
-        applyFilters(licenses, userDetails, searchTerm, filterApproval, filterType);
-    }, [licenses, userDetails, searchTerm, filterApproval, filterType]);
+        applyFilters(licenses, userDetails, searchTerm, filterApproval);
+    }, [licenses, userDetails, searchTerm, filterApproval]);
 
-    const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        setSearchTerm(e.target.value);
-    };
-
-    const handleFilterApproval = (type: 'all' | 'approved' | 'pending') => {
-        setFilterApproval(prev => (prev === type ? 'all' : type));
-    };
-
-    const handleFilterType = (type: 'all' | 'supervisor' | 'personal') => {
-        setFilterType(prev => (prev === type ? 'all' : type));
-    };
-
-
-    const handleViewLicense = (license: License) => {
-        setSelectedLicense(license);
-        setLicenseDialogOpen(true);
-    };
+    const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => setSearchTerm(e.target.value);
+    const handleViewLicense = (license: License) => { setSelectedLicense(license); setLicenseDialogOpen(true); };
+    const handleEditLicense = (license: License) => { setEditLicense(license); setEditDialogOpen(true); };
 
     const handleLicenseUpdate = (updatedLicense: License) => {
         if (updatedLicense.deleted) {
             setLicenses(prev => prev.filter(lic => lic.id !== updatedLicense.id));
         } else {
-            setLicenses(prev =>
-                prev.map(lic => (lic.id === updatedLicense.id ? updatedLicense : lic))
-            );
+            setLicenses(prev => prev.map(lic => (lic.id === updatedLicense.id ? updatedLicense : lic)));
         }
     };
 
+    const formatDate = (dateString: string) => format(parseISO(dateString), 'PPP', { locale: es });
 
-    const formatDate = (dateString: string) => {
-        return format(parseISO(dateString), 'PPP', { locale: es });
-    };
+    if (loading) return (
+        <Box display="flex" justifyContent="center" alignItems="center" minHeight="300px">
+            <CircularProgress />
+        </Box>
+    );
 
-    if (loading) {
-        return (
-            <Box display="flex" justifyContent="center" alignItems="center" minHeight="300px">
-                <CircularProgress />
-            </Box>
-        );
-    }
-
-    if (error) {
-        return (
-            <Box display="flex" justifyContent="center" alignItems="center" minHeight="300px">
-                <Typography variant="h6" color="error">
-                    {error}
-                </Typography>
-                <Button onClick={fetchAllLicenses} sx={{ ml: 2 }} startIcon={<Refresh />}>
-                    Reintentar
-                </Button>
-            </Box>
-        );
-    }
+    if (error) return (
+        <Box display="flex" justifyContent="center" alignItems="center" minHeight="300px">
+            <Typography variant="h6" color="error">{error}</Typography>
+            <Button onClick={fetchAllLicenses} sx={{ ml: 2 }} startIcon={<RefreshIcon />}>Reintentar</Button>
+        </Box>
+    );
 
     return (
         <Paper elevation={3} sx={{ p: 3, borderRadius: 2 }}>
-            <Box
-                sx={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    mb: 3
-                }}
-            >
-                {/* Título e info a la izquierda */}
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
                 <Typography variant="h5" component="h2" sx={{ display: 'flex', alignItems: 'center' }}>
                     <Business sx={{ mr: 1, color: 'primary.main' }} />
                     Gestión General de Permisos
@@ -315,194 +222,139 @@ const AdminLicenses: AclComponent = () => {
                         </Typography>
                     )}
                 </Typography>
-
-                {/* Botones a la derecha */}
-                <Stack
-                    direction={{ xs: 'column', sm: 'row' }}
-                    spacing={2}
-                    justifyContent="flex-end"
-                    alignItems="center"
-                    sx={{ mb: 2 }}
-                >
-                    {/* Botón recargar */}
+                <Stack direction="row" spacing={1} alignItems="center">
+                    <Tooltip title={viewDeleted ? "Ver activas" : "Ver eliminadas"}>
+                        <IconButton
+                            color={viewDeleted ? "error" : "default"}
+                            onClick={() => {
+                                setViewDeleted(!viewDeleted);
+                                if (!viewDeleted) fetchDeletedLicenses();
+                                else fetchAllLicenses();
+                            }}
+                        >
+                            {viewDeleted ? <RestoreIcon /> : <DeleteIcon />}
+                        </IconButton>
+                    </Tooltip>
                     <Tooltip title="Recargar datos">
-                        <IconButton onClick={fetchAllLicenses} color="primary" size="large">
+                        <IconButton onClick={fetchAllLicenses} color="primary">
                             <RefreshIcon />
                         </IconButton>
                     </Tooltip>
-
-                    {/* Formulario de licencia individual */}
-                    <Box>
-                        <SingleLicenseForm />
-                    </Box>
-
-                    {/* Botón de reporte */}
-                    <Button
-                        variant="contained"
-                        color="primary"
-                        startIcon={<DescriptionIcon />}
-                        onClick={() => setOpenReportDialog(true)}
-                    >
+                    <Button variant="contained" color="primary" startIcon={<DescriptionIcon />} onClick={() => setOpenReportDialog(true)}>
                         Reporte Permisos
                     </Button>
-
-                    {/* Botón para ver eliminadas / activas con icono */}
-                    <Tooltip title={viewDeleted ? "Ver Licencias Activas" : "Ver Licencias Eliminadas"}>
-                        <IconButton
-                            color={viewDeleted ? 'success' : 'warning'}
-                            onClick={() => {
-                                if (viewDeleted) {
-                                    fetchAllLicenses();
-                                } else {
-                                    fetchDeletedLicenses();
-                                }
-                                setViewDeleted(!viewDeleted);
-                            }}
-                            size="large"
-                        >
-                            {viewDeleted ? <VisibilityIcon /> : <VisibilityOffIcon />}
-                        </IconButton>
-                    </Tooltip>
                 </Stack>
             </Box>
 
-
-            {/* Filtros y búsqueda */}
-            <Grid container spacing={2} sx={{ mb: 3 }}>
+            <Grid container spacing={2} sx={{ mb: 2 }}>
                 <Grid item xs={12} md={6}>
                     <TextField
                         fullWidth
                         variant="outlined"
-                        placeholder="Buscar por nombre, CI o departamento..."
+                        placeholder="Buscar por nombre, CI, departamento o unidad académica..."
                         value={searchTerm}
                         onChange={handleSearchChange}
-                        InputProps={{
-                            startAdornment: <Search sx={{ color: 'action.active', mr: 1 }} />
-                        }}
+                        InputProps={{ startAdornment: <Search sx={{ color: 'action.active', mr: 1 }} /> }}
                         size="small"
                     />
                 </Grid>
-                <Grid item xs={12} md={6}>
-                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-                        <Chip
-                            label="Todas"
-                            onClick={() => handleFilterApproval('all')}
-                            color={filterApproval === 'all' ? 'primary' : 'default'}
-                            variant={filterApproval === 'all' ? 'filled' : 'outlined'}
-                        />
-                        <Chip
-                            label="Aprobadas Dpto. Personal"
-                            onClick={() => handleFilterApproval('approved')}
-                            color={filterApproval === 'approved' ? 'primary' : 'default'}
-                            variant={filterApproval === 'approved' ? 'filled' : 'outlined'}
-                        />
-                        <Chip
-                            label="Pendientes Dpto. Personal. "
-                            onClick={() => handleFilterApproval('pending')}
-                            color={filterApproval === 'pending' ? 'primary' : 'default'}
-                            variant={filterApproval === 'pending' ? 'filled' : 'outlined'}
-                        />
-                        <Chip
-                            label="Pendientes Jefe Superior"
-                            onClick={() => handleFilterType('supervisor')}
-                            color={filterType === 'supervisor' ? 'secondary' : 'default'}
-                            variant={filterType === 'supervisor' ? 'filled' : 'outlined'}
-                        />
-                    </Box>
+                <Grid item xs={12} md={3}>
+                    <TextField
+                        select
+                        fullWidth
+                        label="Estado"
+                        value={filterApproval}
+                        onChange={(e) => setFilterApproval(e.target.value as 'all' | 'approved' | 'rejected' | 'pending')}
+                        size="small"
+                    >
+                        <MenuItem value="all">Todos</MenuItem>
+                        <MenuItem value="approved">Aprobadas</MenuItem>
+                        <MenuItem value="pending">Pendientes</MenuItem>
+                        <MenuItem value="rejected">Rechazadas</MenuItem>
+                    </TextField>
                 </Grid>
             </Grid>
 
-            {/* Tabla de licencias */}
             <TableContainer>
                 <Table>
                     <TableHead>
                         <TableRow>
-                            <TableCell sx={{ fontWeight: 'bold' }}>ID</TableCell>
-                            <TableCell sx={{ fontWeight: 'bold' }}>Solicitante</TableCell>
-                            <TableCell sx={{ fontWeight: 'bold' }}>CI</TableCell>
-                            <TableCell sx={{ fontWeight: 'bold' }}>Departamento</TableCell>
-                            <TableCell sx={{ fontWeight: 'bold' }}>Unidad Academica</TableCell>
-                            <TableCell sx={{ fontWeight: 'bold' }}>Fechas</TableCell>
-                            <TableCell sx={{ fontWeight: 'bold' }}>Estado</TableCell>
-                            <TableCell sx={{ fontWeight: 'bold' }}>Acciones</TableCell>
+                            <TableCell>ID</TableCell>
+                            <TableCell>Solicitante</TableCell>
+                            <TableCell>CI</TableCell>
+                            <TableCell>Departamento</TableCell>
+                            <TableCell>Unidad Académica</TableCell>
+                            <TableCell>Fechas</TableCell>
+                            <TableCell>Estado</TableCell>
+                            <TableCell>Acciones</TableCell>
                         </TableRow>
                     </TableHead>
                     <TableBody>
                         {filteredLicenses.length > 0 ? (
-                            filteredLicenses
-                                .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                                .map((license) => (
-                                    <TableRow key={license.id} hover>
-                                        <TableCell>{license.id}</TableCell>
-                                        <TableCell>
-                                            {userDetails[license.userId]?.ci ? (
-                                                <Link href={`/users/${userDetails[license.userId].ci}`} passHref>
-                                                    <Box
-                                                        component="a" // Esto hace que se comporte como un enlace
-                                                        color="primary.main" // Usamos `primary.main` porque `Box` no tiene la prop `color` directa como `Typography`
-                                                        sx={{
-                                                            cursor: 'pointer',
-                                                            textDecoration: 'none',
-                                                            fontWeight: 'bold',
-                                                            display: 'inline-block', // Para mantener el comportamiento en línea como un texto
-                                                            '&:hover': {
-                                                                textDecoration: 'none', // Aseguramos que no haya subrayado al pasar el mouse
-                                                            },
-                                                        }}
-                                                    >
-                                                        {userDetails[license.userId].name}
-                                                    </Box>
-                                                </Link>
-                                            ) : 'N/A'}
-                                        </TableCell>
-                                        <TableCell>
-                                            {userDetails[license.userId]?.ci || 'N/A'}
-                                        </TableCell>
-                                        <TableCell>
-                                            {userDetails[license.userId]?.department || 'N/A'}
-                                        </TableCell>
-                                        <TableCell>
-                                            {userDetails[license.userId]?.academicUnit || 'N/A'}
-                                        </TableCell>
-
-                                        <TableCell>
-                                            <Box>
-                                                <Typography variant="body2">
-                                                    <strong>Inicio:</strong> {formatDate(license.startDate)}
-                                                </Typography>
-                                                <Typography variant="body2">
-                                                    <strong>Fin:</strong> {formatDate(license.endDate)}
-                                                </Typography>
-                                            </Box>
-                                        </TableCell>
-                                        <TableCell>
-                                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                                                <Chip
-                                                    label={license.immediateSupervisorApproval ? 'Aprobado Jefe' : 'Pendiente Jefe'}
-                                                    color={license.immediateSupervisorApproval ? 'primary' : 'default'}
-                                                    size="small"
-                                                    icon={license.immediateSupervisorApproval ? <CheckCircle /> : <Cancel />}
-                                                />
-                                                <Chip
-                                                    label={license.personalDepartmentApproval ? 'Aprobado Personal' : 'Pendiente Personal'}
-                                                    color={license.personalDepartmentApproval ? 'primary' : 'default'}
-                                                    size="small"
-                                                    icon={license.personalDepartmentApproval ? <CheckCircle /> : <Cancel />}
-                                                />
-                                            </Box>
-                                        </TableCell>
-                                        <TableCell>
-                                            <Button
-                                                variant="outlined"
+                            filteredLicenses.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((license) => (
+                                <TableRow key={license.id} hover>
+                                    <TableCell>{license.id}</TableCell>
+                                    <TableCell>
+                                        {userDetails[license.userId]?.ci ? (
+                                            <Link href={`/users/${userDetails[license.userId].ci}`} passHref>
+                                                <Box component="a" color="primary.main" sx={{ cursor: 'pointer', textDecoration: 'none', fontWeight: 'bold' }}>
+                                                    {userDetails[license.userId].name}
+                                                </Box>
+                                            </Link>
+                                        ) : 'N/A'}
+                                    </TableCell>
+                                    <TableCell>{userDetails[license.userId]?.ci || 'N/A'}</TableCell>
+                                    <TableCell>{userDetails[license.userId]?.department || 'N/A'}</TableCell>
+                                    <TableCell>{userDetails[license.userId]?.academicUnit || 'N/A'}</TableCell>
+                                    <TableCell>
+                                        <Typography variant="body2"><strong>Inicio:</strong> {formatDate(license.startDate)}</Typography>
+                                        <Typography variant="body2"><strong>Fin:</strong> {formatDate(license.endDate)}</Typography>
+                                    </TableCell>
+                                    <TableCell>
+                                        <Stack direction="column" spacing={1}>
+                                            <Chip
+                                                label={
+                                                    license.immediateSupervisorApproval === true ? 'Aprobado Jefe' :
+                                                        license.immediateSupervisorApproval === false ? 'Rechazado Jefe' :
+                                                            'Pendiente Jefe'
+                                                }
+                                                color={
+                                                    license.immediateSupervisorApproval === true ? 'primary' :
+                                                        license.immediateSupervisorApproval === false ? 'error' :
+                                                            'default'
+                                                }
                                                 size="small"
-                                                startIcon={<Visibility />}
-                                                onClick={() => handleViewLicense(license)}
-                                            >
-                                                Gestionar
-                                            </Button>
-                                        </TableCell>
-                                    </TableRow>
-                                ))
+                                            />
+                                            <Chip
+                                                label={
+                                                    license.personalDepartmentApproval === true ? 'Aprobado Personal' :
+                                                        license.personalDepartmentApproval === false ? 'Rechazado Personal' :
+                                                            'Pendiente Personal'
+                                                }
+                                                color={
+                                                    license.personalDepartmentApproval === true ? 'primary' :
+                                                        license.personalDepartmentApproval === false ? 'error' :
+                                                            'default'
+                                                }
+                                                size="small"
+                                            />
+                                        </Stack>
+
+                                    </TableCell>
+                                    <TableCell>
+                                        <Tooltip title="Editar">
+                                            <IconButton size="small" onClick={() => handleEditLicense(license)}>
+                                                <EditIcon />
+                                            </IconButton>
+                                        </Tooltip>
+                                        <Tooltip title="Ver detalles">
+                                            <IconButton size="small" onClick={() => handleViewLicense(license)}>
+                                                <VisibilityIcon />
+                                            </IconButton>
+                                        </Tooltip>
+                                    </TableCell>
+                                </TableRow>
+                            ))
                         ) : (
                             <TableRow>
                                 <TableCell colSpan={8} align="center" sx={{ py: 4 }}>
@@ -516,7 +368,6 @@ const AdminLicenses: AclComponent = () => {
                 </Table>
             </TableContainer>
 
-            {/* Paginación */}
             <TablePagination
                 rowsPerPageOptions={[5, 10, 25]}
                 component="div"
@@ -524,15 +375,11 @@ const AdminLicenses: AclComponent = () => {
                 rowsPerPage={rowsPerPage}
                 page={page}
                 onPageChange={(_, newPage) => setPage(newPage)}
-                onRowsPerPageChange={(e) => {
-                    setRowsPerPage(parseInt(e.target.value, 10));
-                    setPage(0);
-                }}
+                onRowsPerPageChange={(e) => { setRowsPerPage(parseInt(e.target.value, 10)); setPage(0); }}
                 labelRowsPerPage="Licencias por página:"
-                sx={{ mt: 2 }}
             />
 
-            {/* Diálogo de detalles de licencia */}
+            {/* Dialog de detalles */}
             {selectedLicense && (
                 <LicenseDetailDialog
                     open={licenseDialogOpen}
@@ -543,7 +390,18 @@ const AdminLicenses: AclComponent = () => {
                     onLicenseUpdate={handleLicenseUpdate}
                 />
             )}
-            {/* 🔹 Diálogo de reporte general */}
+
+            {/* Dialog de edición */}
+            {editLicense && (
+                <EditLicenseDialog
+                    open={editDialogOpen}
+                    onClose={() => setEditDialogOpen(false)}
+                    license={editLicense!}
+                    refreshList={fetchAllLicenses}
+                />
+            )}
+
+            {/* Dialog de reporte */}
             {openReportDialog && (
                 <GeneralReportDialog
                     open={openReportDialog}
