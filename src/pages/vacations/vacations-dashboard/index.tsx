@@ -71,15 +71,15 @@ const formatedDate = (dateString: string) => {
     return date.toLocaleDateString('es-ES');
 };
 
-const VacationDashboard = () => {
+const VacationDashboard: React.FC<{ ciUsuario?: string }> = ({ ciUsuario }) => {
     const [gestiones, setGestiones] = useState<Gestion[]>([]);
     const [loading, setLoading] = useState<boolean>(true);
     const [gestionesData, setGestionesData] = useState<Record<string, { data: VacationData; debt: VacationDebt }>>({});
     const [resumenGeneral, setResumenGeneral] = useState<ResumenGeneral | null>(null);
     const [dialogOpen, setDialogOpen] = useState<boolean>(false);
     const [selectedGestion, setSelectedGestion] = useState<string>('');
-
     const user = useUser();
+    const ci: string | undefined = ciUsuario ?? user?.ci;
     const router = useRouter();
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -91,7 +91,7 @@ const VacationDashboard = () => {
             try {
                 //console.log(`🔍 Obteniendo gestiones para: ${user.ci}`);
                 const gestionesRes = await axios.get<Gestion[]>(
-                    `${process.env.NEXT_PUBLIC_API_BASE_URL}/gestion-periods/gestions/${user.ci}`
+                    `${process.env.NEXT_PUBLIC_API_BASE_URL}/gestion-periods/gestions/${ci}`
                 );
 
                 const gestionesList = gestionesRes.data || [];
@@ -111,8 +111,14 @@ const VacationDashboard = () => {
                 try {
                     const endDateFormatted = ultimaGestion.endDate.split('T')[0];
                     // Opción 1: Codificar manualmente el parámetro
+                    // Evitar ejecución si todavía no tenemos CI
+                    if (!ci) {
+                        console.warn("CI no disponible todavía");
+                        return;
+                    }
+
                     const params = new URLSearchParams();
-                    params.append('carnetIdentidad', user.ci);
+                    params.append("carnetIdentidad", ci);
                     params.append('endDate', endDateFormatted);
 
                     const debtRes = await axios.get<{
@@ -153,7 +159,7 @@ const VacationDashboard = () => {
                                 `${process.env.NEXT_PUBLIC_API_BASE_URL}/vacations`,
                                 {
                                     params: {
-                                        carnetIdentidad: user.ci,
+                                        carnetIdentidad: ci,
                                         startDate: gestionStart,
                                         endDate: gestionEnd,
                                     },

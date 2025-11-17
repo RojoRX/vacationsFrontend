@@ -50,6 +50,7 @@ import { PastVacationDialog } from 'src/components/createPastVacations';
 import CreatePastVacationDto from 'src/interfaces/createPastVacation.dto';
 import { RoleEnum } from 'src/enum/roleEnum';
 import { translateRole } from 'src/utils/translateRole';
+import VacationDashboard from 'src/pages/vacations/vacations-dashboard';
 
 interface Department {
   id: number;
@@ -126,6 +127,7 @@ const UserInformation: AclComponent = () => {
       setDeleteDialogOpen(false);
     }
   };
+  const [openSummary, setOpenSummary] = useState(false);
 
 
   useEffect(() => {
@@ -520,6 +522,14 @@ const UserInformation: AclComponent = () => {
                     fechaIngreso={user.fecha_ingreso}
                     startDate={selectedYear.toString()}
                   />
+                  <Button
+                    variant="contained"
+                    color="primary"
+                    onClick={() => setOpenSummary(true)}
+                    startIcon={<DebtIcon />}
+                  >
+                    Ver resumen de vacaciones
+                  </Button>
                 </>
               )}
               {activeTab === 3 && (
@@ -643,6 +653,24 @@ const UserInformation: AclComponent = () => {
           >
             Cerrar
           </Button>
+        </DialogActions>
+      </Dialog>
+      <Dialog
+        open={openSummary}
+        onClose={() => setOpenSummary(false)}
+        fullWidth
+        maxWidth="lg"
+      >
+        <DialogTitle>Resumen completo del usuario</DialogTitle>
+
+        <DialogContent dividers>
+          {user && (
+            <VacationDashboard ciUsuario={user.ci}></VacationDashboard>
+          )}
+        </DialogContent>
+
+        <DialogActions>
+          <Button onClick={() => setOpenSummary(false)}>Cerrar</Button>
         </DialogActions>
       </Dialog>
 
