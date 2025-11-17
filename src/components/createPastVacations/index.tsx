@@ -107,7 +107,8 @@ const handleSave = async () => {
         const d = new Date(date);
         const start = new Date(selectedPeriod.startDate);
         const end = new Date(selectedPeriod.endDate);
-        return d < start || d > end;
+        
+return d < start || d > end;
     };
 
     const isFormValid =

@@ -73,7 +73,8 @@ const getPeriodColorAndIcon = (name: string) => {
     if (name === 'INVIERNO') {
         return { color: '#0288d1', icon: <SnowflakeIcon fontSize="small" /> };
     }
-    return { color: '#4caf50', icon: <Today fontSize="small" /> };
+    
+return { color: '#4caf50', icon: <Today fontSize="small" /> };
 };
 
 const PersonalHolidayCalendar: AclComponent = () => {
@@ -175,7 +176,8 @@ const PersonalHolidayCalendar: AclComponent = () => {
     };
     const isWeekend = (date: Date) => {
         const day = date.getDay();
-        return day === 0 || day === 6;
+        
+return day === 0 || day === 6;
     };
 
     const isHoliday = (date: Date) => {
@@ -186,7 +188,8 @@ const PersonalHolidayCalendar: AclComponent = () => {
         return filteredPeriods.some(period => {
             const startDateStr = period.startDate.split('T')[0];
             const endDateStr = period.endDate.split('T')[0];
-            return currentDateStr >= startDateStr && currentDateStr <= endDateStr;
+            
+return currentDateStr >= startDateStr && currentDateStr <= endDateStr;
         });
     };
     const calculateWorkingDays = (startDate: string, endDate: string) => {
@@ -197,7 +200,8 @@ const PersonalHolidayCalendar: AclComponent = () => {
         end.setHours(23, 59, 59, 999);
 
         const days = eachDayOfInterval({ start, end });
-        return days.filter(day => !isWeekend(day)).length;
+        
+return days.filter(day => !isWeekend(day)).length;
     };
 
     const renderCalendarDays = () => {
@@ -207,6 +211,7 @@ const PersonalHolidayCalendar: AclComponent = () => {
         // CORRECCIÓN: Ajustamos para que el calendario comience en Domingo
         // Obtenemos el día de la semana (0=Domingo, 1=Lunes, etc.)
         const firstDayOfWeek = getDay(monthStart);
+
         // Calculamos cuántos días del mes anterior mostrar
         const daysFromPrevMonth = firstDayOfWeek === 0 ? 0 : firstDayOfWeek;
 
@@ -251,7 +256,8 @@ const PersonalHolidayCalendar: AclComponent = () => {
                                 const periodStart = period.startDate.split('T')[0];
                                 const periodEnd = period.endDate.split('T')[0];
                                 const dayStr = format(day, 'yyyy-MM-dd');
-                                return dayStr >= periodStart && dayStr <= periodEnd;
+                                
+return dayStr >= periodStart && dayStr <= periodEnd;
                             }) : null;
 
                             const { color } = getPeriodColorAndIcon(holiday?.name || '');

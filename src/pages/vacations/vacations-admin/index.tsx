@@ -117,7 +117,8 @@ const AdminVacationRequests: FC = () => {
         (request.username || '').toLowerCase().includes(lowerQuery) ||
         (request.ci || '').toString().includes(lowerQuery);
       const matchesStatus = statusFilter === '' || request.status === statusFilter;
-      return matchesNameOrCI && matchesStatus;
+      
+return matchesNameOrCI && matchesStatus;
     })
     .sort((a, b) => b.id - a.id);
 
@@ -188,6 +189,7 @@ const AdminVacationRequests: FC = () => {
 
   const handleCloseEditDialog = () => {
     setOpenEditDialog(false);
+
     // ❌ NO poner setSelectedRequest(null) aquí
   };
 

@@ -53,6 +53,7 @@ import { VacationRequest } from 'src/interfaces/vacationRequests';
 import AcUnitIcon from '@mui/icons-material/AcUnit'; // Icono de invierno
 import HolidayVillageIcon from '@mui/icons-material/HolidayVillage'; // Icono de fin de gestión
 import GestionDetailDialog from '../gestionDetailDialog';
+
 interface ResumenGeneral {
     deudaTotal: number;
     diasDisponiblesActuales: number;
@@ -68,7 +69,8 @@ interface ResumenGeneral {
 const formatedDate = (dateString: string) => {
     if (!dateString) return 'Fecha no disponible';
     const date = new Date(dateString);
-    return date.toLocaleDateString('es-ES');
+    
+return date.toLocaleDateString('es-ES');
 };
 
 const VacationDashboard: React.FC<{ ciUsuario?: string }> = ({ ciUsuario }) => {
@@ -95,13 +97,15 @@ const VacationDashboard: React.FC<{ ciUsuario?: string }> = ({ ciUsuario }) => {
                 );
 
                 const gestionesList = gestionesRes.data || [];
+
                 //console.log('📅 Gestiones obtenidas:', gestionesList);
                 setGestiones(gestionesList);
 
                 if (gestionesList.length === 0) {
                     setGestionesData({});
                     setLoading(false);
-                    return;
+                    
+return;
                 }
 
                 const ultimaGestion = gestionesList.reduce((a, b) =>
@@ -110,11 +114,13 @@ const VacationDashboard: React.FC<{ ciUsuario?: string }> = ({ ciUsuario }) => {
 
                 try {
                     const endDateFormatted = ultimaGestion.endDate.split('T')[0];
+
                     // Opción 1: Codificar manualmente el parámetro
                     // Evitar ejecución si todavía no tenemos CI
                     if (!ci) {
                         console.warn("CI no disponible todavía");
-                        return;
+                        
+return;
                     }
 
                     const params = new URLSearchParams();
@@ -140,7 +146,8 @@ const VacationDashboard: React.FC<{ ciUsuario?: string }> = ({ ciUsuario }) => {
                             let deudaCorrespondiente = debtRes.data.detalles.find(d => {
                                 const debtStart = normalizeDate(d.startDate);
                                 const debtEnd = normalizeDate(d.endDate);
-                                return debtStart === gestionStart && debtEnd === gestionEnd;
+                                
+return debtStart === gestionStart && debtEnd === gestionEnd;
                             });
 
 
@@ -165,6 +172,7 @@ const VacationDashboard: React.FC<{ ciUsuario?: string }> = ({ ciUsuario }) => {
                                     },
                                 }
                             );
+
                             //console.log("Enviando a /vacations" + " " + gestionStart, gestionEnd)
                             return {
                                 key: `${gestion.startDate}-${gestion.endDate}`,
@@ -173,7 +181,8 @@ const VacationDashboard: React.FC<{ ciUsuario?: string }> = ({ ciUsuario }) => {
                             };
                         } catch (vacError) {
                             console.error(`❌ Error en vacaciones ${gestion.startDate} - ${gestion.endDate}:`, vacError);
-                            return {
+                            
+return {
                                 key: `${gestion.startDate}-${gestion.endDate}`,
                                 data: {} as VacationData,
                                 debt: {
@@ -211,6 +220,7 @@ const VacationDashboard: React.FC<{ ciUsuario?: string }> = ({ ciUsuario }) => {
                         ...resumenBackend,
                         totalDiasLicencia,
                         totalDiasVacacionUsados,
+
                         // Aseguramos que las fechas sean Date objects si es necesario
                         primeraGestion: resumenBackend.primeraGestion ? new Date(resumenBackend.primeraGestion) : null,
                         ultimaGestion: resumenBackend.ultimaGestion ? new Date(resumenBackend.ultimaGestion) : null
@@ -238,13 +248,15 @@ const VacationDashboard: React.FC<{ ciUsuario?: string }> = ({ ciUsuario }) => {
     const formatFecha = (fechaISO: string) => {
         if (!fechaISO) return 'No disponible';
         const fecha = new Date(fechaISO).toISOString();
-        return fecha.split('T')[0];
+        
+return fecha.split('T')[0];
     };
 
     const getVisibleSlides = () => {
         if (isMobile) return 1;
         if (theme.breakpoints.down('lg')) return 3;
-        return 4;
+        
+return 4;
     };
 
     const visibleSlides = getVisibleSlides();

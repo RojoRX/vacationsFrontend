@@ -42,7 +42,7 @@ const AdministrativeHolidayManagement: React.FC = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [typeFilter, setTypeFilter] = useState<string>('all');
 
-    const fetchHolidays = async (year: string = '') => {
+    const fetchHolidays = async (year = '') => {
         setLoading(true);
         try {
             // Si year está vacío, obtener todos los recesos
@@ -74,6 +74,7 @@ const AdministrativeHolidayManagement: React.FC = () => {
     const handleYearFilter = (year: string) => {
         setFilteredYear(year);
         setPage(0);
+
         // Si year está vacío, obtener todos los recesos
         // Si year tiene valor, obtener solo los de ese año
         fetchHolidays(year);
@@ -132,7 +133,8 @@ const AdministrativeHolidayManagement: React.FC = () => {
         const start = parseISO(startDate);
         const end = parseISO(endDate);
         const allDays = eachDayOfInterval({ start, end });
-        return allDays.filter(date => !isWeekend(date)).length;
+        
+return allDays.filter(date => !isWeekend(date)).length;
     };
 
     // Filtrar holidays basado en los filtros aplicados
@@ -166,7 +168,8 @@ const AdministrativeHolidayManagement: React.FC = () => {
         }
         if (!holiday.year) { newErrors.year = 'Año requerido'; isValid = false; }
         setErrors(newErrors);
-        return isValid;
+        
+return isValid;
     };
 
     // Obtener años únicos para mostrar en el selector

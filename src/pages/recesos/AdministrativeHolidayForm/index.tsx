@@ -79,7 +79,8 @@ const AdministrativeHolidayForm: React.FC<AdministrativeHolidayFormProps> = ({
     }
 
     setErrors(newErrors);
-    return isValid;
+    
+return isValid;
   };
 
   const handleSubmit = async (event: React.FormEvent) => {

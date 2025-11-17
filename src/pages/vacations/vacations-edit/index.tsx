@@ -103,18 +103,21 @@ const EditVacationDialog: React.FC<EditVacationDialogProps> = ({
       const end = new Date(formData.endDate);
       if (start > end) {
         setError('La fecha de inicio no puede ser posterior a la fecha de fin');
-        return false;
+        
+return false;
       }
     }
 
     // Validar razón de postergación
     if (formData.status === 'POSTPONED' && !formData.postponedReason.trim()) {
       setError('La razón de postergación es obligatoria cuando el estado es POSTERGADO');
-      return false;
+      
+return false;
     }
 
     setError('');
-    return true;
+    
+return true;
   };
 
   const handleSubmit = async () => {

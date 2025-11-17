@@ -140,9 +140,11 @@ const UserInformation: AclComponent = () => {
     try {
       const response = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/users/find/${ci}`);
       setUser(response.data);
+
       // Usar directamente el objeto obtenido
       const ingresoYear = new Date(response.data.fecha_ingreso).getFullYear();
       setSelectedYear(ingresoYear);
+
       //console.log(response.data)
     } catch (error) {
       //setSnackbarMessage('Error al buscar usuario. Verifique el carnet de identidad.');
@@ -159,7 +161,8 @@ const UserInformation: AclComponent = () => {
       setSnackbarMessage('Error: No se pudo obtener la información del usuario.');
       setSnackbarSeverity('error');
       setSnackbarOpen(true);
-      return;
+      
+return;
     }
 
     try {
@@ -210,6 +213,7 @@ const UserInformation: AclComponent = () => {
           case 403: // Forbidden (rol no permitido para la acción, manejado por RolesGuard)
             setSnackbarMessage('No tienes permiso para realizar esta acción o tu sesión ha expirado.');
             setSnackbarSeverity('error');
+
             // Podrías forzar un logout aquí si no lo hace el interceptor de axios global
             break;
           default:
@@ -299,6 +303,7 @@ const UserInformation: AclComponent = () => {
               </Typography>
 
               <Chip
+
                 // Aquí es donde usas el traductor:
                 label={translateRole(user.role)} // <--- ¡Aplica la traducción aquí!
                 color={getRoleColor(user.role)}

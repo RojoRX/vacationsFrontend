@@ -44,6 +44,7 @@ interface BulkLicenseFormProps {
 
 const BulkLicenseForm: React.FC<BulkLicenseFormProps> = ({ open, onClose, userId, onSuccess }) => {
   const theme = useTheme();
+
   // Estado inicial
   const [licenses, setLicenses] = useState<LicenseFormData[]>([{
     timeRequested: 'Día Completo',
@@ -122,7 +123,8 @@ const BulkLicenseForm: React.FC<BulkLicenseFormProps> = ({ open, onClose, userId
 
     setValidationErrors(errors);
     console.log('Estado validationErrors:', errors);
-    return isValid;
+    
+return isValid;
   };
 
   const [successDialogOpen, setSuccessDialogOpen] = useState(false); // Nuevo estado para diálogo de éxito
@@ -165,13 +167,15 @@ const BulkLicenseForm: React.FC<BulkLicenseFormProps> = ({ open, onClose, userId
         });
 
         setValidationErrors(backendErrors); // Mostrar errores puntuales en cada licencia
-        return; // ⚠️ No abrimos diálogo de éxito si hay errores
+        
+return; // ⚠️ No abrimos diálogo de éxito si hay errores
       }
 
       // ✅ Todo OK: abrir diálogo de éxito
       setValidationErrors({}); // Limpiar errores anteriores
       setError(null);
       setSuccessDialogOpen(true);
+
       // 🔹 Llamar al callback del padre para refrescar datos
       if (onSuccess) onSuccess();
 
@@ -225,6 +229,7 @@ const BulkLicenseForm: React.FC<BulkLicenseFormProps> = ({ open, onClose, userId
               border: `1px solid ${theme.palette.divider}`,
               borderRadius: 1,
               position: 'relative',
+
               // Puedes mantener el cambio de color de fondo si lo deseas
               // backgroundColor: validationErrors[index] ? theme.palette.error.light + '20' : 'inherit'
             }}>

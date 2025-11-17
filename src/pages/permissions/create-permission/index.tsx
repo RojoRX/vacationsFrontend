@@ -119,7 +119,8 @@ const RequestPermissionDialog: AclComponent = ({ open, onClose, onSuccess }) => 
     const { value } = e.target;
     if (new Date(value) < new Date(formData.startDate)) {
       setError('La fecha de fin no puede ser anterior a la fecha de inicio');
-      return;
+      
+return;
     }
     setFormData(prev => ({ ...prev, endDate: value }));
   };
@@ -133,7 +134,8 @@ const RequestPermissionDialog: AclComponent = ({ open, onClose, onSuccess }) => 
     if (formData.endHalfDay !== 'Completo') totalDays -= 0.5;
 
     if (totalDays < 0.5) totalDays = 0.5;
-    return totalDays;
+    
+return totalDays;
   };
 
 
@@ -145,7 +147,8 @@ const RequestPermissionDialog: AclComponent = ({ open, onClose, onSuccess }) => 
     if (!formData.startDate || !formData.timeRequested) {
       setError('Complete todos los campos requeridos');
       setLoading(false);
-      return;
+      
+return;
     }
 
     const totalDays = calculateTotalDays();
@@ -153,6 +156,7 @@ const RequestPermissionDialog: AclComponent = ({ open, onClose, onSuccess }) => 
 
     try {
       const isHalfDay = formData.timeRequested === 'Medio Día';
+
       //console.log(formData)
       const response = await axios.post(`${process.env.NEXT_PUBLIC_API_BASE_URL}/licenses/${user?.id}`, {
         licenseType: formData.licenseType,
@@ -437,6 +441,7 @@ const RequestPermissionDialog: AclComponent = ({ open, onClose, onSuccess }) => 
     </Dialog>
   );
 };
+
 // Configurar ACL para dar acceso a empleados
 RequestPermissionDialog.acl = {
   action: 'read',

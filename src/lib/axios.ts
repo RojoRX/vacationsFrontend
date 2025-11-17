@@ -23,7 +23,8 @@ axiosInstance.interceptors.request.use(config => {
       }
     }
   }
-  return config;
+  
+return config;
 });
 
 // 4. Interceptor de response (maneja errores globales)

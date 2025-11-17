@@ -173,12 +173,14 @@ const VacationRequestDetailsInfo = () => {
           );
         } catch (e) {
           console.error('Error al parsear fechas del detalle:', detalle, e);
-          return false;
+          
+return false;
         }
       });
 
       if (!gestionDebt) {
         console.warn('No se encontró deuda para la gestión específica, usando el último registro');
+
         // Usar el último registro si no se encuentra la gestión específica
         const lastRecord = response.data.detalles[response.data.detalles.length - 1];
         setDebtData({
@@ -189,7 +191,8 @@ const VacationRequestDetailsInfo = () => {
           endDate: lastRecord?.endDate ?? '',
           deudaAcumulativaHastaEstaGestion: lastRecord?.deudaAcumulativaHastaEstaGestion ?? 0,
         });
-        return;
+        
+return;
       }
 
       //console.log('Datos encontrados para la gestión:', gestionDebt);

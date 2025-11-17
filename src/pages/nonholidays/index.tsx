@@ -42,6 +42,7 @@ const NonHolidayManager: React.FC = () => {
   const fetchNonHolidays = async () => {
     try {
       const response = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/non-holidays`);
+
       // 🔽 Ordenar descendente por fecha o id (según prefieras)
       const sortedData = [...response.data].sort((a, b) => b.id - a.id);
 
@@ -73,7 +74,8 @@ const NonHolidayManager: React.FC = () => {
       .replace(/[^a-zA-Z0-9\s.,áéíóúÁÉÍÓÚñÑ\-()]/g, '') // solo caracteres permitidos
       .replace(/\s{2,}/g, ' ') // reemplaza múltiples espacios
       .trim(); // elimina espacios al inicio y final
-    return allowed;
+    
+return allowed;
   };
 
   const validate = (): boolean => {
@@ -191,7 +193,8 @@ const NonHolidayManager: React.FC = () => {
     const filtered = nonHolidays.filter(nonHoliday => {
       const matchesYear = year ? nonHoliday.year === year : true;
       const matchesDescription = nonHoliday.description.toLowerCase().includes(description.toLowerCase());
-      return matchesYear && matchesDescription;
+      
+return matchesYear && matchesDescription;
     });
     setFilteredNonHolidays(filtered);
     setPage(0);

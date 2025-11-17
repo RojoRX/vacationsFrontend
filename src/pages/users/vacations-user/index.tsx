@@ -77,10 +77,12 @@ const VacationRequestsTable: React.FC<VacationRequestsTableProps> = ({ userId, r
     const [openDetailDialog, setOpenDetailDialog] = useState<boolean>(false);
     const [selectedRequest, setSelectedRequest] = useState<VacationRequest | null>(null);
     const [openSuspendDialog, setOpenSuspendDialog] = useState(false);
+
     // Nuevos estados agregados:
     const [openDeleteConfirmDialog, setOpenDeleteConfirmDialog] = useState(false);
     const [requestToDelete, setRequestToDelete] = useState<VacationRequest | null>(null);
     const [deleteSuccess, setDeleteSuccess] = useState(false);
+
     // En el componente, agregar este estado:
     const [openEditDialog, setOpenEditDialog] = useState(false);
     useEffect(() => {
@@ -138,6 +140,7 @@ const VacationRequestsTable: React.FC<VacationRequestsTableProps> = ({ userId, r
             console.error('Error al actualizar las solicitudes:', error);
         }
     };
+
     // Nuevo método para eliminar solicitud
     const handleForceDelete = async () => {
         if (!requestToDelete) return;

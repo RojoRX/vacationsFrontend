@@ -88,7 +88,8 @@ const DateRangePickerWithHolidays: React.FC<DateRangePickerWithHolidaysProps> = 
         return holidayPeriods.some(period => {
             const start = parseISO(period.startDate);
             const end = parseISO(period.endDate);
-            return isWithinInterval(date, { start, end });
+            
+return isWithinInterval(date, { start, end });
         });
     };
 
@@ -96,16 +97,19 @@ const DateRangePickerWithHolidays: React.FC<DateRangePickerWithHolidaysProps> = 
         const period = holidayPeriods.find(p => {
             const start = parseISO(p.startDate);
             const end = parseISO(p.endDate);
-            return isWithinInterval(date, { start, end });
+            
+return isWithinInterval(date, { start, end });
         });
-        return period?.name || '';
+        
+return period?.name || '';
     };
 
     const handleStartDateChange = (date: Date | null) => {
         if (date && isDateInHolidayPeriod(date)) {
             const holidayName = getHolidayName(date);
             alert(`La fecha seleccionada cae en el período de receso: ${holidayName}`);
-            return;
+            
+return;
         }
         onStartDateChange(date);
     };
@@ -115,12 +119,14 @@ const DateRangePickerWithHolidays: React.FC<DateRangePickerWithHolidaysProps> = 
             if (isDateInHolidayPeriod(date)) {
                 const holidayName = getHolidayName(date);
                 alert(`La fecha seleccionada cae en el período de receso: ${holidayName}`);
-                return;
+                
+return;
             }
 
             if (startDate && date < startDate) {
                 alert('La fecha de fin no puede ser anterior a la fecha de inicio');
-                return;
+                
+return;
             }
         }
         onEndDateChange(date);
@@ -142,19 +148,22 @@ const DateRangePickerWithHolidays: React.FC<DateRangePickerWithHolidaysProps> = 
     const getPeriodColor = (name: string) => {
         if (name === 'FINDEGESTION') return '#d32f2f';
         if (name === 'INVIERNO') return '#0288d1';
-        return '#4caf50';
+        
+return '#4caf50';
     };
 
     const getPeriodDisplayName = (name: string) => {
         if (name === 'FINDEGESTION') return 'Fin de Gestión';
         if (name === 'INVIERNO') return 'Invierno';
-        return 'General';
+        
+return 'General';
     };
 
     const filteredPeriods = holidayPeriods.filter(period => {
         const start = parseISO(period.startDate);
         const end = parseISO(period.endDate);
-        return (
+        
+return (
             (getYear(start) === selectedYear ||
                 getYear(end) === selectedYear ||
                 (getYear(start) < selectedYear && getYear(end) > selectedYear)) &&

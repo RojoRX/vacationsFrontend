@@ -50,7 +50,8 @@ export default function UserConfigDialog({
         for (let y = startYear; y <= currentYear; y++) {
             years.push(y);
         }
-        return years;
+        
+return years;
     }, [startYear, currentYear]);
 
     const isConfigValid =
@@ -63,6 +64,7 @@ export default function UserConfigDialog({
         setMessage(null);
         try {
             const res = await axios.get(`${API_URL}/user-config/${userId}`);
+
             //console.log('✅ Configuración obtenida:', res.data);
             setConfig(res.data);
             setIsNewConfig(false);
@@ -101,7 +103,8 @@ export default function UserConfigDialog({
             config.initialVacationBalance === undefined
         ) {
             setError('Debe ingresar al menos un valor para guardar la configuración.');
-            return;
+            
+return;
         }
 
         setSaving(true);

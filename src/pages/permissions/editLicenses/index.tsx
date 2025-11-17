@@ -133,7 +133,8 @@ const EditLicenseDialog: React.FC<EditLicenseDialogProps> = ({
     const handleEndDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (new Date(e.target.value) < new Date(formData.startDate)) {
             setError('La fecha de fin no puede ser menor que la fecha de inicio.');
-            return;
+            
+return;
         }
         setFormData((prev) => ({ ...prev, endDate: e.target.value }));
     };
@@ -143,34 +144,41 @@ const EditLicenseDialog: React.FC<EditLicenseDialogProps> = ({
         let total = getBusinessDays(new Date(formData.startDate), new Date(formData.endDate));
         if (formData.startHalfDay !== 'Completo') total -= 0.5;
         if (formData.endHalfDay !== 'Completo') total -= 0.5;
-        return total <= 0 ? 0.5 : total;
+        
+return total <= 0 ? 0.5 : total;
     };
 
     const validate = (): boolean => {
         if (!formData.startDate || !formData.endDate) {
             setError('Las fechas de inicio y fin son obligatorias.');
-            return false;
+            
+return false;
         }
         const start = new Date(formData.startDate);
         const end = new Date(formData.endDate);
         if (isNaN(start.getTime()) || isNaN(end.getTime())) {
             setError('Formato de fecha invalido.');
-            return false;
+            
+return false;
         }
         if (start > end) {
             setError('La fecha de inicio no puede ser posterior a la fecha de fin.');
-            return false;
+            
+return false;
         }
         if (formData.timeRequested === 'Medio Día' && formData.startDate !== formData.endDate) {
             setError('La licencia de medio día debe tener la misma fecha de inicio y fin.');
-            return false;
+            
+return false;
         }
-        return true;
+        
+return true;
     };
 
     const convertApproval = (value: string | null): boolean | undefined => {
         if (value === null) return undefined;
-        return value === 'true';
+        
+return value === 'true';
     };
 
 
@@ -182,7 +190,8 @@ const handleSubmit = async () => {
     try {
         if (!validate()) {
             setLoading(false);
-            return;
+            
+return;
         }
 
         const payload: Partial<License> = {

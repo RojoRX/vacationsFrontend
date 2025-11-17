@@ -72,7 +72,8 @@ const SingleLicenseForm: React.FC = () => {
     useEffect(() => {
         if (!debouncedSearch) {
             setSearchResults([]);
-            return;
+            
+return;
         }
         const fetchUsers = async () => {
             try {
@@ -134,13 +135,15 @@ const SingleLicenseForm: React.FC = () => {
             }
         });
         setValidationErrors(errors);
-        return isValid;
+        
+return isValid;
     };
 
     const handleSubmit = async () => {
         if (!selectedUser) {
             setError('Debe seleccionar un usuario antes de registrar licencias.');
-            return;
+            
+return;
         }
         if (!validateLicenses()) return;
 

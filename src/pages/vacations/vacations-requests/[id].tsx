@@ -155,6 +155,7 @@ const VacationRequestDetails = () => {
           response.data.managementPeriodEnd,
           response.data.ci || ""
         );
+
         //console.log(response.data.managementPeriodStart)
         //console.log(response.data.managementPeriodEnd)
       }
@@ -174,6 +175,7 @@ const VacationRequestDetails = () => {
 
       //console.log('Respuesta completa del servidor:', response.data);
       setDeudaData(response.data);
+
       //console.log(`datos de deuda data ${deudaData?.diasDisponiblesActuales}`)
       // Verificar si hay detalles en la respuesta
       if (!response.data.detalles || !Array.isArray(response.data.detalles)) {
@@ -198,12 +200,14 @@ const VacationRequestDetails = () => {
           );
         } catch (e) {
           console.error('Error al parsear fechas del detalle:', detalle, e);
-          return false;
+          
+return false;
         }
       });
 
       if (!gestionDebt) {
         console.warn('No se encontró deuda para la gestión específica, usando el último registro');
+
         // Usar el último registro si no se encuentra la gestión específica
         const lastRecord = response.data.detalles[response.data.detalles.length - 1];
         setDebtData({
@@ -214,7 +218,8 @@ const VacationRequestDetails = () => {
           endDate: lastRecord?.endDate ?? '',
           deudaAcumulativaHastaEstaGestion: lastRecord?.deudaAcumulativaHastaEstaGestion ?? 0,
         });
-        return;
+        
+return;
       }
 
       //console.log('Datos encontrados para la gestión:', gestionDebt);
@@ -267,7 +272,8 @@ const VacationRequestDetails = () => {
     if (newStatus === 'POSTPONED') {
       setInfoMessage('Para postergar la solicitud, utilice el formulario de postergación.');
       setDialogOpen(true);
-      return;
+      
+return;
     }
 
     if (!request || newStatus === request.status || !user?.id) return;
@@ -326,7 +332,8 @@ const VacationRequestDetails = () => {
 
   const getRecessByName = (name: string) => {
     if (!request || !request.recesos) return undefined;
-    return request.recesos.find(receso => receso.name === name);
+    
+return request.recesos.find(receso => receso.name === name);
   };
 
   const formatDateLong = (dateString: string): string => {

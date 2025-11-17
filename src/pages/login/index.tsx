@@ -22,6 +22,7 @@ import InputAdornment from '@mui/material/InputAdornment'
 import Typography, { TypographyProps } from '@mui/material/Typography'
 import MuiFormControlLabel, { FormControlLabelProps } from '@mui/material/FormControlLabel'
 import Image from 'next/image'
+
 // ** Icon Imports
 import Icon from 'src/@core/components/icon'
 
@@ -105,6 +106,7 @@ const defaultValues = {
 }
 
 interface FormData {
+
   // email: string
   password: string
   username: string

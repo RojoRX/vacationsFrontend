@@ -17,6 +17,7 @@ export interface  License {
     fullName: string;
   };
   department?: { name: string };
+
   // 🔹 NUEVOS CAMPOS
   startHalfDay?: string;
   endHalfDay?: string;

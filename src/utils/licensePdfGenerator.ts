@@ -166,7 +166,8 @@ const calculateReturnDate = (endDate: string, totalDays: number): Date => {
   date.setDate(date.getDate() + 1);
   if (date.getDay() === 6) date.setDate(date.getDate() + 2);
   if (date.getDay() === 0) date.setDate(date.getDate() + 1);
-  return date;
+  
+return date;
 };
 
 const formatFullDate = (date: Date): string => {
@@ -174,7 +175,8 @@ const formatFullDate = (date: Date): string => {
     'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
     'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'
   ];
-  return `${date.getDate()} de ${months[date.getMonth()]} de ${date.getFullYear()}`;
+  
+return `${date.getDate()} de ${months[date.getMonth()]} de ${date.getFullYear()}`;
 };
 
 const formatDateForPdf = (date: Date | string): string => {
@@ -183,9 +185,11 @@ const formatDateForPdf = (date: Date | string): string => {
     const day = d.getDate().toString().padStart(2, '0');
     const month = (d.getMonth() + 1).toString().padStart(2, '0');
     const year = d.getFullYear();
-    return `${day}/${month}/${year}`;
+    
+return `${day}/${month}/${year}`;
   } catch (e) {
     console.error('Error formateando fecha:', date, e);
-    return 'Fecha inválida';
+    
+return 'Fecha inválida';
   }
 };

@@ -16,12 +16,14 @@ const PostponeVacationRequestForm: React.FC<{
   const handlePostpone = async () => {
     if (!postponedDate || !postponedReason) {
       setError('Por favor, completa todos los campos.');
-      return;
+      
+return;
     }
 
     if (!user) {
       setError('Usuario no autenticado.');
-      return;
+      
+return;
     }
 
     try {

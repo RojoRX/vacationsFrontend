@@ -99,7 +99,8 @@ const NotificationDialog = ({ open, onClose, notification }: Props) => {
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    return new Intl.DateTimeFormat('es-BO', {
+    
+return new Intl.DateTimeFormat('es-BO', {
       day: '2-digit',
       month: 'long',
       year: 'numeric',

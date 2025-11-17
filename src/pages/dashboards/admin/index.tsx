@@ -69,7 +69,8 @@ const AdminDashboard = () => {
     if (requestStatus.loading) return 'Verificando disponibilidad...';
     if (!requestStatus.canRequest) return requestStatus.reason;
     if (vacationDebt !== null && vacationDebt <= 0) return 'No tienes días de vacaciones disponibles';
-    return 'Solicitar vacaciones';
+    
+return 'Solicitar vacaciones';
   };
 
   // Texto para mostrar en la card de vacaciones (ya existente)
@@ -77,7 +78,8 @@ const AdminDashboard = () => {
     if (requestStatus.loading) return 'Verificando estado...';
     if (!requestStatus.canRequest) return 'No disponible';
     if (vacationDebt !== null && vacationDebt <= 0) return 'Sin días disponibles';
-    return 'Disponible';
+    
+return 'Disponible';
   };
 
   // --- NUEVO: Lógica para el botón de Licencias ---
@@ -90,13 +92,15 @@ const AdminDashboard = () => {
     if (licenseRequestStatus.loading) return 'Verificando disponibilidad...';
     if (!licenseRequestStatus.canRequest) return licenseRequestStatus.reason;
     if (licenseRequestStatus.availableDays !== undefined && licenseRequestStatus.availableDays <= 0) return 'No tienes días de licencia disponibles';
-    return 'Solicitar licencia';
+    
+return 'Solicitar licencia';
   };
 
   const getLicenseStatusText = () => {
     if (licenseRequestStatus.loading) return 'Verificando estado...';
     if (!licenseRequestStatus.canRequest) return 'No disponible';
-    return 'Disponible';
+    
+return 'Disponible';
   };
 
   useEffect(() => {
@@ -109,7 +113,8 @@ const AdminDashboard = () => {
       if (!user?.ci) {
         setRequestStatus(prev => ({ ...prev, loading: false }));
         setLicenseRequestStatus(prev => ({ ...prev, loading: false }));
-        return;
+        
+return;
       }
 
       try {

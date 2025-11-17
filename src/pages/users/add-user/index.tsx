@@ -24,6 +24,7 @@ import { Profession, AcademicUnit } from 'src/interfaces/user.interface';
 import { TransitionProps } from '@mui/material/transitions';
 import { ErrorOutline } from '@mui/icons-material';
 import { CreateCredentialsDialog } from 'src/components/userCredentials';
+
 // Transition para el diálogo
 interface CreateUserForm {
     ci: string;
@@ -82,11 +83,13 @@ const CreateUserForm: React.FC = () => {
     const [credentialsDialogOpen, setCredentialsDialogOpen] = useState(false);
 
     const [createdUser, setCreatedUser] = useState<UserResponse | null>(null);
+
     // Antes: fechaIngreso: new Date().toISOString().split('T')[0],
     const { control, handleSubmit, formState: { errors }, reset, watch, setValue } = useForm<CreateUserForm>({
         resolver: yupResolver(schema),
         defaultValues: {
             tipoEmpleado: 'DOCENTE',
+
             // remitimos la fecha por defecto: la dejamos vacía para evitar falsos datos
             fechaIngreso: '',
             profession: { id: undefined },
@@ -102,7 +105,8 @@ const CreateUserForm: React.FC = () => {
         const ciValue = watch('ci');
         if (!ciValue) {
             setSearchError('Debe ingresar un CI para buscar.');
-            return;
+            
+return;
         }
 
         setSearching(true);
@@ -110,20 +114,26 @@ const CreateUserForm: React.FC = () => {
 
         const parseToISODate = (raw: any): string | null => {
             if (!raw) return null;
+
             // Si ya viene en formato ISO yyyy-mm-dd (o con hora), extraer yyyy-mm-dd
             if (typeof raw === 'string' && /^\d{4}-\d{2}-\d{2}/.test(raw)) {
                 return raw.slice(0, 10);
             }
+
             // Si viene como dd/mm/yyyy -> convertir
             if (typeof raw === 'string' && /^\d{2}\/\d{2}\/\d{4}$/.test(raw)) {
                 const [d, m, y] = raw.split('/');
-                return `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
+                
+return `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
             }
+
             // Si viene como dd-mm-yyyy
             if (typeof raw === 'string' && /^\d{2}-\d{2}-\d{4}$/.test(raw)) {
                 const [d, m, y] = raw.split('-');
-                return `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
+                
+return `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
             }
+
             // si no se reconoce, no asignar
             return null;
         };
@@ -189,6 +199,7 @@ const CreateUserForm: React.FC = () => {
         };
         fetchInitialData();
     }, []);
+
     // Este se ejecuta cada vez que cambia tipoEmpleado
     useEffect(() => {
         if (tipoEmpleado === 'DOCENTE') {
@@ -206,7 +217,8 @@ const CreateUserForm: React.FC = () => {
         // Validación adicional: debe haber al menos uno
         if (!academicId && !departmentId) {
             setUnidadError(true);
-            return;
+            
+return;
         } else {
             setUnidadError(false);
         }
@@ -224,6 +236,7 @@ const CreateUserForm: React.FC = () => {
                 position: data.position,
                 tipoEmpleado: data.tipoEmpleado,
             };
+
             //console.log(payload)
             const response = await axios.post(`${process.env.NEXT_PUBLIC_API_BASE_URL}/users`, payload);
             const createdUser = response.data;

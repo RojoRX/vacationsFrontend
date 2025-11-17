@@ -60,6 +60,7 @@ const ProfileTab = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
+
   // Solo los campos que se pueden editar: email y celular
   const [editData, setEditData] = useState<Partial<{ email: string; celular: string }>>({});
   const [saveSuccess, setSaveSuccess] = useState<boolean>(false);
@@ -81,7 +82,8 @@ const ProfileTab = () => {
     if (!userId) {
       setLoading(false);
       setError('ID de usuario no disponible. Por favor, inicia sesión.');
-      return;
+      
+return;
     }
 
     setLoading(true);
@@ -90,6 +92,7 @@ const ProfileTab = () => {
       const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
       const response = await axios.get<UserData>(`${baseUrl}/users/${userId}`);
       setUserDataApi(response.data);
+
       // Inicializar editData solo con email y celular para la edición
       setEditData({
         email: response.data.email || '', // Asegurarse de que no sea null
@@ -153,7 +156,8 @@ const getTransformedData = (data: UserData) => ({
       errors.celular = 'El celular debe contener entre 7 y 10 dígitos numéricos.';
     }
     setValidationErrors(errors);
-    return Object.keys(errors).length === 0; // Retorna true si no hay errores
+    
+return Object.keys(errors).length === 0; // Retorna true si no hay errores
   };
 
   const handleSaveChanges = async () => {
@@ -176,6 +180,7 @@ const getTransformedData = (data: UserData) => ({
       handleCloseDialog();
     } catch (err: any) { // Captura el error para acceder a su respuesta
       console.error('Error al guardar los cambios:', err);
+
       // Intentar obtener el mensaje de error del backend si está disponible
       const errorMessage = err.response?.data?.message || 'Error al guardar los cambios. Por favor, inténtalo de nuevo.';
       setError(errorMessage); // Mostrar el error en el Alert principal
@@ -188,17 +193,20 @@ const getTransformedData = (data: UserData) => ({
 
     if (!oldPassword || !newPassword || !confirmPassword) {
       setPasswordError("Todos los campos son obligatorios.");
-      return;
+      
+return;
     }
 
     if (newPassword.length < 6) {
       setPasswordError("La nueva contraseña debe tener al menos 6 caracteres.");
-      return;
+      
+return;
     }
 
     if (newPassword !== confirmPassword) {
       setPasswordError("Las contraseñas no coinciden.");
-      return;
+      
+return;
     }
 
     try {

@@ -60,7 +60,8 @@ const UserReportModal: React.FC<UserReportModalProps> = ({ open, onClose, defaul
     const handleDownload = async () => {
         if (!ci) {
             setError('El carnet de identidad es requerido');
-            return;
+            
+return;
         }
 
         setIsLoading(true);

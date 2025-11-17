@@ -21,13 +21,15 @@ const SupervisorPendingRequestsCard = () => {
       if (!user?.id) {
         // No fetch if user ID is not available (e.g., user not logged in or data not loaded yet)
         setLoading(false);
-        return;
+        
+return;
       }
 
       setLoading(true);
       setError(null);
       try {
         const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
+
         // Fetch the count using the new endpoint
         const response = await axios.get(
           `${baseUrl}/vacation-requests/pending-count/supervisor/${user.id}`

@@ -87,12 +87,14 @@ const UserVacationDebt: React.FC<UserVacationDebtProps> = ({ ci, fechaIngreso, s
                     {
                         params: {
                             carnetIdentidad: ci,
+
                             //startDate: startDateFormatted,
                             endDate
                         }
                     }
 
                 );
+
                 //console.log(response.data)
 
                 setData(response.data);

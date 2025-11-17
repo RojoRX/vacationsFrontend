@@ -55,14 +55,17 @@ const formatDate = (dateString: string) => {
     try {
         // Primero intentar parsear como ISO
         const date = parseISO(dateString);
+
         // Si la fecha es válida, formatear
         if (!isNaN(date.getTime())) {
             return format(date, 'dd/MM/yyyy', { locale: es });
         }
+
         // Si falla, intentar con formato de fecha simple
         const [year, month, day] = dateString.split('T')[0].split('-');
         const simpleDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
-        return format(simpleDate, 'dd/MM/yyyy', { locale: es });
+        
+return format(simpleDate, 'dd/MM/yyyy', { locale: es });
     } catch {
         return dateString.split('T')[0].split('-').reverse().join('/');
     }

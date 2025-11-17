@@ -29,6 +29,7 @@ import { License } from 'src/interfaces/licenseTypes';
 import PictureAsPdfIcon from '@mui/icons-material';
 import { generateLicensePdf } from 'src/utils/licensePdfGenerator';
 import { formatDate } from 'src/utils/dateUtils';
+
 interface AclComponent extends FC {
     acl?: {
         action: string;
@@ -149,6 +150,7 @@ const UserLicenses: AclComponent = () => {
             await axios.delete(`${process.env.NEXT_PUBLIC_API_BASE_URL}/licenses/${selectedLicense.id}`);
             setAlertMessage('Licencia eliminada correctamente');
             setAlertSeverity('success');
+
             // Recargar lista
             const response = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/licenses/user/${user?.id}`);
             const sortedLicenses = response.data.sort((a: License, b: License) =>
@@ -300,7 +302,8 @@ const UserLicenses: AclComponent = () => {
                         <TableBody>
                             {filteredLicenses.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((license) => {
                                 const status = getApprovalStatus(license);
-                                return (
+                                
+return (
                                     <TableRow key={license.id} hover>
                                         <TableCell>{license.id}</TableCell>
                                         <TableCell>{license.licenseType}</TableCell>

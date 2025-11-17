@@ -64,7 +64,8 @@ const SearchUsers = () => {
         setUsers([]);
         setError('Error al cargar los usuarios.');
       }
-      return;
+      
+return;
     }
 
     setLoading(true);
@@ -127,7 +128,8 @@ const SearchUsers = () => {
     const matchesRole = roleFilter === 'all' || user.role?.toLowerCase() === roleFilter.toLowerCase();
     const matchesPosition = positionFilter === 'all' ||
       (user.position && user.position.toLowerCase().includes(positionFilter.toLowerCase()));
-    return matchesRole && matchesPosition;
+    
+return matchesRole && matchesPosition;
   });
 
   const uniqueRoles = Array.from(new Set(users.map(user => user.role)));

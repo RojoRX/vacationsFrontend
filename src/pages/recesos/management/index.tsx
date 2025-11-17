@@ -21,6 +21,7 @@ import axios from 'src/lib/axios';
 import { format, parseISO, eachDayOfInterval, isWeekend } from 'date-fns';
 import { es } from 'date-fns/locale';
 import GeneralHolidayForm from '../create-form';
+
 interface GeneralHolidayPeriod {
     id: number;
     name: string;
@@ -58,6 +59,7 @@ const HolidayManagement: AclComponent = () => {
                 : `${process.env.NEXT_PUBLIC_API_BASE_URL}/general-holiday-periods`;
 
             const response = await axios.get(url);
+
             // Ordenar por fecha de inicio descendente (más recientes primero)
             const sortedData = response.data.sort((a: GeneralHolidayPeriod, b: GeneralHolidayPeriod) => {
                 return new Date(b.startDate).getTime() - new Date(a.startDate).getTime();
@@ -76,6 +78,7 @@ const HolidayManagement: AclComponent = () => {
 
     const handleYearFilter = (year: number | null) => {
         setFilteredYear(year);
+
         // Si year es null, obtenemos todos los registros
         if (year === null) {
             fetchHolidays();
@@ -156,6 +159,7 @@ const HolidayManagement: AclComponent = () => {
 
         return matchesSearch && matchesType && matchesYear;
     });
+
     // Nuevo estado para manejar errores
     const [errors, setErrors] = useState({
         name: '',
@@ -202,7 +206,8 @@ const HolidayManagement: AclComponent = () => {
         }
 
         setErrors(newErrors);
-        return isValid;
+        
+return isValid;
     };
 
     return (
@@ -415,6 +420,7 @@ const HolidayManagement: AclComponent = () => {
                             if (editHoliday) {
                                 const newHoliday = { ...editHoliday, startDate: e.target.value };
                                 setEditHoliday(newHoliday);
+
                                 // Validar fechas
                                 if (newHoliday.endDate && new Date(newHoliday.endDate) < new Date(e.target.value)) {
                                     setErrors(prev => ({
@@ -450,6 +456,7 @@ const HolidayManagement: AclComponent = () => {
                             if (editHoliday) {
                                 const newHoliday = { ...editHoliday, endDate: e.target.value };
                                 setEditHoliday(newHoliday);
+
                                 // Validar que la fecha de fin no sea anterior a la de inicio
                                 if (newHoliday.startDate && new Date(e.target.value) < new Date(newHoliday.startDate)) {
                                     setErrors(prev => ({

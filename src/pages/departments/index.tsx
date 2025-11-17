@@ -47,14 +47,16 @@ const DepartmentManagement: React.FC = () => {
         const trimmed = name.trim();
         if (!trimmed) return 'El nombre no puede estar vacío.';
         if (trimmed.length < 3) return 'El nombre debe tener al menos 3 caracteres.';
-        return null;
+        
+return null;
     };
 
     const createDepartment = async () => {
         const validation = validateName(newDepartment.name);
         if (validation) {
             showSnackbar(validation, 'warning');
-            return;
+            
+return;
         }
 
         try {
@@ -73,7 +75,8 @@ const DepartmentManagement: React.FC = () => {
         const validation = validateName(name);
         if (validation) {
             showSnackbar(validation, 'warning');
-            return;
+            
+return;
         }
 
         try {

@@ -120,6 +120,7 @@ const NotificationDropdown = ({ settings }: Props) => {
           const url = `${process.env.NEXT_PUBLIC_API_BASE_URL}/notifications/${user.id}/unread`;
 
           const response = await axios.get(url);
+
           //console.log('Notificaciones recibidas:', response.data, 'para el usuario:', user); // <-- agrega esta línea aquí
           setNotificationsData(response.data);
 
@@ -132,7 +133,8 @@ const NotificationDropdown = ({ settings }: Props) => {
 
       fetchNotifications();
       const intervalId = setInterval(fetchNotifications, 10000); // Actualizar notificaciones cada 10 segundos
-      return () => clearInterval(intervalId);
+      
+return () => clearInterval(intervalId);
     }
   }, [user?.id, user?.role]);
 
@@ -161,7 +163,8 @@ const NotificationDropdown = ({ settings }: Props) => {
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    return new Intl.DateTimeFormat('es-BO', {
+    
+return new Intl.DateTimeFormat('es-BO', {
       day: '2-digit',
       month: 'long',
       year: 'numeric'

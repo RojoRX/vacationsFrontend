@@ -19,7 +19,8 @@ const formatGestionRange = (startDate, endDate) => {
   try {
     const startYear = format(parseISO(startDate), 'yyyy');
     const endYear = format(parseISO(endDate), 'yyyy');
-    return `${startYear}-${endYear}`;
+    
+return `${startYear}-${endYear}`;
   } catch {
     return `${startDate.split('-')[0]}-${endDate.split('-')[0]}`;
   }

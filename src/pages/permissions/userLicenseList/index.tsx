@@ -26,6 +26,7 @@ import {
   Select,
   MenuItem,
   Grid
+
   // <-- Importar Grid
 } from '@mui/material';
 import HourglassEmptyIcon from '@mui/icons-material/HourglassEmpty';
@@ -102,6 +103,7 @@ const UserLicenseList: React.FC<UserLicenseListProps> = ({ userId }) => {
   const [dialogLoadingDetails, setDialogLoadingDetails] = useState(false); // <-- Estado de carga para los detalles del diálogo
   const [dialogDetailsError, setDialogDetailsError] = useState<string | null>(null); // <-- Estado de error para los detalles del diálogo
   const [dialogSuccess, setDialogSuccess] = useState<string | null>(null);
+
   // Estado para abrir/cerrar el diálogo de edición
   const [openEditLicenseDialog, setOpenEditLicenseDialog] = useState(false);
   const [selectedLicenseToEdit, setSelectedLicenseToEdit] = useState<License | null>(null);
@@ -216,6 +218,7 @@ const UserLicenseList: React.FC<UserLicenseListProps> = ({ userId }) => {
     try {
       await axios.delete(`${process.env.NEXT_PUBLIC_API_BASE_URL}/licenses/${selectedLicenseId}/admin-remove`);
       setDialogSuccess('Licencia eliminada correctamente.');
+
       // Después de eliminar, recargar la tabla de licencias
       // y cerrar el diálogo después de un breve retraso para que el usuario vea el mensaje
       setTimeout(() => {
@@ -236,12 +239,14 @@ const UserLicenseList: React.FC<UserLicenseListProps> = ({ userId }) => {
   const handleOpenEditLicenseDialog = (license: License) => {
     setSelectedLicenseToEdit(license);
     setOpenEditLicenseDialog(true);
+
     // Cerrar el diálogo de detalles si está abierto
     setOpenDetailsDialog(false);
   };
   const handleOpenDetailsDialog = async (licenseId: number) => {
     setSelectedLicenseId(licenseId);
     setOpenDetailsDialog(true);
+
     // Cerrar el diálogo de edición si está abierto
     setOpenEditLicenseDialog(false);
 
@@ -300,12 +305,14 @@ const UserLicenseList: React.FC<UserLicenseListProps> = ({ userId }) => {
         return null;
     }
   };
+
   // --- Función para generar PDF ---
   const handleDownloadPDF = () => {
     // Usar dialogUserDetails para el PDF si ya está cargado
     if (!dialogLicenseDetails || !dialogUserDetails) { // Usamos dialogLicenseDetails y dialogUserDetails del estado del diálogo
       setDialogDetailsError('Detalles de la licencia o del usuario no disponibles para generar el PDF.');
-      return;
+      
+return;
     }
 
     const pdf = generateLicensePdf(dialogLicenseDetails, { // Pasamos dialogLicenseDetails
@@ -380,7 +387,8 @@ const UserLicenseList: React.FC<UserLicenseListProps> = ({ userId }) => {
     if (value === true) {
       return <Chip label="Aprobado" color="success" size="small" icon={<CheckCircleIcon />} />;
     }
-    return <Chip label="Rechazado" color="error" size="small" icon={<CancelIcon />} />;
+    
+return <Chip label="Rechazado" color="error" size="small" icon={<CancelIcon />} />;
   };
 
   return (
@@ -616,6 +624,7 @@ const UserLicenseList: React.FC<UserLicenseListProps> = ({ userId }) => {
                   </Grid>
                 </Grid>
               ) : (
+
                 // Mostrar un mensaje si no se pudieron cargar los detalles completos
                 !dialogDetailsError && <Typography variant="body2">No se pudieron cargar los detalles completos de la licencia o del usuario.</Typography>
               )}

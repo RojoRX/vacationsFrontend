@@ -129,7 +129,8 @@ const DepartmentLicenses: AclComponent = () => {
             filtered = filtered.filter(license => {
                 const userDetail = details[license.userId];
                 if (!userDetail) return false;
-                return (
+                
+return (
                     userDetail.name.toLowerCase().includes(term.toLowerCase()) ||
                     userDetail.ci.toLowerCase().includes(term.toLowerCase())
                 );
@@ -204,7 +205,8 @@ const DepartmentLicenses: AclComponent = () => {
             </Box>
         );
     }
-    return (
+    
+return (
         <Paper elevation={3} sx={{ p: 3, borderRadius: 2 }}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
                 <Typography variant="h5" component="h2" sx={{ display: 'flex', alignItems: 'center' }}>

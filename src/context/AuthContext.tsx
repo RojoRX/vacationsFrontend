@@ -42,6 +42,7 @@ const AuthProvider = ({ children }: Props) => {
   useEffect(() => {
     const initAuth = async (): Promise<void> => {
       const storedToken = window.localStorage.getItem(authConfig.storageTokenKeyName);
+
       //console.log('📦 Token en almacenamiento:', storedToken);
 
       // Validar token antes de usarlo
@@ -51,6 +52,7 @@ const AuthProvider = ({ children }: Props) => {
           const response = await axios.get(authConfig.meEndpoint, {
             headers: { Authorization: `Bearer ${storedToken}` }
           });
+
           //console.log('👤 Usuario autenticado:', response.data.userData);
           setUser({ ...response.data.userData });
           setLoading(false);

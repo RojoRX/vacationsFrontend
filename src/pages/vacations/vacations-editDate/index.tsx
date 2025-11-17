@@ -49,11 +49,13 @@ const EditVacationDialog: React.FC<EditVacationDialogProps> = ({
   const handleSave = async () => {
     if (!startDate || !endDate) {
       setErrorMessage('Debe seleccionar ambas fechas.');
-      return;
+      
+return;
     }
     if (new Date(startDate) > new Date(endDate)) {
       setErrorMessage('La fecha de inicio no puede ser posterior a la fecha de fin.');
-      return;
+      
+return;
     }
 
     try {

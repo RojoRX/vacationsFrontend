@@ -21,7 +21,8 @@ export const formatDate = (dateString: string | null, fallback = 'No definida'):
     return format(adjustedDate, 'dd/MM/yyyy');
   } catch (error) {
     console.error('Error formateando fecha:', dateString, error);
-    return fallback;
+    
+return fallback;
   }
 };
 
@@ -40,5 +41,6 @@ export const getCurrentISODate = (): string => {
  */
 export const isValidDate = (dateString: string | null): boolean => {
   if (!dateString) return false;
-  return !isNaN(new Date(dateString).getTime());
+  
+return !isNaN(new Date(dateString).getTime());
 };

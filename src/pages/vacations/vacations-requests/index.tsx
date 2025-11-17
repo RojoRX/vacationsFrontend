@@ -50,6 +50,7 @@ import SaveIcon from '@mui/icons-material/Save';
 import { DatePicker, LocalizationProvider } from '@mui/lab'; // Para v5
 import EditVacationDialog from '../vacations-edit';
 import toast from 'react-hot-toast';
+
 interface VacationRequest {
     id: number;
     position: string;
@@ -105,7 +106,8 @@ const VacationRequestList: VacationRequestsComponent = () => {
             'SUSPENDED': 'Suspendido',
             'CANCELLED': 'Cancelado'
         };
-        return statusMap[status] || status;
+        
+return statusMap[status] || status;
     };
 
     const [dateFilter, setDateFilter] = useState({
@@ -121,7 +123,8 @@ const VacationRequestList: VacationRequestsComponent = () => {
         const fetchRequests = async () => {
             if (!user?.id) {
                 console.error('ID de usuario no disponible.');
-                return;
+                
+return;
             }
 
             try {
@@ -169,7 +172,8 @@ const VacationRequestList: VacationRequestsComponent = () => {
                 } else if (endDate) {
                     return dateToFilter <= endDate;
                 }
-                return true;
+                
+return true;
             });
         }
 
@@ -265,6 +269,7 @@ const VacationRequestList: VacationRequestsComponent = () => {
             return dateString;
         }
     };
+
     // Función para abrir el diálogo de edición
     const handleOpenEditDialog = (request: VacationRequest) => {
         setSelectedRequest(request);
@@ -311,7 +316,8 @@ const VacationRequestList: VacationRequestsComponent = () => {
         }
 
     };
-    return (
+    
+return (
         <Box sx={{ width: '100%' }}>
             <Paper sx={{ width: '100%', mb: 2, p: 2 }}>
                 <Toolbar

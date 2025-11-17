@@ -51,7 +51,8 @@ const UserProfileHeader = () => {
       if (!userId) {
         setError('User ID is not available.');
         setLoading(false);
-        return;
+        
+return;
       }
 
       try {

@@ -133,7 +133,8 @@ const AdminLicenses: AclComponent = () => {
                             academicUnit: userResponse.data.academicUnit?.name || 'Sin Unidad académica'
                         }))
                 );
-                return Promise.all(userRequests);
+                
+return Promise.all(userRequests);
             })
             .then(userDetailsArray => {
                 const userDetailsMap: { [key: string]: any } = {};
@@ -157,7 +158,8 @@ const AdminLicenses: AclComponent = () => {
             filtered = filtered.filter(license => {
                 const userDetail = details[license.userId];
                 if (!userDetail) return false;
-                return (
+                
+return (
                     userDetail.name.toLowerCase().includes(term.toLowerCase()) ||
                     userDetail.ci.toLowerCase().includes(term.toLowerCase()) ||
                     userDetail.department.toLowerCase().includes(term.toLowerCase()) ||

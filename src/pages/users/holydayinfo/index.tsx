@@ -50,6 +50,7 @@ const UserHolidayPeriods: AclComponent = ({ userId, year }) => {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(5);
   const [searchTerm, setSearchTerm] = useState('');
+
   // Cambiar el estado inicial del typeFilter para que coincida con los valores del MenuItem
   const [typeFilter, setTypeFilter] = useState<string>('all');
 
@@ -144,7 +145,8 @@ const UserHolidayPeriods: AclComponent = ({ userId, year }) => {
     .sort((a, b) => {
       // Ordenar por año descendente y luego por nombre
       if (b.year !== a.year) return b.year - a.year;
-      return a.name.localeCompare(b.name);
+      
+return a.name.localeCompare(b.name);
     });
 
   // Resetear la página cuando cambian los filtros
@@ -242,7 +244,8 @@ const UserHolidayPeriods: AclComponent = ({ userId, year }) => {
                     const startDate = parseISO(period.startDate);
                     const endDate = parseISO(period.endDate);
                     const duration = getBusinessDays(startDate, endDate);
-                    return (
+                    
+return (
                       <TableRow key={period.id} hover>
                         <TableCell>{period.year}</TableCell>
                         <TableCell>

@@ -86,7 +86,8 @@ const CombinedHolidayPeriods: React.FC<CombinedHolidayPeriodsProps> = ({ userId,
             // Ordenar por año descendente y nombre
             combined.sort((a, b) => {
                 if (b.year !== a.year) return b.year - a.year;
-                return a.name.localeCompare(b.name);
+                
+return a.name.localeCompare(b.name);
             });
 
             setCombinedPeriods(combined);
@@ -158,7 +159,8 @@ const CombinedHolidayPeriods: React.FC<CombinedHolidayPeriodsProps> = ({ userId,
 
     const formatShortDate = (dateString: string) => {
         const date = new Date(dateString);
-        return date.toLocaleDateString('es-ES', {
+        
+return date.toLocaleDateString('es-ES', {
             day: '2-digit',
             month: 'short',
             year: 'numeric'

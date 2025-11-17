@@ -74,7 +74,8 @@ const GeneralHolidayForm: React.FC<GeneralHolidayFormProps> = ({ open, onClose, 
     }
 
     setErrors(newErrors);
-    return isValid;
+    
+return isValid;
   };
 
   const handleSubmit = async (event: React.FormEvent) => {

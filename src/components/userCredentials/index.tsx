@@ -74,6 +74,7 @@ export const CreateCredentialsDialog: React.FC<CreateCredentialsDialogProps> = (
             });
 
             setResult(response.data);
+
             // Extraer valores y generar PDF
             const finalUsername = username || response.data.username;
             const finalPassword = password || response.data.temporaryPassword || 'No proporcionada';

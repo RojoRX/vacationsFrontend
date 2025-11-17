@@ -42,6 +42,7 @@ const WelcomeDashboard = () => {
     reason: '',
     loading: true
   });
+
   // NUEVO ESTADO para la validación de licencias
   const [licenseRequestStatus, setLicenseRequestStatus] = useState({
     canRequest: true,
@@ -55,7 +56,8 @@ const WelcomeDashboard = () => {
       if (!user?.ci) {
         setRequestStatus(prev => ({ ...prev, loading: false }));
         setLicenseRequestStatus(prev => ({ ...prev, loading: false }));
-        return;
+        
+return;
       }
 
       try {
@@ -85,6 +87,7 @@ const WelcomeDashboard = () => {
         const licenseValidationResponse = await axios.get(
           `${process.env.NEXT_PUBLIC_API_BASE_URL}/licenses-validation/can-request/${user.ci}`
         );
+
         //console.log('Available days from backend:', licenseValidationResponse.data.availableDays);
 
         setLicenseRequestStatus({
@@ -109,6 +112,7 @@ const WelcomeDashboard = () => {
           reason: errorMessage,
           loading: false
         });
+
         // Asegurar que el estado de licencia también se actualice en caso de error general
         setLicenseRequestStatus({
           canRequest: false,
@@ -133,7 +137,8 @@ const WelcomeDashboard = () => {
     if (requestStatus.loading) return 'Verificando disponibilidad...';
     if (!requestStatus.canRequest) return requestStatus.reason;
     if (vacationDebt !== null && vacationDebt <= 0) return 'No tienes días de vacaciones disponibles';
-    return 'Solicitar vacaciones';
+    
+return 'Solicitar vacaciones';
   };
 
   // Texto para mostrar en la card de vacaciones
@@ -141,7 +146,8 @@ const WelcomeDashboard = () => {
     if (requestStatus.loading) return 'Verificando estado...';
     if (!requestStatus.canRequest) return 'No disponible';
     if (vacationDebt !== null && vacationDebt <= 0) return 'Sin días disponibles';
-    return 'Disponible';
+    
+return 'Disponible';
   };
 
   // --- NUEVO: Lógica para el botón de Licencias ---
@@ -154,7 +160,8 @@ const WelcomeDashboard = () => {
     if (licenseRequestStatus.loading) return 'Verificando disponibilidad...';
     if (!licenseRequestStatus.canRequest) return licenseRequestStatus.reason;
     if (licenseRequestStatus.availableDays !== undefined && licenseRequestStatus.availableDays <= 0) return 'No tienes días de licencia disponibles';
-    return 'Solicitar licencia';
+    
+return 'Solicitar licencia';
   };
 
   // Esta función ahora solo determina si está "Disponible" o "No disponible",
@@ -162,9 +169,11 @@ const WelcomeDashboard = () => {
   const getLicenseStatusText = () => {
     if (licenseRequestStatus.loading) return 'Verificando estado...';
     if (!licenseRequestStatus.canRequest) return 'No disponible';
-    return 'Disponible';
+    
+return 'Disponible';
   };
-  return (
+  
+return (
     <ApexChartWrapper>
       <Grid container spacing={6}>
         {/* Bienvenida */}

@@ -166,6 +166,7 @@ const UserProfile = ({ tab, data }: { tab: string; data: UserProfileActiveTab })
     </Grid>
   )
 }
+
 // ** Configuración ACL para UserProfile
 UserProfile.acl = {
   action: 'read',

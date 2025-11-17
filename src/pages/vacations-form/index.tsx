@@ -94,6 +94,7 @@ const VacationRequestSubmissionForm = () => {
     // Formatear la fecha resultante
     const formattedMonth = String(ingresoMonth).padStart(2, '0');
     const formattedDay = String(ingresoDay).padStart(2, '0');
+
     //console.log("Informacion del hook" + " " + user?.fecha_ingreso);
     return `${anniversaryYear}-${formattedMonth}-${formattedDay}`;
 
@@ -118,6 +119,7 @@ const VacationRequestSubmissionForm = () => {
           }
         );
         setData(response.data);
+
         //console.log(data)
         const availablePeriod = response.data.detalles.find(d => d.diasDisponibles > 0);
         if (availablePeriod) {
@@ -157,6 +159,7 @@ const VacationRequestSubmissionForm = () => {
         }
 
       );
+
       // Supongamos que response.data.id contiene el ID
       setRequestSuccess(true);
       setRequestId(response.data.id || null); // Aquí guardamos el ID

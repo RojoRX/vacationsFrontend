@@ -62,6 +62,7 @@ const SupervisorVacationRequests: FC<SupervisorVacationRequestsProps> = () => {
     DENIED: { label: 'Rechazado', color: 'error' },
     SUSPENDED: { label: 'Suspendido', color: 'info' },
   } as const;
+
 // Obtener las solicitudes de vacaciones por supervisor
 useEffect(() => {
   const fetchVacationRequests = async () => {
@@ -88,7 +89,8 @@ const filteredRequests = requests
     const matchesName = request.user.username.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesCI = request.user.ci.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesStatus = statusFilter === '' || request.status === statusFilter;
-    return (matchesName || matchesCI) && matchesStatus;
+    
+return (matchesName || matchesCI) && matchesStatus;
   })
   .sort((a, b) => b.id - a.id); // Ordenar por ID de mayor a menor
 
