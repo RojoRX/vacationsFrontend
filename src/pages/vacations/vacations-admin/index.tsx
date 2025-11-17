@@ -53,7 +53,7 @@ import { VacationRequest } from 'src/interfaces/vacationRequests';
 import { formatDate } from 'src/utils/dateUtils';
 import Link from 'next/link';
 import useUser from 'src/hooks/useUser';
-import EditVacationDialog from '../vacations-editDate';
+import EditVacationDialog from '../vacations-edit';
 import GeneralReportDialog from 'src/pages/users/generalReports';
 import GlobalVacationReportDialog from 'src/components/globalVacationReport';
 
@@ -195,7 +195,11 @@ const AdminVacationRequests: FC = () => {
   const handleEditSuccess = async () => {
     try {
       const response = await axios.get(`${API_BASE_URL}/vacation-requests`);
-      setRequests(response.data);
+
+      // Filtrar solicitudes eliminadas
+      const filteredRequests = response.data.filter((req: VacationRequest) => !req.deleted);
+
+      setRequests(filteredRequests);
 
       setFeedbackSeverity('success');
       setFeedbackMessage('Solicitud actualizada correctamente ✅');
@@ -207,6 +211,7 @@ const AdminVacationRequests: FC = () => {
       console.error('Error al actualizar la lista después de editar:', error);
     }
   };
+
 
   const [openReportDialog, setOpenReportDialog] = useState(false);
 
@@ -291,7 +296,7 @@ const AdminVacationRequests: FC = () => {
               color="primary"
               onClick={() => setOpenReportDialog(true)}
             >
-            Reporte Vacaciones
+              Reporte Vacaciones
             </Button>
 
           </Stack>
@@ -514,23 +519,6 @@ const AdminVacationRequests: FC = () => {
                 </Box>
               )}
 
-              {/* Botón para suspender */}
-              {selectedRequest.status !== 'SUSPENDED' && selectedRequest.deleted !== true && (
-                <Grid container spacing={1}>
-                  <Grid item xs={12}>
-                    <Button
-                      variant="contained"
-                      color="warning"
-                      startIcon={<EditIcon />}
-                      onClick={() => setOpenSuspendDialog(true)}
-                      fullWidth
-                    >
-                      Suspender Solicitud
-                    </Button>
-                  </Grid>
-                </Grid>
-              )}
-
             </Box>
           )}
         </DialogContent>
@@ -571,19 +559,12 @@ const AdminVacationRequests: FC = () => {
 
 
       </Dialog>
-      {/* Diálogo de suspensión (componente reutilizable) */}
-      <SuspendVacationDialog
-        open={openSuspendDialog}
-        onClose={() => setOpenSuspendDialog(false)}
-        request={selectedRequest}
-        onSuccess={handleSuspendSuccess}
-      />
       <EditVacationDialog
         open={openEditDialog}
-        onClose={handleCloseEditDialog}
+        onClose={() => setOpenEditDialog(false)}
         request={selectedRequest}
-        onSuccess={async () => {
-          await handleEditSuccess();
+        onUpdate={async (updatedRequest: VacationRequest) => {
+          await handleEditSuccess(); // Tu función existente
           handleCloseDetailDialog(); // 🔹 cerrar el dialogo padre también
           handleCloseEditDialog();   // 🔹 cerrar el dialogo de edición
         }}

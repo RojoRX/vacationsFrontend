@@ -43,6 +43,7 @@ import { VacationRequest } from 'src/interfaces/vacationRequests';
 import { Delete as DeleteIcon } from '@mui/icons-material';
 import useUser from 'src/hooks/useUser';
 import { formatDate } from 'src/utils/dateUtils';
+import EditVacationDialog from 'src/pages/vacations/vacations-edit';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || '';
 
@@ -80,26 +81,27 @@ const VacationRequestsTable: React.FC<VacationRequestsTableProps> = ({ userId, r
     const [openDeleteConfirmDialog, setOpenDeleteConfirmDialog] = useState(false);
     const [requestToDelete, setRequestToDelete] = useState<VacationRequest | null>(null);
     const [deleteSuccess, setDeleteSuccess] = useState(false);
+    // En el componente, agregar este estado:
+    const [openEditDialog, setOpenEditDialog] = useState(false);
+    useEffect(() => {
+        const fetchRequests = async () => {
+            try {
+                setLoading(true);
+                setError(null);
+                const response = await axios.get(`${API_BASE_URL}/vacation-requests/user/${userId}`);
+                setRequests(response.data);
+            } catch (err) {
+                setError('Error al cargar las solicitudes de vacaciones');
+                console.error('Error fetching vacation requests:', err);
+            } finally {
+                setLoading(false);
+            }
+        };
 
-useEffect(() => {
-    const fetchRequests = async () => {
-        try {
-            setLoading(true);
-            setError(null);
-            const response = await axios.get(`${API_BASE_URL}/vacation-requests/user/${userId}`);
-            setRequests(response.data);
-        } catch (err) {
-            setError('Error al cargar las solicitudes de vacaciones');
-            console.error('Error fetching vacation requests:', err);
-        } finally {
-            setLoading(false);
+        if (userId) {
+            fetchRequests();
         }
-    };
-
-    if (userId) {
-        fetchRequests();
-    }
-}, [userId, reloadRequests]); // Asegúrate de que reloadRequests esté en las dependencias
+    }, [userId, reloadRequests]); // Asegúrate de que reloadRequests esté en las dependencias
 
     const handleChangePage = (event: unknown, newPage: number) => {
         setPage(newPage);
@@ -119,9 +121,12 @@ useEffect(() => {
         setOpenDetailDialog(false);
     };
 
-    const handleEditRequest = (requestId: number) => {
-        router.push(`/vacations/vacations-requests/${requestId}`);
+    // Agregar estos métodos en el componente
+    const handleEditRequest = (request: VacationRequest) => {
+        setSelectedRequest(request);
+        setOpenEditDialog(true);
     };
+
 
     const handleSuspendSuccess = async () => {
         try {
@@ -155,6 +160,16 @@ useEffect(() => {
         } catch (err) {
             console.error('Error al eliminar la solicitud:', err);
         }
+    };
+
+    const handleUpdateSuccess = (updatedRequest: VacationRequest) => {
+        setRequests(prev =>
+            prev
+                .map(req => (req.id === updatedRequest.id ? updatedRequest : req))
+                .filter(req => !req.deleted) // <- filtra las eliminadas
+        );
+        setOpenEditDialog(false);
+        setOpenDetailDialog(false); // Cerrar también el diálogo de detalles si está abierto
     };
 
 
@@ -213,15 +228,17 @@ useEffect(() => {
                                             <Box sx={{ display: 'flex', gap: 1 }}>
                                                 <IconButton
                                                     size="small"
-                                                    onClick={() => handleOpenDetailDialog(request)}
+                                                    onClick={() => handleEditRequest(request)}
                                                     color="primary"
+                                                    title="Editar solicitud"
                                                 >
                                                     <EditIcon />
                                                 </IconButton>
                                                 <IconButton
                                                     size="small"
-                                                    onClick={() => handleEditRequest(request.id)}
-                                                    color="secondary"
+                                                    onClick={() => handleOpenDetailDialog(request)}
+                                                    color="info"
+                                                    title="Ver detalles"
                                                 >
                                                     <VisibilityIcon />
                                                 </IconButton>
@@ -418,6 +435,13 @@ useEffect(() => {
                 onClose={() => setOpenSuspendDialog(false)}
                 request={selectedRequest as unknown as (Omit<VacationRequest, "managementPeriodStart" | "managementPeriodEnd" | "reviewDate">)}
                 onSuccess={handleSuspendSuccess}
+            />
+
+            <EditVacationDialog
+                open={openEditDialog}
+                onClose={() => setOpenEditDialog(false)}
+                request={selectedRequest}
+                onUpdate={handleUpdateSuccess}
             />
 
         </Box>
