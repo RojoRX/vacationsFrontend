@@ -41,26 +41,26 @@ const navigation = (): VerticalNavItemsType => {
         //   subject: 'vacation-request-form',
         // },
         {
-          title: 'Resumen de Mis Vacaciones',
+          title: 'Resumen',
           path: '/vacations/vacations-dashboard',
           action: 'read',
           subject: 'vacation-dashboard',
         },
         {
-          title: 'Mis Solicitudes de Vacaciones',
+          title: 'Mis Solicitudes',
           path: '/vacations/vacations-requests',
           action: 'read',
           subject: 'vacation-request-list',
         },
         {
-          title: 'Solicitudes Pendientes del Personal',
+          title: 'Solicitudes del Personal',
           path: '/vacations/vacations-supervisor',
           action: 'read',
           subject: 'supervisor-vacation-requests',
         },
 
         {
-          title: 'Ver Todas las Solicitudes',
+          title: 'Todas las Solicitudes',
           path: '/vacations/vacations-admin',
           action: 'read',
         },
@@ -89,7 +89,7 @@ const navigation = (): VerticalNavItemsType => {
           subject: 'department-permission',
         },
         {
-          title: 'Gestión de Solicitudes de Permisos',
+          title: 'Gestión de Permisos',
           path: '/permissions/adminlicenses',
           action: 'read',
           subject: 'adminlicenses',
@@ -118,7 +118,7 @@ const navigation = (): VerticalNavItemsType => {
       ]
     },
     {
-      title: 'Gestión de Usuarios',
+      title: 'Usuarios',
       icon: 'mdi:account-multiple',
       children: [
         {
@@ -161,7 +161,7 @@ const navigation = (): VerticalNavItemsType => {
         },
 
         {
-          title: 'Gestión de Departamentos',
+          title: 'Departamentos',
           icon: 'mdi:office-building',
           path: '/departments',
           action: 'manage',
@@ -173,13 +173,13 @@ const navigation = (): VerticalNavItemsType => {
           action: 'manage',
         },
         {
-          title: 'Gestión de Feriados',
+          title: 'Feriados',
           icon: 'mdi:office-building',
           path: '/nonholidays',
           action: 'manage',
         },
         {
-          title: 'Gestión de Políticas de Vacaciones',
+          title: 'Políticas de Vacaciones',
           icon: 'mdi:beach',
           path: '/vacations/vacations-policy',
           action: 'manage',

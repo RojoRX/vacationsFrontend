@@ -12,7 +12,8 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
-  TextField
+  TextField,
+  Tooltip
 } from '@mui/material';
 import {
   BeachAccess as VacationIcon,
@@ -24,7 +25,7 @@ import { format, isBefore, isAfter, parseISO, addDays } from 'date-fns';
 import { es } from 'date-fns/locale';
 import useUser from 'src/hooks/useUser';
 import { formatDate } from 'src/utils/dateUtils';
-import { DatePicker, LocalizationProvider } from '@mui/x-date-pickers';
+import { DatePicker, LocalizationProvider, PickersDay } from '@mui/x-date-pickers';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { calculateEndDate, getNextWorkDay } from 'src/utils/calculateEndDate';
 import router from 'next/router';
@@ -68,6 +69,7 @@ const VacationRequestSubmissionForm = () => {
   const [requestError, setRequestError] = useState<string | null>(null);
   const [selectedStartDate, setSelectedStartDate] = useState<Date | null>(null);
   const [requestId, setRequestId] = useState<number | null>(null);
+  const [nonHolidays, setNonHolidays] = useState<{ date: string; description: string }[]>([]);
 
   function getMostRecentAnniversary(ingresoDateStr: string, today: Date = new Date()): string {
     // Parsear la fecha de ingreso
@@ -138,6 +140,25 @@ const VacationRequestSubmissionForm = () => {
       fetchVacationDebt();
     }
   }, [user?.ci]);
+  useEffect(() => {
+    const fetchNonHolidays = async () => {
+      try {
+         const res = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/non-holidays/all`);
+
+        setNonHolidays(
+          res.data.map((d: any) => ({
+            date: d.date, // YYYY-MM-DD
+            description: d.description
+          }))
+        );
+      } catch (e) {
+        console.error("Error cargando feriados:", e);
+      }
+    };
+
+    fetchNonHolidays();
+  }, []);
+
 
   const handleRequestVacation = async () => {
     if (!selectedPeriod || daysRequested <= 0 || !selectedStartDate) return;
@@ -213,6 +234,37 @@ const VacationRequestSubmissionForm = () => {
   if (endDate) {
     endDatePlusOne = getNextWorkDay(endDate); // Ajusta al siguiente día hábil si es fin de semana
   }
+
+const createHolidayDayComponent = (nonHolidays: { date: string; description: string }[]) => {
+  return function HolidayDay(props: any) {
+    const { day, outsideCurrentMonth, ...other } = props;
+
+    const dayStr = format(day, "yyyy-MM-dd");
+    const holiday = nonHolidays.find(h => h.date === dayStr);
+
+    if (!holiday) {
+      return <PickersDay day={day} outsideCurrentMonth={outsideCurrentMonth} {...other} />;
+    }
+
+    return (
+      <Tooltip title={holiday.description} arrow>
+        <PickersDay
+          day={day}
+          outsideCurrentMonth={outsideCurrentMonth}
+          {...other}
+          sx={{
+            backgroundColor: "rgba(255, 0, 0, 0.25)",
+            borderRadius: "50%",
+            "&:hover": {
+              backgroundColor: "rgba(255, 0, 0, 0.45)"
+            }
+          }}
+        />
+      </Tooltip>
+    );
+  };
+};
+
 
 
 
@@ -312,9 +364,16 @@ const VacationRequestSubmissionForm = () => {
               value={selectedStartDate}
               onChange={(newDate) => setSelectedStartDate(newDate)}
               disablePast
-              slotProps={{ textField: { fullWidth: true, margin: 'normal' } }}
+              slots={{
+                day: createHolidayDayComponent(nonHolidays)
+              }}
+              slotProps={{
+                textField: { fullWidth: true, margin: "normal" }
+              }}
             />
           </LocalizationProvider>
+
+
 
           {selectedStartDate && selectedPeriod.diasDisponibles > 0 && (
             <Alert severity="info" sx={{ mt: 2 }}>

@@ -44,6 +44,17 @@ const CombinedHolidayPeriods: React.FC<CombinedHolidayPeriodsProps> = ({ userId,
     const [editHoliday, setEditHoliday] = useState<Partial<HolidayPeriod> | null>(null);
     const [snackbarMessage, setSnackbarMessage] = useState<string>('');
     const [openDialog, setOpenDialog] = useState<boolean>(false);
+    const [holidays, setHolidays] = useState<any[]>([]);
+    const [selectedHolidays, setSelectedHolidays] = useState<any[]>([]);
+    const [openHolidayDialog, setOpenHolidayDialog] = useState(false);
+    const fetchHolidays = async () => {
+        try {
+            const res = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/non-holidays/all`);
+            setHolidays(res.data);
+        } catch (error) {
+            console.error("Error al obtener feriados:", error);
+        }
+    };
 
     const fetchHolidayPeriods = async () => {
         try {
@@ -86,8 +97,8 @@ const CombinedHolidayPeriods: React.FC<CombinedHolidayPeriodsProps> = ({ userId,
             // Ordenar por año descendente y nombre
             combined.sort((a, b) => {
                 if (b.year !== a.year) return b.year - a.year;
-                
-return a.name.localeCompare(b.name);
+
+                return a.name.localeCompare(b.name);
             });
 
             setCombinedPeriods(combined);
@@ -101,6 +112,7 @@ return a.name.localeCompare(b.name);
 
     useEffect(() => {
         fetchHolidayPeriods();
+        fetchHolidays();
     }, [userId, tipoEmpleado]);
 
     const handleChangePage = (event: unknown, newPage: number) => setPage(newPage);
@@ -108,6 +120,16 @@ return a.name.localeCompare(b.name);
         setRowsPerPage(parseInt(event.target.value, 10));
         setPage(0);
     };
+    const getHolidaysInsideRange = (start: string, end: string) => {
+        const startDate = new Date(start);
+        const endDate = new Date(end);
+
+        return holidays.filter(h => {
+            const d = new Date(h.date);
+            return d >= startDate && d <= endDate;
+        });
+    };
+
 
     const handleDelete = async (id: number) => {
         try {
@@ -159,8 +181,8 @@ return a.name.localeCompare(b.name);
 
     const formatShortDate = (dateString: string) => {
         const date = new Date(dateString);
-        
-return date.toLocaleDateString('es-ES', {
+
+        return date.toLocaleDateString('es-ES', {
             day: '2-digit',
             month: 'short',
             year: 'numeric'
@@ -241,6 +263,7 @@ return date.toLocaleDateString('es-ES', {
                             <TableCell>Fecha Inicio</TableCell>
                             <TableCell>Fecha Fin</TableCell>
                             <TableCell>Duración</TableCell>
+                            <TableCell>Feriados en este receso</TableCell>
                             <TableCell>Tipo</TableCell>
                             <TableCell>Acciones</TableCell>
                         </TableRow>
@@ -258,6 +281,26 @@ return date.toLocaleDateString('es-ES', {
                                 <TableCell>{formatShortDate(period.startDate)}</TableCell>
                                 <TableCell>{formatShortDate(period.endDate)}</TableCell>
                                 <TableCell>{getBusinessDays(new Date(period.startDate), new Date(period.endDate))} (días hábiles)</TableCell>
+                                <TableCell>
+                                    {(() => {
+                                        const contained = getHolidaysInsideRange(period.startDate, period.endDate);
+
+                                        return contained.length > 0 ? (
+                                            <Chip
+                                                label={`${contained.length} feriado(s)`}
+                                                color="warning"
+                                                onClick={() => {
+                                                    setSelectedHolidays(contained);
+                                                    setOpenHolidayDialog(true);
+                                                }}
+                                                sx={{ cursor: "pointer" }}
+                                            />
+                                        ) : (
+                                            <Chip label="0" color="default" />
+                                        );
+                                    })()}
+                                </TableCell>
+
                                 <TableCell>
                                     <Chip
                                         label={period.isPersonalized ? 'Personalizado' : tipoEmpleado === 'ADMINISTRATIVO' ? 'Administrativo' : 'General'}
@@ -343,6 +386,41 @@ return date.toLocaleDateString('es-ES', {
                 <DialogActions>
                     <Button onClick={handleCloseDialog} color="inherit">Cancelar</Button>
                     <Button onClick={handleEdit} color="primary" variant="contained">Guardar Cambios</Button>
+                </DialogActions>
+            </Dialog>
+            <Dialog
+                open={openHolidayDialog}
+                onClose={() => setOpenHolidayDialog(false)}
+                maxWidth="sm"
+                fullWidth
+            >
+                <DialogTitle>Feriados dentro de este receso</DialogTitle>
+
+                <DialogContent dividers>
+                    {selectedHolidays.length === 0 ? (
+                        <Typography>No hay feriados dentro del rango.</Typography>
+                    ) : (
+                        selectedHolidays.map(h => (
+                            <Box
+                                key={h.id}
+                                sx={{
+                                    p: 1.5,
+                                    mb: 1,
+                                    borderRadius: 1,
+                                    backgroundColor: "#fff7e6",
+                                    border: "1px solid #ffe5b4"
+                                }}
+                            >
+                                <Typography>
+                                    <strong>{new Date(h.date).toLocaleDateString("es-ES")}</strong> — {h.description}
+                                </Typography>
+                            </Box>
+                        ))
+                    )}
+                </DialogContent>
+
+                <DialogActions>
+                    <Button onClick={() => setOpenHolidayDialog(false)} color="primary">Cerrar</Button>
                 </DialogActions>
             </Dialog>
 
