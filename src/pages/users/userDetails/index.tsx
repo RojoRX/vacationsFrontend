@@ -51,6 +51,7 @@ import CreatePastVacationDto from 'src/interfaces/createPastVacation.dto';
 import { RoleEnum } from 'src/enum/roleEnum';
 import { translateRole } from 'src/utils/translateRole';
 import VacationDashboard from 'src/pages/vacations/vacations-dashboard';
+import EmployeeContractHistoryDialog from '../contractConfig';
 
 interface Department {
   id: number;
@@ -104,6 +105,7 @@ const UserInformation: AclComponent = () => {
   const [deleteResultDialogOpen, setDeleteResultDialogOpen] = useState(false);
   const [deleteResultMessage, setDeleteResultMessage] = useState('');
   const [submittingDelete, setSubmittingDelete] = useState(false);
+  const [openContractDialog, setOpenContractDialog] = useState(false);
 
   const triggerReload = () => {
     setReloadRequests(prev => !prev); // Alternar el valor para forzar la recarga
@@ -161,8 +163,8 @@ const UserInformation: AclComponent = () => {
       setSnackbarMessage('Error: No se pudo obtener la información del usuario.');
       setSnackbarSeverity('error');
       setSnackbarOpen(true);
-      
-return;
+
+      return;
     }
 
     try {
@@ -409,6 +411,15 @@ return;
               >
                 Eliminar Usuario
               </Button>
+              <Button
+                variant="outlined"
+                startIcon={<WorkIcon />}
+                sx={{ mt: 2, ml: 1 }}
+                onClick={() => setOpenContractDialog(true)}
+              >
+                Contratos
+              </Button>
+
 
               <CreateCredentialsDialog open={openCreate} onClose={async () => {
                 setOpenCreate(false);
@@ -454,15 +465,16 @@ return;
                   iconPosition="start"
                 />
                 <Tab
-                  icon={<DebtIcon color="warning" />}
-                  label="Deuda Vacacional"
-                  iconPosition="start"
-                />
-                <Tab
                   icon={<CalendarIcon color="success" />}
                   label="Vacaciones"
                   iconPosition="start"
                 />
+                <Tab
+                  icon={<DebtIcon color="warning" />}
+                  label="Deuda Vacacional"
+                  iconPosition="start"
+                />
+
                 {/** 
                 <Tab
                   icon={<CalendarIcon color="success" />}
@@ -519,25 +531,8 @@ return;
                   <UserLicenseList userId={user.id} />
                 </>
               )}
-              {activeTab === 2 && user && (
-                <>
-                  {/* Componente UserVacationDebt */}
-                  <UserVacationDebt
-                    ci={user.ci}
-                    fechaIngreso={user.fecha_ingreso}
-                    startDate={selectedYear.toString()}
-                  />
-                  <Button
-                    variant="contained"
-                    color="primary"
-                    onClick={() => setOpenSummary(true)}
-                    startIcon={<DebtIcon />}
-                  >
-                    Ver resumen de vacaciones
-                  </Button>
-                </>
-              )}
-              {activeTab === 3 && (
+
+              {activeTab === 2 && (
                 <>
                   <Button variant="outlined" onClick={() => setDialogOpen(true)}>
                     Generar Reporte de Vacaciones
@@ -554,6 +549,24 @@ return;
                     reloadRequests={reloadRequests}
                   />
                   {/**  <UserHolidayPeriods userId={user.id} year={new Date().getFullYear()} />*/}
+                </>
+              )}
+              {activeTab === 3 && user && (
+                <>
+                  {/* Componente UserVacationDebt */}
+                  <UserVacationDebt
+                    ci={user.ci}
+                    fechaIngreso={user.fecha_ingreso}
+                    startDate={selectedYear.toString()}
+                  />
+                  <Button
+                    variant="contained"
+                    color="primary"
+                    onClick={() => setOpenSummary(true)}
+                    startIcon={<DebtIcon />}
+                  >
+                    Ver resumen de vacaciones
+                  </Button>
                 </>
               )}
             </CardContent>
@@ -678,6 +691,13 @@ return;
           <Button onClick={() => setOpenSummary(false)}>Cerrar</Button>
         </DialogActions>
       </Dialog>
+
+      <EmployeeContractHistoryDialog
+        open={openContractDialog}
+        onClose={() => setOpenContractDialog(false)}
+        userId={user.id}
+      />
+
 
 
       <Snackbar

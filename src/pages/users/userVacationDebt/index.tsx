@@ -9,23 +9,15 @@ import {
     TableContainer,
     TableHead,
     TableRow,
-    Chip,
-    Divider,
-    CircularProgress,
-    Alert,
     Grid,
-    useTheme
+    useTheme,
+    CircularProgress,
+    Alert
 } from '@mui/material';
 import {
-    Event as EventIcon,
     BeachAccess as VacationIcon,
-    MoneyOff as DebtIcon,
-    AttachMoney as PaidIcon
 } from '@mui/icons-material';
 import axios from 'src/lib/axios';
-import { format, parseISO } from 'date-fns';
-import { es } from 'date-fns/locale';
-import { formatDate } from 'src/utils/dateUtils';
 
 interface VacationDebtDetail {
     startDate: string;
@@ -36,6 +28,7 @@ interface VacationDebtDetail {
     deudaAcumulativaHastaEstaGestion: number;
     deudaAcumulativaAnterior: number;
     diasDisponibles: number;
+    contratoTipo?: string;
 }
 
 interface VacationDebtSummary {
@@ -57,8 +50,22 @@ interface VacationDebtResponse {
 interface UserVacationDebtProps {
     ci: string;
     fechaIngreso: string;
-    startDate: string; // nuevo
+    startDate: string;
 }
+
+const safeNum = (v: any, decimals = 1) => {
+    const n = Number(v ?? 0);
+    if (isNaN(n)) return (0).toFixed(decimals);
+    return n % 1 === 0 ? n.toString() : n.toFixed(decimals);
+};
+
+// Función para obtener el año de una fecha UTC sin problemas de zona horaria
+const getUTCYear = (dateString: string): number => {
+    if (!dateString) return NaN;
+    // Extraer directamente el año de la cadena ISO
+    const yearMatch = dateString.match(/^(\d{4})-/);
+    return yearMatch ? parseInt(yearMatch[1], 10) : NaN;
+};
 
 const UserVacationDebt: React.FC<UserVacationDebtProps> = ({ ci, fechaIngreso, startDate }) => {
     const theme = useTheme();
@@ -71,40 +78,39 @@ const UserVacationDebt: React.FC<UserVacationDebtProps> = ({ ci, fechaIngreso, s
             try {
                 setLoading(true);
 
-                // Convertir año recibido en un Date con mes y día de la fecha de ingreso
-                const ingreso = parseISO(fechaIngreso);
+                // Parsear la fecha de ingreso de manera segura
+                const ingresoParts = fechaIngreso.split('-');
+                const ingresoYear = parseInt(ingresoParts[0], 10);
+                const ingresoMonth = parseInt(ingresoParts[1], 10) - 1; // Mes 0-indexed
+                const ingresoDay = parseInt(ingresoParts[2], 10);
+
                 const now = new Date();
-                const startDateFormatted = new Date(Number(startDate), ingreso.getMonth(), ingreso.getDate())
+                const currentYear = now.getFullYear();
+
+                // Construir endDate usando UTC para evitar problemas de zona horaria
+                const endDate = new Date(Date.UTC(currentYear, ingresoMonth, ingresoDay))
                     .toISOString()
                     .split('T')[0];
 
-                const endDate = new Date(now.getFullYear(), ingreso.getMonth(), ingreso.getDate())
-                    .toISOString()
-                    .split('T')[0];
+                console.log('Solicitando datos con:', { ci, endDate });
 
                 const response = await axios.get(
                     `${process.env.NEXT_PUBLIC_API_BASE_URL}/vacations/accumulated-debt`,
                     {
                         params: {
                             carnetIdentidad: ci,
-
-                            //startDate: startDateFormatted,
                             endDate
                         }
                     }
-
                 );
 
-                //console.log(response.data)
-
+                console.log('Datos recibidos del backend:', response.data);
                 setData(response.data);
             } catch (err) {
                 console.error('Error fetching vacation debt:', err);
-
                 if (axios.isAxiosError(err)) {
-                    console.error('Error response:', err.response); // Ver detalles de la respuesta de la API
+                    console.error('Error response:', err.response);
                 }
-
                 setError('Error al obtener la deuda desde la fecha indicada');
             } finally {
                 setLoading(false);
@@ -115,7 +121,6 @@ const UserVacationDebt: React.FC<UserVacationDebtProps> = ({ ci, fechaIngreso, s
             fetchVacationDebt();
         }
     }, [ci, fechaIngreso, startDate]);
-
 
     if (loading) {
         return (
@@ -133,9 +138,7 @@ const UserVacationDebt: React.FC<UserVacationDebtProps> = ({ ci, fechaIngreso, s
         );
     }
 
-    if (!data) {
-        return null;
-    }
+    if (!data) return null;
 
     return (
         <Paper elevation={3} sx={{ p: 3, mb: 3, borderRadius: 2 }}>
@@ -144,51 +147,35 @@ const UserVacationDebt: React.FC<UserVacationDebtProps> = ({ ci, fechaIngreso, s
                 <Typography variant="h6">Deuda Acumulativa de Vacaciones</Typography>
             </Box>
 
-            {/* Resumen General */}
             <Grid container spacing={2} sx={{ mb: 3 }}>
                 <Grid item xs={12} md={4}>
-                    <Paper sx={{ p: 2, }}>
-                        <Typography variant="subtitle2" color="textSecondary">
-                            Total Dias Disponibles
-                        </Typography>
+                    <Paper sx={{ p: 2 }}>
+                        <Typography variant="subtitle2" color="textSecondary">Total Dias Disponibles</Typography>
                         <Typography variant="h4" color={data.resumenGeneral.deudaTotal > 0 ? 'error' : 'success'}>
-                            {data.resumenGeneral.diasDisponiblesActuales} días
+                            {safeNum(data.resumenGeneral.diasDisponiblesActuales, 1)} días
                         </Typography>
                     </Paper>
                 </Grid>
+
                 <Grid item xs={12} md={4}>
                     <Paper sx={{ p: 2 }}>
-                        <Typography variant="subtitle2" color="textSecondary">
-                            Deuda Total
-                        </Typography>
+                        <Typography variant="subtitle2" color="textSecondary">Deuda Total</Typography>
                         <Typography variant="h4" color={data.resumenGeneral.deudaTotal > 0 ? 'error' : 'success'}>
-                            {data.resumenGeneral.deudaTotal} días
+                            {safeNum(data.resumenGeneral.deudaTotal, 1)} días
                         </Typography>
                     </Paper>
                 </Grid>
+
                 <Grid item xs={12} md={4}>
                     <Paper sx={{ p: 2 }}>
-                        <Typography variant="subtitle2" color="textSecondary">
-                            Gestiones con Deuda
-                        </Typography>
+                        <Typography variant="subtitle2" color="textSecondary">Gestiones con Deuda</Typography>
                         <Typography variant="h4">
                             {data.resumenGeneral.gestionesConDeuda} / {data.detalles.length}
                         </Typography>
                     </Paper>
                 </Grid>
-                <Grid item xs={12} md={4}>
-                    <Paper sx={{ p: 2 }}>
-                        <Typography variant="subtitle2" color="textSecondary">
-                            Promedio de Deuda
-                        </Typography>
-                        <Typography variant="h4">
-                            {data.resumenGeneral.promedioDeudaPorGestion.toFixed(1)} días/gestión
-                        </Typography>
-                    </Paper>
-                </Grid>
             </Grid>
 
-            {/* Tabla de Detalles */}
             <TableContainer component={Paper}>
                 <Table>
                     <TableHead>
@@ -200,53 +187,79 @@ const UserVacationDebt: React.FC<UserVacationDebtProps> = ({ ci, fechaIngreso, s
                             <TableCell align="right">Días Disponibles</TableCell>
                         </TableRow>
                     </TableHead>
-                    <TableBody>
-                        {data.detalles.map((detail, index) => (
-                            <TableRow key={index}>
-                                <TableCell>
-                                    {new Date(detail.startDate).getFullYear()} - {new Date(detail.endDate).getFullYear()}
-                                </TableCell>
 
-                                <TableCell align="right">
-                                    <Typography fontWeight="bold">{detail.diasDeVacacion}</Typography>
-                                </TableCell>
-                                  <TableCell align="right">
-                                    <Typography
-                                        fontWeight="bold"
-                                        color={detail.deudaAcumulativaAnterior > 0 ? 'error' : 'success'}
-                                    >
-                                        {detail.deudaAcumulativaAnterior}
-                                    </Typography>
-                                </TableCell>
-                                <TableCell align="right">
-                                    <Typography
-                                        color={detail.deudaAcumulativaHastaEstaGestion > 0 ? 'error' : 'success'}
-                                        fontWeight="bold">
-                                        {detail.deudaAcumulativaHastaEstaGestion}
-                                    </Typography>
-                                </TableCell>
-                                <TableCell align="right">
-                                    <Typography
-                                        fontWeight="bold"
-                                        color={detail.diasDisponibles > 0 ? 'success.main' : 'text.primary'}
-                                    >
-                                        {detail.diasDisponibles}
-                                    </Typography>
-                                </TableCell>
-                            </TableRow>
-                        ))}
+                    <TableBody>
+                        {data.detalles.map((detail, index) => {
+                            // Usar la función segura para obtener años UTC
+                            const startYear = getUTCYear(detail.startDate);
+                            const endYear = getUTCYear(detail.endDate);
+                            
+                            let gestionLabel = 'N/A';
+                            if (!isNaN(startYear) && !isNaN(endYear)) {
+                                gestionLabel = `${startYear} - ${endYear}`;
+                            }
+
+                            const deudaGestion = Number(detail.deuda ?? 0);
+                            const deudaAcum = Number(detail.deudaAcumulativaHastaEstaGestion ?? 0);
+                            const diasVac = Number(detail.diasDeVacacion ?? 0);
+                            const diasDisp = Number(detail.diasDisponibles ?? 0);
+
+                            return (
+                                <TableRow key={index}>
+                                    <TableCell>
+                                        <Typography variant="body2" fontWeight="medium">
+                                            {gestionLabel}
+                                        </Typography>
+                                        {detail.contratoTipo === 'OTRO' && (
+                                            <Typography variant="caption" color="text.secondary">
+                                                Contrato: {detail.contratoTipo}
+                                            </Typography>
+                                        )}
+                                    </TableCell>
+
+                                    <TableCell align="right">
+                                        <Typography fontWeight="bold">{safeNum(diasVac, 0)}</Typography>
+                                    </TableCell>
+
+                                    <TableCell align="right">
+                                        <Typography
+                                            fontWeight="bold"
+                                            color={deudaGestion > 0 ? 'error' : 'success'}
+                                        >
+                                            {safeNum(deudaGestion, 1)}
+                                        </Typography>
+                                    </TableCell>
+
+                                    <TableCell align="right">
+                                        <Typography
+                                            color={deudaAcum > 0 ? 'error' : 'success'}
+                                            fontWeight="bold"
+                                        >
+                                            {safeNum(deudaAcum, 1)}
+                                        </Typography>
+                                    </TableCell>
+
+                                    <TableCell align="right">
+                                        <Typography
+                                            fontWeight="bold"
+                                            color={diasDisp > 0 ? 'success.main' : 'text.primary'}
+                                        >
+                                            {safeNum(diasDisp, 1)}
+                                        </Typography>
+                                    </TableCell>
+                                </TableRow>
+                            );
+                        })}
                     </TableBody>
                 </Table>
             </TableContainer>
 
-
-            {/* Resumen adicional */}
             <Box sx={{ mt: 3, p: 2, bgcolor: theme.palette.grey[100], borderRadius: 1 }}>
                 <Typography variant="body2">
-                    <strong>Primera gestión:</strong> {new Date(data.resumenGeneral.primeraGestion).getFullYear()}
+                    <strong>Primera gestión:</strong> {getUTCYear(data.resumenGeneral.primeraGestion)}
                 </Typography>
                 <Typography variant="body2" sx={{ mt: 1 }}>
-                    <strong>Última gestión:</strong> {new Date(data.resumenGeneral.ultimaGestion).getFullYear()}
+                    <strong>Última gestión:</strong> {getUTCYear(data.resumenGeneral.ultimaGestion)}
                 </Typography>
             </Box>
         </Paper>

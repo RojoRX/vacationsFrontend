@@ -34,7 +34,8 @@ const SearchUsers = () => {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(5);
   const [roleFilter, setRoleFilter] = useState<string>('all');
-  const [positionFilter, setPositionFilter] = useState<string>('all');
+  const [tipoEmpleadoFilter, setTipoEmpleadoFilter] = useState<string>('all');
+
   const [openReportDialog, setOpenReportDialog] = useState(false);
 
   // 🔹 Cargar últimos 20 usuarios al inicio
@@ -59,13 +60,14 @@ const SearchUsers = () => {
       try {
         const res = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/users/latest`);
         setUsers(res.data);
+        console.log(res.data);
         setError(null);
       } catch {
         setUsers([]);
         setError('Error al cargar los usuarios.');
       }
-      
-return;
+
+      return;
     }
 
     setLoading(true);
@@ -93,7 +95,7 @@ return;
   const handleReset = () => {
     setSearchTerm('');
     setRoleFilter('all');
-    setPositionFilter('all');
+    setTipoEmpleadoFilter('all');
     setError(null);
     fetchUsers('');
   };
@@ -126,14 +128,18 @@ return;
 
   const filteredUsers = users.filter(user => {
     const matchesRole = roleFilter === 'all' || user.role?.toLowerCase() === roleFilter.toLowerCase();
-    const matchesPosition = positionFilter === 'all' ||
-      (user.position && user.position.toLowerCase().includes(positionFilter.toLowerCase()));
-    
-return matchesRole && matchesPosition;
+    const matchesTipoEmpleado =
+      tipoEmpleadoFilter === 'all' ||
+      user.tipoEmpleado?.toLowerCase() === tipoEmpleadoFilter.toLowerCase();
+
+    return matchesRole && matchesTipoEmpleado;
+
   });
 
   const uniqueRoles = Array.from(new Set(users.map(user => user.role)));
-  const uniquePositions = Array.from(new Set(users.map(user => user.position).filter(Boolean)));
+  const uniqueTiposEmpleado = Array.from(
+    new Set(users.map(user => user.tipoEmpleado).filter(Boolean))
+  );
 
   return (
     <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
@@ -179,15 +185,22 @@ return matchesRole && matchesPosition;
               </Select>
             </FormControl>
 
-            <FormControl size="small" sx={{ minWidth: 120 }}>
-              <InputLabel>Posición</InputLabel>
-              <Select value={positionFilter} onChange={(e) => setPositionFilter(e.target.value)} label="Posición">
-                <MenuItem value="all">Todas las posiciones</MenuItem>
-                {uniquePositions.map(position => (
-                  <MenuItem key={position} value={position}>{position}</MenuItem>
+            <FormControl size="small" sx={{ minWidth: 160 }}>
+              <InputLabel>Tipo Empleado</InputLabel>
+              <Select
+                value={tipoEmpleadoFilter}
+                onChange={(e) => setTipoEmpleadoFilter(e.target.value)}
+                label="Tipo Empleado"
+              >
+                <MenuItem value="all">Todos</MenuItem>
+                {uniqueTiposEmpleado.map(tipo => (
+                  <MenuItem key={tipo} value={tipo}>
+                    {tipo === 'DOCENTE' ? 'Docente' : 'Administrativo'}
+                  </MenuItem>
                 ))}
               </Select>
             </FormControl>
+
 
             <IconButton onClick={handleReset} title="Restablecer búsqueda">
               <RefreshIcon />
@@ -211,7 +224,7 @@ return matchesRole && matchesPosition;
                   <TableCell>CI</TableCell>
                   <TableCell>Nombre Completo</TableCell>
                   <TableCell>Rol</TableCell>
-                  <TableCell>Posición</TableCell>
+                  <TableCell>Tipo Empleado</TableCell>
                   <TableCell>Profesión</TableCell>
                   <TableCell>Departamento</TableCell>
                   <TableCell>Unidad Académica</TableCell>
@@ -238,7 +251,7 @@ return matchesRole && matchesPosition;
                             component={Link}
                             href={`/users/${user.ci}`}
                             sx={{
-                              
+
                               textDecoration: 'none',
                               fontWeight: 500,
                               '&:hover': {
@@ -262,7 +275,15 @@ return matchesRole && matchesPosition;
                             size="small"
                           />
                         </TableCell>
-                        <TableCell>{user.position || '-'}</TableCell>
+                        <TableCell>
+                          <Chip
+                            label={user.tipoEmpleado === 'DOCENTE' ? 'Docente' : 'Administrativo'}
+                            color={user.tipoEmpleado === 'DOCENTE' ? 'info' : 'success'}
+                            size="small"
+                            sx={{ fontWeight: 'bold' }}
+                          />
+                        </TableCell>
+
                         <TableCell>{user.profession?.name || '-'}</TableCell>
                         <TableCell>{user.department?.name || '-'}</TableCell>
                         <TableCell>{user.academicUnit?.name || '-'}</TableCell>

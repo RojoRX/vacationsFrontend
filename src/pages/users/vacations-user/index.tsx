@@ -22,6 +22,7 @@ import {
     Alert,
     DialogActions
 } from '@mui/material';
+import ArrowRightIcon from '@mui/icons-material/ArrowForward';
 import {
     Info as InfoIcon,
     Visibility as VisibilityIcon,
@@ -379,39 +380,31 @@ const VacationRequestsTable: React.FC<VacationRequestsTableProps> = ({ userId, r
                             )}
                             {/* Botón para suspender */}
                             {selectedRequest.status !== 'SUSPENDED' && (
-                                <Box sx={{ mt: 2, display: 'flex', justifyContent: 'flex-end' }}>
-                                    <Button
-                                        variant="contained"
-                                        color="warning"
-                                        startIcon={<EditIcon />}
-                                        onClick={() => setOpenSuspendDialog(true)}
-                                    >
-                                        Suspender Solicitud
-                                    </Button>
-                                </Box>
+
+                                <Button
+                                    variant="contained"
+                                    color="warning"
+                                    startIcon={<EditIcon />}
+                                    onClick={() => setOpenSuspendDialog(true)}
+                                >
+                                    Suspender Solicitud
+                                </Button>
+
                             )}
-                        </Box>
-                    )}
-                    {selectedRequest && !selectedRequest.deleted && (
-                        <Box sx={{ mt: 2, display: 'flex', justifyContent: 'flex-end' }}>
                             <Button
-                                variant="contained"
-                                color="error"
-                                startIcon={<DeleteIcon />}
                                 onClick={() => {
-                                    setRequestToDelete(selectedRequest);
-                                    setOpenDeleteConfirmDialog(true);
+                                    if (selectedRequest) {
+                                        router.push(`/vacations/vacations-requests/${selectedRequest.id}`);
+                                    }
                                 }}
+                                color="secondary"
+                                variant="contained"
+                                fullWidth
+                                startIcon={<ArrowRightIcon />}
                             >
-                                Eliminar Solicitud
+                                Ver solicitud completa
                             </Button>
                         </Box>
-                    )}
-
-                    {deleteSuccess && (
-                        <Alert severity="success" sx={{ mt: 2 }}>
-                            La solicitud ha sido eliminada correctamente.
-                        </Alert>
                     )}
                 </DialogContent>
             </Dialog>
