@@ -93,16 +93,19 @@ const SupervisorsAdminsTable: FC = () => {
 
 
   const filteredUsers = users.filter(user => {
+    const search = searchQuery.toLowerCase();
+
     const matchesSearch =
-      user.ci.includes(searchQuery) ||
-      user.fullName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (user.department && user.department.toLowerCase().includes(searchQuery.toLowerCase())) ||
-      (user.academicUnit && user.academicUnit.toLowerCase().includes(searchQuery.toLowerCase()));
+      (user.ci?.includes(searchQuery)) ||
+      (user.fullName?.toLowerCase().includes(search)) ||
+      (user.department?.toLowerCase().includes(search)) ||
+      (user.academicUnit?.toLowerCase().includes(search));
 
     const matchesRole = roleFilter === '' || user.role === roleFilter;
 
     return matchesSearch && matchesRole;
   });
+
 
   const handleChangePage = (event: unknown, newPage: number) => {
     setPage(newPage);
