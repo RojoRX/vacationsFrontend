@@ -375,7 +375,7 @@ return;
         <strong>Postergado hasta:</strong> {request?.postponedDate ? formatDate(request.postponedDate) : 'No disponible'}
       </Typography>
       <Typography variant="body1">
-        <strong>Justificación de la postergación:</strong> {request?.postponedReason || 'No disponible'}
+        <strong>Observaciones:</strong> {request?.postponedReason || 'No disponible'}
       </Typography>
     </>
   );

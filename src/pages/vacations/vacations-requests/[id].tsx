@@ -35,7 +35,8 @@ import {
   StepContent,
   StepLabel,
   Stepper,
-  styled
+  styled,
+  TextField
 } from '@mui/material';
 import {
   People as PeopleIcon,
@@ -134,37 +135,63 @@ const VacationRequestDetails = () => {
   const [debtData, setDebtData] = useState<VacationDebt | null>(null);
   const [deudaData, setDeudaData] = useState<GestionDeuda | null>(null);
   let requestId: number | undefined = undefined;
-  const fetchRequestDetails = useCallback(async () => {
-    if (!id) return;
+  // Estado para la observación editable
+  const [observation, setObservation] = useState('');
+  const [savingObservation, setSavingObservation] = useState(false);
+
+  // Función para guardar observación
+  const handleObservationSave = async () => {
+    if (!request || !user?.id) return;
 
     try {
-      setLoading(true);
-      setError(null);
-
-      const response = await axios.get<VacationRequest>(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/vacation-requests/${id}/details`
+      setSavingObservation(true);
+      await axios.put(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/vacation-requests/${request.requestId}/observation`,
+        { observation }
       );
-      setRequest(response.data);
-      console.log(request?.approvedBy?.username)
-      requestId = response.data.id;
-      setSelectedStatus(response.data.status);
 
-      if (response.data.managementPeriodStart && response.data.managementPeriodEnd) {
-        await fetchDebtData(
-          response.data.managementPeriodStart,
-          response.data.managementPeriodEnd,
-          response.data.ci || ""
-        );
-
-        //console.log(response.data.managementPeriodStart)
-        //console.log(response.data.managementPeriodEnd)
-      }
+      setRequest(prev => ({ ...prev!, postponedReason: observation }));
     } catch (err) {
-      handleFetchError(err);
+      console.error('Error guardando la observación:', err);
+      setError('Error al guardar la observación');
     } finally {
-      setLoading(false);
+      setSavingObservation(false);
     }
-  }, [id]);
+  };
+
+const fetchRequestDetails = useCallback(async () => {
+  if (!id) return;
+
+  try {
+    setLoading(true);
+    setError(null);
+
+    const response = await axios.get<VacationRequest>(
+      `${process.env.NEXT_PUBLIC_API_BASE_URL}/vacation-requests/${id}/details`
+    );
+    setRequest(response.data);
+    requestId = response.data.id;
+    setSelectedStatus(response.data.status);
+
+    // ⚠️ Usar response.data en lugar de request
+    if (response.data.postponedReason) {
+      setObservation(response.data.postponedReason);
+    }
+
+    if (response.data.managementPeriodStart && response.data.managementPeriodEnd) {
+      await fetchDebtData(
+        response.data.managementPeriodStart,
+        response.data.managementPeriodEnd,
+        response.data.ci || ""
+      );
+    }
+  } catch (err) {
+    handleFetchError(err);
+  } finally {
+    setLoading(false);
+  }
+}, [id]);
+
 
   const fetchDebtData = async (startDate: string, endDate: string, ci: string) => {
     try {
@@ -200,8 +227,8 @@ const VacationRequestDetails = () => {
           );
         } catch (e) {
           console.error('Error al parsear fechas del detalle:', detalle, e);
-          
-return false;
+
+          return false;
         }
       });
 
@@ -218,8 +245,8 @@ return false;
           endDate: lastRecord?.endDate ?? '',
           deudaAcumulativaHastaEstaGestion: lastRecord?.deudaAcumulativaHastaEstaGestion ?? 0,
         });
-        
-return;
+
+        return;
       }
 
       //console.log('Datos encontrados para la gestión:', gestionDebt);
@@ -272,8 +299,8 @@ return;
     if (newStatus === 'POSTPONED') {
       setInfoMessage('Para postergar la solicitud, utilice el formulario de postergación.');
       setDialogOpen(true);
-      
-return;
+
+      return;
     }
 
     if (!request || newStatus === request.status || !user?.id) return;
@@ -332,8 +359,8 @@ return;
 
   const getRecessByName = (name: string) => {
     if (!request || !request.recesos) return undefined;
-    
-return request.recesos.find(receso => receso.name === name);
+
+    return request.recesos.find(receso => receso.name === name);
   };
 
   const formatDateLong = (dateString: string): string => {
@@ -563,6 +590,7 @@ return request.recesos.find(receso => receso.name === name);
   );
 
 
+
   const renderActionSections = () => (
     <>
       {(user?.role === 'supervisor') && (
@@ -623,7 +651,11 @@ return request.recesos.find(receso => receso.name === name);
             </Typography>
             <Divider sx={{ mb: 2 }} />
 
-            {request?.approvedByHR === null && (
+            {request?.status === 'PENDING' ? (
+              <Alert severity="info" sx={{ mb: 2 }}>
+                La solicitud debe ser revisada primero por el supervisor o jefe superior antes de aprobarla.
+              </Alert>
+            ) : request?.approvedByHR === null ? (
               <Box display="flex" gap={2}>
                 <Button
                   variant="contained"
@@ -645,9 +677,7 @@ return request.recesos.find(receso => receso.name === name);
                   Rechazar
                 </Button>
               </Box>
-            )}
-
-            {request?.approvedByHR !== null && request?.approvedByHR !== undefined && (
+            ) : (
               <Alert
                 severity={request?.approvedByHR ? "success" : "error"}
                 sx={{ mt: 2 }}
@@ -659,6 +689,7 @@ return request.recesos.find(receso => receso.name === name);
           </CardContent>
         </Card>
       )}
+
 
 
 
@@ -695,6 +726,39 @@ return request.recesos.find(receso => receso.name === name);
       {renderApplicantSection()}
       {renderVacationDetailsSection()}
       {renderManagementDetailsSection()}
+      {
+        (user?.role === 'admin' || user?.role === 'supervisor') && (
+          <Card sx={{ mb: 3 }}>
+            <CardContent>
+              <Typography variant="h6" gutterBottom fontWeight="bold">
+                Observaciones
+              </Typography>
+              <Divider sx={{ mb: 2 }} />
+
+              <TextField
+                fullWidth
+                multiline
+                minRows={3}
+                placeholder="Ingrese observaciones para el supervisor o administrador"
+                value={observation}
+                onChange={(e) => setObservation(e.target.value)}
+                variant="outlined"
+                disabled={savingObservation}
+              />
+
+              <Button
+                variant="contained"
+                sx={{ mt: 2 }}
+                startIcon={<EditIcon />}
+                onClick={handleObservationSave}
+                /*disabled={savingObservation || observation === request?.postponedReason} */
+              >
+                {savingObservation ? 'Guardando...' : 'Guardar Observación'}
+              </Button>
+            </CardContent>
+          </Card>
+        )
+      }
       {renderActionSections()}
 
       <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)}>

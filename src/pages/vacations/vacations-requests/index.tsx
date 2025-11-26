@@ -50,22 +50,9 @@ import SaveIcon from '@mui/icons-material/Save';
 import { DatePicker, LocalizationProvider } from '@mui/lab'; // Para v5
 import EditVacationDialog from '../vacations-edit';
 import toast from 'react-hot-toast';
+import { VacationRequest } from 'src/interfaces/vacationRequests';
 
-interface VacationRequest {
-    id: number;
-    position: string;
-    requestDate: string;
-    startDate: string;
-    endDate: string;
-    totalDays: number;
-    status: 'PENDING' | 'AUTHORIZED' | 'DENIED' | 'SUSPENDED';
-    postponedDate: string | null;
-    postponedReason: string | null;
-    returnDate: string;
-    approvedByHR: boolean;
-    approvedBySupervisor: boolean;
-    ci: string;
-}
+
 
 interface VacationRequestsComponent extends React.FC {
     acl?: {
@@ -106,8 +93,8 @@ const VacationRequestList: VacationRequestsComponent = () => {
             'SUSPENDED': 'Suspendido',
             'CANCELLED': 'Cancelado'
         };
-        
-return statusMap[status] || status;
+
+        return statusMap[status] || status;
     };
 
     const [dateFilter, setDateFilter] = useState({
@@ -123,8 +110,8 @@ return statusMap[status] || status;
         const fetchRequests = async () => {
             if (!user?.id) {
                 console.error('ID de usuario no disponible.');
-                
-return;
+
+                return;
             }
 
             try {
@@ -172,8 +159,8 @@ return;
                 } else if (endDate) {
                     return dateToFilter <= endDate;
                 }
-                
-return true;
+
+                return true;
             });
         }
 
@@ -275,7 +262,7 @@ return true;
         setSelectedRequest(request);
         setEditData({
             startDate: request.startDate,
-            status: request.status,
+            status: request.status as 'PENDING' | 'AUTHORIZED' | 'POSTPONED' | 'DENIED' | 'SUSPENDED',
             postponedDate: request.postponedDate || '',
             postponedReason: request.postponedReason || ''
         });
@@ -316,8 +303,8 @@ return true;
         }
 
     };
-    
-return (
+
+    return (
         <Box sx={{ width: '100%' }}>
             <Paper sx={{ width: '100%', mb: 2, p: 2 }}>
                 <Toolbar
@@ -509,8 +496,9 @@ return (
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                                 <CalendarReturnIcon color="action" />
                                 <Typography variant="body1">
-                                    <strong>Fecha Retorno:</strong> {formatDate(selectedRequest.returnDate)}
+                                    <strong>Fecha Retorno:</strong> {formatDate(selectedRequest.returnDate ?? '')}
                                 </Typography>
+
                             </Box>
 
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
@@ -592,8 +580,6 @@ return (
                 </DialogActions>
 
             </Dialog>
-            {/* Nuevo diálogo de edición */}
-            {/* Nuevo diálogo de edición */}
             {/* Aquí usas tu componente en lugar de <Dialog> */}
             <EditVacationDialog
                 open={editDialogOpen}

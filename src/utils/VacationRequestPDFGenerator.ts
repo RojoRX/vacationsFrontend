@@ -217,7 +217,7 @@ export const generateVacationRequestPDF = (request: VacationRequest) => {
         ['Fecha de Inicio:', formatDate(request.startDate)],
         ['Fecha de Revisión Jefe Superior:', request.reviewDate ? formatDate(request.reviewDate) : 'No disponible'],
         ['Postergado hasta:', request.postponedDate ? formatDate(request.postponedDate) : 'No disponible'],
-        ['Justificación de la postergación:', request.postponedReason || 'No disponible']
+        ['Observaciones:', request.postponedReason || 'No disponible']
     ];
 
     autoTable(doc, {
