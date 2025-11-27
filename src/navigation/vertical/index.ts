@@ -41,6 +41,12 @@ const navigation = (): VerticalNavItemsType => {
         //   subject: 'vacation-request-form',
         // },
         {
+          title: 'Solicitar Vacaciones',
+          path: '/welcome',
+          action: 'read',
+          subject: 'welcome-dashboard',
+        },
+        {
           title: 'Resumen',
           path: '/vacations/vacations-dashboard',
           action: 'read',
@@ -70,12 +76,12 @@ const navigation = (): VerticalNavItemsType => {
       title: 'Permisos',
       icon: 'mdi:clipboard-text',
       children: [
-        /*{
-          title: 'Solicitar Licencia',
-          path: '/permissions/create-permission',
+        {
+          title: 'Solicitar Permiso',
+          path: '/welcome',
           action: 'read',
-          subject: 'request-permission',
-        },*/
+          subject: 'welcome-dashboard',
+        },
         {
           title: 'Mis Permisos',
           path: '/permissions/user-licenses',

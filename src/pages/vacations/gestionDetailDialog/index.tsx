@@ -44,14 +44,19 @@ import { useRouter } from 'next/router';
 import { License } from 'src/interfaces/licenseTypes';
 import { DateTime } from 'luxon';
 
+interface GestionData {
+    key?: string; // <-- ahora opcional
+    data?: any;
+    debt?: any;
+}
+
+
 interface GestionDetailDialogProps {
     open: boolean;
     onClose: () => void;
-    gestionData?: {
-        data?: any;
-        debt?: any;
-    };
+    gestionData?: GestionData;
 }
+
 const GestionDetailDialog: React.FC<GestionDetailDialogProps> = ({
     open,
     onClose,
@@ -77,7 +82,14 @@ const GestionDetailDialog: React.FC<GestionDetailDialogProps> = ({
             backgroundColor: theme.palette.action.hover
         }
     });
+    const getGestionYears = (debt: { startDate: string; endDate: string }) => {
+        if (!debt) return '';
+        const startYear = DateTime.fromISO(debt.startDate, { zone: 'utc' }).year;
+        const endYear = DateTime.fromISO(debt.endDate, { zone: 'utc' }).year;
+        return `${startYear} - ${endYear}`;
+    };
 
+    console.log(gestionData)
     return (
         <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
             <DialogTitle sx={{
@@ -91,17 +103,26 @@ const GestionDetailDialog: React.FC<GestionDetailDialogProps> = ({
             }}>
                 <WorkHistoryIcon fontSize="large" />
                 <Box>
-                    <Typography sx={{ color: '#ffff' }} variant="h6">Resumen de Gestión</Typography>
+                    <Typography sx={{ color: '#fff' }} variant="h6">
+                        {gestionData?.debt
+                            ? `Gestión: ${getGestionYears(gestionData.debt)}`
+                            : 'Resumen de Gestión'}
+                    </Typography>
+
                     <Typography variant="subtitle2" sx={{ opacity: 0.9, color: '#ffff' }}>
                         Detalles de tus vacaciones y permisos
                     </Typography>
                 </Box>
             </DialogTitle>
 
+
+
             <DialogContent sx={{ py: 3, p: 8 }}>
                 <Box>
                     {/* Resumen Principal */}
+                    {/* Resumen Principal y Estadísticas */}
                     <Grid container spacing={3} sx={{ mb: 3 }}>
+                        {/* Antigüedad */}
                         <Grid item xs={12} md={6}>
                             <Paper elevation={0} sx={{
                                 p: 2,
@@ -116,11 +137,12 @@ const GestionDetailDialog: React.FC<GestionDetailDialogProps> = ({
                                     </Typography>
                                 </Box>
                                 <Typography>
-                                    {gestionData.data?.antiguedadEnAnios || 0} años y {gestionData.data?.antiguedadEnDias || 0} días de servicio
+                                    {gestionData.data?.antiguedadEnAnios || 0} años
                                 </Typography>
                             </Paper>
                         </Grid>
 
+                        {/* Días de Vacación según Antigüedad */}
                         <Grid item xs={12} md={6}>
                             <Paper elevation={0} sx={{
                                 p: 2,
@@ -139,11 +161,9 @@ const GestionDetailDialog: React.FC<GestionDetailDialogProps> = ({
                                 </Typography>
                             </Paper>
                         </Grid>
-                    </Grid>
 
-                    {/* Estadísticas de Uso */}
-                    <Grid container spacing={3} sx={{ mb: 4 }}>
-                        <Grid item xs={12} md={4}>
+                        {/* Vacaciones Usadas */}
+                        <Grid item xs={12} md={6}>
                             <Paper elevation={0} sx={{
                                 p: 2,
                                 borderLeft: '4px solid',
@@ -162,7 +182,8 @@ const GestionDetailDialog: React.FC<GestionDetailDialogProps> = ({
                             </Paper>
                         </Grid>
 
-                        <Grid item xs={12} md={4}>
+                        {/* Licencia (cuenta vacación) */}
+                        <Grid item xs={12} md={6}>
                             <Paper elevation={0} sx={{
                                 p: 2,
                                 borderLeft: '4px solid',
@@ -172,7 +193,7 @@ const GestionDetailDialog: React.FC<GestionDetailDialogProps> = ({
                                 <Box display="flex" alignItems="center" mb={1}>
                                     <AssignmentTurnedInIcon color="info" sx={{ mr: 1 }} />
                                     <Typography variant="subtitle1" fontWeight={600}>
-                                        Permisos Usados
+                                        Licencias (cuenta vacación)
                                     </Typography>
                                 </Box>
                                 <Typography>
@@ -180,69 +201,6 @@ const GestionDetailDialog: React.FC<GestionDetailDialogProps> = ({
                                 </Typography>
                             </Paper>
                         </Grid>
-                        <Grid item xs={4}>
-                            <Paper elevation={0} sx={{
-                                p: 2,
-                                borderLeft: '4px solid',
-                                borderColor: (gestionData.debt?.deudaAcumulativaHastaEstaGestion || 0) > 0
-                                    ? theme.palette.error.main
-                                    : theme.palette.divider,
-                                bgcolor: (gestionData.debt?.deudaAcumulativaHastaEstaGestion || 0) > 0
-                                    ? theme.palette.error.light + '20'
-                                    : theme.palette.background.default
-                            }}>
-                                <Box display="flex" alignItems="center" mb={1}>
-                                    <EventAvailableIcon
-                                        color={(gestionData.debt?.deudaAcumulativaHastaEstaGestion || 0) > 0 ? 'error' : 'disabled'}
-                                        sx={{ mr: 1 }}
-                                    />
-                                    <Typography variant="subtitle1" fontWeight={600}>
-                                        Deuda Acumulada
-                                    </Typography>
-                                </Box>
-
-
-                                <Typography
-                                    color={(gestionData.debt?.deudaAcumulativaHastaEstaGestion || 0) > 0 ? 'error' : 'textSecondary'}
-                                    sx={{ fontWeight: (gestionData.debt?.deudaAcumulativaHastaEstaGestion || 0) > 0 ? 600 : 'normal' }}
-                                >
-                                    {gestionData.debt?.deudaAcumulativaHastaEstaGestion || 0} días de deuda acumulada
-                                </Typography>
-                            </Paper>
-                        </Grid>
-                        <Grid item xs={4}>
-                            <Paper
-                                elevation={0}
-                                sx={{
-                                    p: 2,
-                                    borderLeft: '4px solid',
-                                    borderColor: (gestionData.debt?.deudaAcumulativaAnterior || 0) > 0
-                                        ? theme.palette.warning.main  // usamos un color distinto, p.ej. warning
-                                        : theme.palette.divider,
-                                    bgcolor: (gestionData.debt?.deudaAcumulativaAnterior || 0) > 0
-                                        ? theme.palette.warning.light + '20'
-                                        : theme.palette.background.default,
-                                }}
-                            >
-                                <Box display="flex" alignItems="center" mb={1}>
-                                    <EventAvailableIcon
-                                        color={(gestionData.debt?.deudaAcumulativaAnterior || 0) > 0 ? 'warning' : 'disabled'}
-                                        sx={{ mr: 1 }}
-                                    />
-                                    <Typography variant="subtitle1" fontWeight={600}>
-                                        Deuda gestión anterior
-                                    </Typography>
-                                </Box>
-
-                                <Typography
-                                    color={(gestionData.debt?.deudaAcumulativaAnterior || 0) > 0 ? 'warning.main' : 'textSecondary'}
-                                    sx={{ fontWeight: (gestionData.debt?.deudaAcumulativaAnterior || 0) > 0 ? 600 : 'normal' }}
-                                >
-                                    {gestionData.debt?.deudaAcumulativaAnterior || 0} días
-                                </Typography>
-                            </Paper>
-                        </Grid>
-
                     </Grid>
                     <Grid container spacing={3} sx={{ mb: 4 }}>
                         {/* Receso de Invierno */}
@@ -321,6 +279,69 @@ const GestionDetailDialog: React.FC<GestionDetailDialogProps> = ({
                             </Paper>
                         </Grid>
                     </Grid>
+                    <Grid container spacing={3} sx={{ mb: 4 }}>
+                        {/* Deuda Acumulada */}
+                        <Grid item xs={12} md={6}>
+                            <Paper elevation={0} sx={{
+                                p: 2,
+                                borderLeft: '4px solid',
+                                borderColor: (gestionData.debt?.deudaAcumulativaHastaEstaGestion || 0) > 0
+                                    ? theme.palette.error.main
+                                    : theme.palette.divider,
+                                bgcolor: (gestionData.debt?.deudaAcumulativaHastaEstaGestion || 0) > 0
+                                    ? theme.palette.error.light + '20'
+                                    : theme.palette.background.default
+                            }}>
+                                <Box display="flex" alignItems="center" mb={1}>
+                                    <EventAvailableIcon
+                                        color={(gestionData.debt?.deudaAcumulativaHastaEstaGestion || 0) > 0 ? 'error' : 'disabled'}
+                                        sx={{ mr: 1 }}
+                                    />
+                                    <Typography variant="subtitle1" fontWeight={600}>
+                                        Deuda Acumulada
+                                    </Typography>
+                                </Box>
+                                <Typography
+                                    color={(gestionData.debt?.deudaAcumulativaHastaEstaGestion || 0) > 0 ? 'error' : 'textSecondary'}
+                                    sx={{ fontWeight: (gestionData.debt?.deudaAcumulativaHastaEstaGestion || 0) > 0 ? 600 : 'normal' }}
+                                >
+                                    {gestionData.debt?.deudaAcumulativaHastaEstaGestion || 0} días de deuda acumulada
+                                </Typography>
+                            </Paper>
+                        </Grid>
+
+                        {/* Deuda Gestión Anterior */}
+                        <Grid item xs={12} md={6}>
+                            <Paper elevation={0} sx={{
+                                p: 2,
+                                borderLeft: '4px solid',
+                                borderColor: (gestionData.debt?.deudaAcumulativaAnterior || 0) > 0
+                                    ? theme.palette.info.main   // Cambié a info para diferenciar del warning/error
+                                    : theme.palette.divider,
+                                bgcolor: (gestionData.debt?.deudaAcumulativaAnterior || 0) > 0
+                                    ? theme.palette.info.light + '20'
+                                    : theme.palette.background.default,
+                            }}>
+                                <Box display="flex" alignItems="center" mb={1}>
+                                    <EventAvailableIcon
+                                        color={(gestionData.debt?.deudaAcumulativaAnterior || 0) > 0 ? 'info' : 'disabled'}
+                                        sx={{ mr: 1 }}
+                                    />
+                                    <Typography variant="subtitle1" fontWeight={600}>
+                                        Deuda Gestión Anterior
+                                    </Typography>
+                                </Box>
+                                <Typography
+                                    color={(gestionData.debt?.deudaAcumulativaAnterior || 0) > 0 ? 'info.main' : 'textSecondary'}
+                                    sx={{ fontWeight: (gestionData.debt?.deudaAcumulativaAnterior || 0) > 0 ? 600 : 'normal' }}
+                                >
+                                    {gestionData.debt?.deudaAcumulativaAnterior || 0} días
+                                </Typography>
+                            </Paper>
+                        </Grid>
+                    </Grid>
+
+
                     <Grid item xs={12} md={12}>
                         <Paper elevation={0} sx={{
                             p: 2,

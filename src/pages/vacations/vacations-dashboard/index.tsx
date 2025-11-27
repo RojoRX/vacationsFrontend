@@ -69,8 +69,8 @@ interface ResumenGeneral {
 const formatedDate = (dateString: string) => {
     if (!dateString) return 'Fecha no disponible';
     const date = new Date(dateString);
-    
-return date.toLocaleDateString('es-ES');
+
+    return date.toLocaleDateString('es-ES');
 };
 
 const VacationDashboard: React.FC<{ ciUsuario?: string }> = ({ ciUsuario }) => {
@@ -104,8 +104,8 @@ const VacationDashboard: React.FC<{ ciUsuario?: string }> = ({ ciUsuario }) => {
                 if (gestionesList.length === 0) {
                     setGestionesData({});
                     setLoading(false);
-                    
-return;
+
+                    return;
                 }
 
                 const ultimaGestion = gestionesList.reduce((a, b) =>
@@ -119,8 +119,8 @@ return;
                     // Evitar ejecución si todavía no tenemos CI
                     if (!ci) {
                         console.warn("CI no disponible todavía");
-                        
-return;
+
+                        return;
                     }
 
                     const params = new URLSearchParams();
@@ -146,8 +146,8 @@ return;
                             let deudaCorrespondiente = debtRes.data.detalles.find(d => {
                                 const debtStart = normalizeDate(d.startDate);
                                 const debtEnd = normalizeDate(d.endDate);
-                                
-return debtStart === gestionStart && debtEnd === gestionEnd;
+
+                                return debtStart === gestionStart && debtEnd === gestionEnd;
                             });
 
 
@@ -181,8 +181,8 @@ return debtStart === gestionStart && debtEnd === gestionEnd;
                             };
                         } catch (vacError) {
                             console.error(`❌ Error en vacaciones ${gestion.startDate} - ${gestion.endDate}:`, vacError);
-                            
-return {
+
+                            return {
                                 key: `${gestion.startDate}-${gestion.endDate}`,
                                 data: {} as VacationData,
                                 debt: {
@@ -245,18 +245,21 @@ return {
 
     const handleDialogClose = () => setDialogOpen(false);
 
-    const formatFecha = (fechaISO: string) => {
+    const formatFecha = (fechaISO?: string) => {
         if (!fechaISO) return 'No disponible';
-        const fecha = new Date(fechaISO).toISOString();
-        
-return fecha.split('T')[0];
+        const fecha = new Date(fechaISO);
+        const day = fecha.getDate().toString().padStart(2, '0');
+        const month = (fecha.getMonth() + 1).toString().padStart(2, '0'); // getMonth() devuelve 0-11
+        const year = fecha.getFullYear();
+        return `${day}/${month}/${year}`;
     };
+
 
     const getVisibleSlides = () => {
         if (isMobile) return 1;
         if (theme.breakpoints.down('lg')) return 3;
-        
-return 4;
+
+        return 4;
     };
 
     const visibleSlides = getVisibleSlides();
@@ -453,17 +456,6 @@ return 4;
                                                         {detalle.debt.diasDisponibles}
                                                     </Typography>
                                                 </Box>
-
-                                                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                                                    <Typography variant="body2">Deudas Acumulada:</Typography>
-                                                    <Typography
-                                                        variant="body1"
-                                                        color={(detalle.debt.deudaAcumulativaHastaEstaGestion) > 0 ? 'error' : 'text.primary'}
-                                                        fontWeight="bold"
-                                                    >
-                                                        {detalle.debt.deudaAcumulativaHastaEstaGestion}
-                                                    </Typography>
-                                                </Box>
                                                 <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
                                                     <Typography variant="body2">Deuda gestión anterior:</Typography>
                                                     <Typography
@@ -474,6 +466,17 @@ return 4;
                                                         {detalle.debt.deudaAcumulativaAnterior}
                                                     </Typography>
                                                 </Box>
+                                                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                                                    <Typography variant="body2">Deudas Acumulada:</Typography>
+                                                    <Typography
+                                                        variant="body1"
+                                                        color={(detalle.debt.deudaAcumulativaHastaEstaGestion) > 0 ? 'error' : 'text.primary'}
+                                                        fontWeight="bold"
+                                                    >
+                                                        {detalle.debt.deudaAcumulativaHastaEstaGestion}
+                                                    </Typography>
+                                                </Box>
+
 
 
 

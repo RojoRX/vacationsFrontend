@@ -49,8 +49,20 @@ const HolidayManagement: AclComponent = () => {
     const [rowsPerPage, setRowsPerPage] = useState(5);
     const [searchTerm, setSearchTerm] = useState('');
     const [typeFilter, setTypeFilter] = useState<string>('all');
+    const [allHolidays, setAllHolidays] = useState<any[]>([]); // Todos los feriados cargados
+    const [selectedHolidays, setSelectedHolidays] = useState<any[]>([]);
+    const [openHolidayDialog, setOpenHolidayDialog] = useState(false);
 
     // Modificamos la función fetchHolidays para ordenar los resultados
+    const fetchAllHolidays = async () => {
+        try {
+            const res = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/non-holidays/all`);
+            setAllHolidays(res.data);
+        } catch (error) {
+            console.error('Error al obtener feriados:', error);
+        }
+    };
+
     const fetchHolidays = async (year: number | null = null) => {
         setLoading(true);
         try {
@@ -74,6 +86,7 @@ const HolidayManagement: AclComponent = () => {
 
     useEffect(() => {
         fetchHolidays();
+        fetchAllHolidays();
     }, []);
 
     const handleYearFilter = (year: number | null) => {
@@ -135,13 +148,14 @@ const HolidayManagement: AclComponent = () => {
     const calculateDuration = (startDate: string, endDate: string): number => {
         const start = parseISO(startDate);
         const end = parseISO(endDate);
-      
+
         const allDays = eachDayOfInterval({ start, end });
-      
+
         const workingDays = allDays.filter(date => !isWeekend(date));
-      
+
         return workingDays.length;
-      };
+    };
+
 
     // Filtrado modificado
     const filteredHolidays = holidays.filter(holiday => {
@@ -159,6 +173,15 @@ const HolidayManagement: AclComponent = () => {
 
         return matchesSearch && matchesType && matchesYear;
     });
+    const getHolidaysInsideRange = (start: string, end: string) => {
+        const startDate = new Date(start);
+        const endDate = new Date(end);
+
+        return allHolidays.filter(h => {
+            const d = new Date(h.date);
+            return d >= startDate && d <= endDate;
+        });
+    };
 
     // Nuevo estado para manejar errores
     const [errors, setErrors] = useState({
@@ -206,8 +229,8 @@ const HolidayManagement: AclComponent = () => {
         }
 
         setErrors(newErrors);
-        
-return isValid;
+
+        return isValid;
     };
 
     return (
@@ -306,6 +329,7 @@ return isValid;
                                     <TableCell>Fecha Inicio</TableCell>
                                     <TableCell>Fecha Fin</TableCell>
                                     <TableCell>Duración</TableCell>
+                                    <TableCell>Feriados en este receso</TableCell>
                                     <TableCell>Año</TableCell>
                                     <TableCell align="right">Acciones</TableCell>
                                 </TableRow>
@@ -349,6 +373,26 @@ return isValid;
                                                 <TableCell>
                                                     {calculateDuration(holiday.startDate, holiday.endDate)} días hábiles
                                                 </TableCell>
+                                                <TableCell>
+                                                    {(() => {
+                                                        const contained = getHolidaysInsideRange(holiday.startDate, holiday.endDate);
+
+                                                        return contained.length > 0 ? (
+                                                            <Chip
+                                                                label={`${contained.length} feriado(s)`}
+                                                                color="warning"
+                                                                onClick={() => {
+                                                                    setSelectedHolidays(contained);
+                                                                    setOpenHolidayDialog(true);
+                                                                }}
+                                                                sx={{ cursor: "pointer" }}
+                                                            />
+                                                        ) : (
+                                                            <Chip label="0" color="default" />
+                                                        );
+                                                    })()}
+                                                </TableCell>
+
                                                 <TableCell>{holiday.year}</TableCell>
                                                 <TableCell align="right">
                                                     <IconButton
@@ -498,6 +542,40 @@ return isValid;
                     }} color="primary" variant="contained">
                         Guardar Cambios
                     </Button>
+                </DialogActions>
+            </Dialog>
+
+            <Dialog
+                open={openHolidayDialog}
+                onClose={() => setOpenHolidayDialog(false)}
+                maxWidth="sm"
+                fullWidth
+            >
+                <DialogTitle>Feriados dentro de este receso</DialogTitle>
+                <DialogContent dividers>
+                    {selectedHolidays.length === 0 ? (
+                        <Typography>No hay feriados dentro del rango.</Typography>
+                    ) : (
+                        selectedHolidays.map(h => (
+                            <Box
+                                key={h.id}
+                                sx={{
+                                    p: 1.5,
+                                    mb: 1,
+                                    borderRadius: 1,
+                                    backgroundColor: "#fff7e6",
+                                    border: "1px solid #ffe5b4"
+                                }}
+                            >
+                                <Typography>
+                                    <strong>{new Date(h.date).toLocaleDateString("es-ES")}</strong> — {h.description}
+                                </Typography>
+                            </Box>
+                        ))
+                    )}
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setOpenHolidayDialog(false)} color="primary">Cerrar</Button>
                 </DialogActions>
             </Dialog>
 
