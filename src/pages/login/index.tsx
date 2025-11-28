@@ -44,6 +44,7 @@ import BlankLayout from 'src/@core/layouts/BlankLayout'
 
 // ** Demo Imports
 import FooterIllustrationsV2 from 'src/views/pages/auth/FooterIllustrationsV2'
+import { CircularProgress } from '@mui/material'
 
 // ** Styled Components
 const LoginIllustrationWrapper = styled(Box)<BoxProps>(({ theme }) => ({
@@ -96,13 +97,17 @@ const FormControlLabel = styled(MuiFormControlLabel)<FormControlLabelProps>(({ t
 }))
 
 const schema = yup.object().shape({
-  username: yup.string().required('Username is required'), // Cambia 'email' a 'username'
-  password: yup.string().min(5).required('Password is required')
+  username: yup.string().required('El usuario o CI es obligatorio'),
+  password: yup
+    .string()
+    .min(5, 'La contraseña debe tener al menos 5 caracteres')
+    .required('La contraseña es obligatoria')
 })
 
+
 const defaultValues = {
-  password: 'password',
-  username: 'lucionazario'
+  password: '',
+  username: ''
 }
 
 interface FormData {
@@ -115,11 +120,11 @@ interface FormData {
 const LoginPage = () => {
   const [rememberMe, setRememberMe] = useState<boolean>(true)
   const [showPassword, setShowPassword] = useState<boolean>(false)
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false) // ← ESTADO DE CARGA
 
   // ** Hooks
   const auth = useAuth()
   const theme = useTheme()
-  const bgColors = useBgColor()
   const { settings } = useSettings()
   const hidden = useMediaQuery(theme.breakpoints.down('md'))
 
@@ -130,24 +135,55 @@ const LoginPage = () => {
     control,
     setError,
     handleSubmit,
-    formState: { errors }
+    formState: { errors },
+    clearErrors // ← LIMPIAR ERRORES PREVIOS
   } = useForm({
     defaultValues,
-    mode: 'onBlur',
+    mode: 'onSubmit',
+    reValidateMode: 'onBlur',
     resolver: yupResolver(schema)
   })
 
-  const onSubmit = (data: FormData) => {
-    const { username, password } = data; // Cambia 'email' a 'username'
-    auth.login({ username, password, rememberMe }, (err) => {
-      console.error('Login error:', err);
+
+
+  const onSubmit = async (data: FormData) => {
+    if (isSubmitting) return // ← EVITA MÚLTIPLES ENVÍOS
+
+    setIsSubmitting(true)
+    clearErrors() // ← LIMPIA ERRORES PREVIOS
+
+    const { username, password } = data
+
+    try {
+      await auth.login({ username, password, rememberMe })
+      // La redirección se maneja automáticamente en auth.login
+    } catch (err: any) {
+      console.error('Error en login:', err)
+
+      // Extrae el mensaje de error de forma más robusta
+      let errorMessage = 'Credenciales inválidas'
+
+      if (typeof err === 'string') {
+        errorMessage = err
+      } else if (err?.response?.data?.message) {
+        errorMessage = err.response.data.message
+      } else if (err?.message) {
+        errorMessage = err.message
+      }
+
+      // Muestra el error de forma más específica
       setError('username', {
         type: 'manual',
-        message: 'Username or Password is invalid'
-      });
-    });
+        message: errorMessage
+      })
 
-  };
+      // También puedes mostrar una alerta global
+      // setError('root', { type: 'manual', message: errorMessage })
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
 
   const imageSource = skin === 'bordered' ? 'auth-v2-login-illustration-bordered' : 'auth-v2-login-illustration'
 
@@ -215,26 +251,46 @@ const LoginPage = () => {
 
             </Alert>*/}
             <form noValidate autoComplete='off' onSubmit={handleSubmit(onSubmit)}>
+              {/* ALERTA PARA ERRORES GLOBALES - OPCIONAL */}
+              {(errors.username?.type === 'manual' || errors.password?.type === 'manual') && (
+                <Alert severity="error" sx={{ mb: 4 }}>
+                  {errors.username?.message || errors.password?.message}
+                </Alert>
+              )}
+
               <FormControl fullWidth sx={{ mb: 4 }}>
                 <Controller
-                  name='username' // Cambia 'email' a 'username'
+                  name='username'
                   control={control}
                   rules={{ required: true }}
                   render={({ field: { value, onChange, onBlur } }) => (
                     <TextField
                       autoFocus
-                      label='Usuario o CI' // Cambia 'Email' a 'Username'
+                      label='Usuario o CI'
                       value={value}
                       onBlur={onBlur}
-                      onChange={onChange}
-                      error={Boolean(errors.username)} // Cambia 'email' a 'username'
-                      placeholder='testuser'
+                      onChange={(e) => {
+                        onChange(e)
+                        // Limpia el error cuando el usuario empiece a escribir
+                        if (errors.username?.type === 'manual') {
+                          clearErrors('username')
+                        }
+                      }}
+                      error={Boolean(errors.username)}
+                      placeholder='Ingrese usuario o carnet de identidad'
+                      disabled={isSubmitting} // ← DESHABILITA DURANTE CARGA
                     />
                   )}
                 />
-                {/* {errors.email && <FormHelperText sx={{ color: 'error.main' }}>{errors.email.message}</FormHelperText>} */}
+                {/* Solo muestra errores de validación, no de servidor */}
+                {errors.username && errors.username.type !== 'manual' && (
+                  <FormHelperText sx={{ color: 'error.main' }}>
+                    {errors.username.message}
+                  </FormHelperText>
+                )}
               </FormControl>
-              <FormControl fullWidth>
+
+              <FormControl fullWidth sx={{ mb: 2 }}>
                 <InputLabel htmlFor='auth-login-v2-password' error={Boolean(errors.password)}>
                   Contraseña
                 </InputLabel>
@@ -247,16 +303,25 @@ const LoginPage = () => {
                       value={value}
                       onBlur={onBlur}
                       label='Password'
-                      onChange={onChange}
+                      onChange={(e) => {
+                        onChange(e)
+                        // Limpia el error cuando el usuario empiece a escribir
+                        if (errors.password?.type === 'manual') {
+                          clearErrors('password')
+                        }
+                      }}
                       id='auth-login-v2-password'
                       error={Boolean(errors.password)}
                       type={showPassword ? 'text' : 'password'}
+                      placeholder='Ingrese su contraseña'
+                      disabled={isSubmitting} // ← DESHABILITA DURANTE CARGA
                       endAdornment={
                         <InputAdornment position='end'>
                           <IconButton
                             edge='end'
                             onMouseDown={e => e.preventDefault()}
                             onClick={() => setShowPassword(!showPassword)}
+                            disabled={isSubmitting} // ← DESHABILITA DURANTE CARGA
                           >
                             <Icon icon={showPassword ? 'mdi:eye-outline' : 'mdi:eye-off-outline'} fontSize={20} />
                           </IconButton>
@@ -265,84 +330,43 @@ const LoginPage = () => {
                     />
                   )}
                 />
-                {errors.password && (
+                {/* Solo muestra errores de validación, no de servidor */}
+                {errors.password && errors.password.type !== 'manual' && (
                   <FormHelperText sx={{ color: 'error.main' }} id=''>
                     {errors.password.message}
                   </FormHelperText>
                 )}
               </FormControl>
+
               <Box
                 sx={{ mb: 4, display: 'flex', alignItems: 'center', flexWrap: 'wrap', justifyContent: 'space-between' }}
               >
                 <FormControlLabel
                   label='Recuerdame'
-                  control={<Checkbox checked={rememberMe} onChange={e => setRememberMe(e.target.checked)} />}
+                  control={
+                    <Checkbox
+                      checked={rememberMe}
+                      onChange={e => setRememberMe(e.target.checked)}
+                      disabled={isSubmitting} // ← DESHABILITA DURANTE CARGA
+                    />
+                  }
                 />
-               {/** <Typography
-                  variant='body2'
-                  component={Link}
-                  href='/forgot-password'
-                  sx={{ color: 'primary.main', textDecoration: 'none', marginTop: 2 }}
-                >
-                  Olvido su contraseña?
-                </Typography>*/} 
               </Box>
-              <Button fullWidth size='large' type='submit' variant='contained' sx={{ mb: 7 }}>
-                ENTRAR
-              </Button>
-              {/* 
-              <Box sx={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', justifyContent: 'center' }}>
-                <Typography sx={{ mr: 2, color: 'text.secondary' }}>Nuevo en la platforma?</Typography>
-                <Typography href='/register' component={Link} sx={{ color: 'primary.main', textDecoration: 'none' }}>
-                  Crear una cuenta
-                </Typography>
-              </Box>*/}
-              {/* 
-              <Divider
-                sx={{
-                  '& .MuiDivider-wrapper': { px: 4 },
-                  mt: theme => `${theme.spacing(5)} !important`,
-                  mb: theme => `${theme.spacing(7.5)} !important`
-                }}
-              >
-                or
-              </Divider>
 
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <IconButton
-                  href='/'
-                  component={Link}
-                  sx={{ color: '#497ce2' }}
-                  onClick={(e: MouseEvent<HTMLElement>) => e.preventDefault()}
-                >
-                  <Icon icon='mdi:facebook' />
-                </IconButton>
-                <IconButton
-                  href='/'
-                  component={Link}
-                  sx={{ color: '#1da1f2' }}
-                  onClick={(e: MouseEvent<HTMLElement>) => e.preventDefault()}
-                >
-                  <Icon icon='mdi:twitter' />
-                </IconButton>
-                <IconButton
-                  href='/'
-                  component={Link}
-                  onClick={(e: MouseEvent<HTMLElement>) => e.preventDefault()}
-                  sx={{ color: theme => (theme.palette.mode === 'light' ? '#272727' : 'grey.300') }}
-                >
-                  <Icon icon='mdi:github' />
-                </IconButton>
-                <IconButton
-                  href='/'
-                  component={Link}
-                  sx={{ color: '#db4437' }}
-                  onClick={(e: MouseEvent<HTMLElement>) => e.preventDefault()}
-                >
-                  <Icon icon='mdi:google' />
-                </IconButton>
-              </Box>
-              */}
+              <Button
+                fullWidth
+                size='large'
+                type='submit'
+                variant='contained'
+                sx={{ mb: 7 }}
+                disabled={isSubmitting} // ← DESHABILITA DURANTE CARGA
+              >
+                {isSubmitting ? (
+                  <CircularProgress size={24} color="inherit" />
+                ) : (
+                  'ENTRAR'
+                )}
+              </Button>
             </form>
           </BoxWrapper>
         </Box>

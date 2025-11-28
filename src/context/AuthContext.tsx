@@ -5,7 +5,7 @@ import { createContext, useEffect, useState, ReactNode } from 'react'
 import { useRouter } from 'next/router'
 
 // ** Axios
-import axios from 'src/lib/axios'
+import axios from 'axios'
 
 
 // ** Config
@@ -41,7 +41,10 @@ const AuthProvider = ({ children }: Props) => {
 
   useEffect(() => {
     const initAuth = async (): Promise<void> => {
-      const storedToken = window.localStorage.getItem(authConfig.storageTokenKeyName);
+      const storedToken =
+        window.localStorage.getItem(authConfig.storageTokenKeyName) ||
+        sessionStorage.getItem(authConfig.storageTokenKeyName);
+
 
       //console.log('📦 Token en almacenamiento:', storedToken);
 
@@ -91,30 +94,44 @@ const AuthProvider = ({ children }: Props) => {
   }, [])
 
 
-  const handleLogin = (params: LoginParams, errorCallback?: ErrCallbackType) => {
-    //console.log('🔐 Intentando login con:', params)
+  const handleLogin = async (params: LoginParams): Promise<any> => {
+    try {
+      const response = await axios.post(authConfig.loginEndpoint, params);
 
-    axios
-      .post(authConfig.loginEndpoint, params)
-      .then(async response => {
-        //console.log('✅ Login exitoso:', response.data)
+      if (response.data.accessToken) {
+        // Guardar token según rememberMe
+        if (params.rememberMe) {
+          window.localStorage.setItem(authConfig.storageTokenKeyName, response.data.accessToken);
+          window.localStorage.setItem('userData', JSON.stringify(response.data.userData));
+        } else {
+          sessionStorage.setItem(authConfig.storageTokenKeyName, response.data.accessToken);
+          sessionStorage.setItem('userData', JSON.stringify(response.data.userData));
+        }
 
-        params.rememberMe
-          ? window.localStorage.setItem(authConfig.storageTokenKeyName, response.data.accessToken)
-          : null
-        const returnUrl = router.query.returnUrl
+        setUser({ ...response.data.userData });
 
-        setUser({ ...response.data.userData })
-        params.rememberMe ? window.localStorage.setItem('userData', JSON.stringify(response.data.userData)) : null
+        const returnUrl = router.query.returnUrl;
+        const redirectURL = returnUrl && returnUrl !== '/' ? returnUrl : '/';
+        router.replace(redirectURL as string);
 
-        const redirectURL = returnUrl && returnUrl !== '/' ? returnUrl : '/'
-        router.replace(redirectURL as string)
-      })
-      .catch(err => {
-        console.error('❌ Error durante login:', err?.response || err)
-        if (errorCallback) errorCallback(err)
-      })
-  }
+        return response.data;
+      } else {
+        throw new Error('No se recibió token de acceso');
+      }
+    } catch (err: any) {
+      console.error('Error en handleLogin:', err);
+
+      // Propaga el error completo para que el componente lo maneje
+      if (err.response?.data) {
+        throw err.response.data; // Propaga el error completo del backend
+      } else if (err.request) {
+        throw new Error('Error de conexión con el servidor');
+      } else {
+        throw new Error('Error inesperado durante el login');
+      }
+    }
+  };
+
 
   const handleLogout = () => {
     setUser(null)

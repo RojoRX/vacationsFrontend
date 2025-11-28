@@ -51,80 +51,83 @@ const WelcomeDashboard = () => {
     availableDays: undefined as number | undefined
   });
 
-  useEffect(() => {
-    const fetchData = async () => {
-      if (!user?.ci) {
-        setRequestStatus(prev => ({ ...prev, loading: false }));
-        setLicenseRequestStatus(prev => ({ ...prev, loading: false }));
-        
-return;
-      }
+useEffect(() => {
+  const fetchData = async () => {
+    if (!user?.ci) {
+      setRequestStatus(prev => ({ ...prev, loading: false }));
+      setLicenseRequestStatus(prev => ({ ...prev, loading: false }));
+      return;
+    }
 
-      try {
-        // --- Lógica para Vacaciones ---
-        // Obtener días disponibles
-        const endDate = getTodayIsoDate();
-        const debtResponse = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/vacations/accumulated-debt`, {
+    try {
+      // === CORRECCIÓN DEL END DATE ===
+      const endDate = getAnniversaryThisYear(user.fecha_ingreso);
+
+      // Obtener días disponibles
+      const debtResponse = await axios.get(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/vacations/accumulated-debt`,
+        {
           params: {
             carnetIdentidad: user.ci,
             endDate
           }
-        });
-        setVacationDebt(debtResponse.data.resumenGeneral.diasDisponiblesActuales);
-
-        // Verificar estado de última solicitud de vacaciones
-        const vacationStatusResponse = await axios.get(
-          `${process.env.NEXT_PUBLIC_API_BASE_URL}/vacation-requests/check-status/${user.ci}`
-        );
-
-        setRequestStatus({
-          canRequest: vacationStatusResponse.data.canRequest,
-          reason: vacationStatusResponse.data.reason || '',
-          loading: false
-        });
-
-        // --- Lógica para Licencias (NUEVO) ---
-        const licenseValidationResponse = await axios.get(
-          `${process.env.NEXT_PUBLIC_API_BASE_URL}/licenses-validation/can-request/${user.ci}`
-        );
-
-        //console.log('Available days from backend:', licenseValidationResponse.data.availableDays);
-
-        setLicenseRequestStatus({
-          canRequest: licenseValidationResponse.data.canRequest,
-          reason: licenseValidationResponse.data.reason || '',
-          availableDays: licenseValidationResponse.data.availableDays, // ¡Asegúrate de que este valor viene del backend!
-          loading: false
-        });
-
-      } catch (error) {
-        console.error('Error fetching data:', error);
-        let errorMessage = 'Error al verificar disponibilidad';
-
-        if (axios.isAxiosError(error)) {
-          errorMessage = error.response?.data?.reason ||
-            error.response?.data?.message ||
-            error.message;
         }
+      );
 
-        setRequestStatus({
-          canRequest: false,
-          reason: errorMessage,
-          loading: false
-        });
+      setVacationDebt(debtResponse.data.resumenGeneral.diasDisponiblesActuales);
 
-        // Asegurar que el estado de licencia también se actualice en caso de error general
-        setLicenseRequestStatus({
-          canRequest: false,
-          reason: errorMessage,
-          availableDays: 0, // En caso de error, puedes establecer 0 días o undefined
-          loading: false
-        });
+      // Verificar estado de última solicitud
+      const vacationStatusResponse = await axios.get(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/vacation-requests/check-status/${user.ci}`
+      );
+
+      setRequestStatus({
+        canRequest: vacationStatusResponse.data.canRequest,
+        reason: vacationStatusResponse.data.reason || '',
+        loading: false
+      });
+
+      // Validación de licencias
+      const licenseValidationResponse = await axios.get(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/licenses-validation/can-request/${user.ci}`
+      );
+
+      setLicenseRequestStatus({
+        canRequest: licenseValidationResponse.data.canRequest,
+        reason: licenseValidationResponse.data.reason || '',
+        availableDays: licenseValidationResponse.data.availableDays,
+        loading: false
+      });
+
+    } catch (error) {
+      console.error('Error fetching data:', error);
+      let errorMessage = 'Error al verificar disponibilidad';
+
+      if (axios.isAxiosError(error)) {
+        errorMessage =
+          error.response?.data?.reason ||
+          error.response?.data?.message ||
+          error.message;
       }
-    };
 
-    fetchData();
-  }, [user?.ci]);
+      setRequestStatus({
+        canRequest: false,
+        reason: errorMessage,
+        loading: false
+      });
+
+      setLicenseRequestStatus({
+        canRequest: false,
+        reason: errorMessage,
+        availableDays: 0,
+        loading: false
+      });
+    }
+  };
+
+  fetchData();
+}, [user?.ci]);
+
 
   // Determinar si el botón de Vacaciones debe estar deshabilitado
   const isVacationButtonDisabled =
@@ -137,8 +140,8 @@ return;
     if (requestStatus.loading) return 'Verificando disponibilidad...';
     if (!requestStatus.canRequest) return requestStatus.reason;
     if (vacationDebt !== null && vacationDebt <= 0) return 'No tienes días de vacaciones disponibles';
-    
-return 'Solicitar vacaciones';
+
+    return 'Solicitar vacaciones';
   };
 
   // Texto para mostrar en la card de vacaciones
@@ -146,8 +149,8 @@ return 'Solicitar vacaciones';
     if (requestStatus.loading) return 'Verificando estado...';
     if (!requestStatus.canRequest) return 'No disponible';
     if (vacationDebt !== null && vacationDebt <= 0) return 'Sin días disponibles';
-    
-return 'Disponible';
+
+    return 'Disponible';
   };
 
   // --- NUEVO: Lógica para el botón de Licencias ---
@@ -160,8 +163,8 @@ return 'Disponible';
     if (licenseRequestStatus.loading) return 'Verificando disponibilidad...';
     if (!licenseRequestStatus.canRequest) return licenseRequestStatus.reason;
     if (licenseRequestStatus.availableDays !== undefined && licenseRequestStatus.availableDays <= 0) return 'No tienes días de licencia disponibles';
-    
-return 'Solicitar licencia';
+
+    return 'Solicitar licencia';
   };
 
   // Esta función ahora solo determina si está "Disponible" o "No disponible",
@@ -169,11 +172,26 @@ return 'Solicitar licencia';
   const getLicenseStatusText = () => {
     if (licenseRequestStatus.loading) return 'Verificando estado...';
     if (!licenseRequestStatus.canRequest) return 'No disponible';
-    
-return 'Disponible';
+
+    return 'Disponible';
   };
-  
-return (
+  const getAnniversaryThisYear = (fechaIngreso: string) => {
+    if (!fechaIngreso) return null;
+
+    const ingreso = new Date(fechaIngreso);
+
+    const month = ingreso.getMonth();      // 0-11
+    const day = ingreso.getDate();         // 1-31
+    const currentYear = new Date().getFullYear();
+
+    // Crear fecha con M/D del ingreso pero con el año actual
+    const anniversary = new Date(currentYear, month, day);
+
+    return anniversary.toISOString().split('T')[0]; // YYYY-MM-DD
+  };
+
+
+  return (
     <ApexChartWrapper>
       <Grid container spacing={6}>
         {/* Bienvenida */}
