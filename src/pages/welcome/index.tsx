@@ -51,82 +51,119 @@ const WelcomeDashboard = () => {
     availableDays: undefined as number | undefined
   });
 
-useEffect(() => {
-  const fetchData = async () => {
-    if (!user?.ci) {
-      setRequestStatus(prev => ({ ...prev, loading: false }));
-      setLicenseRequestStatus(prev => ({ ...prev, loading: false }));
-      return;
-    }
+  useEffect(() => {
+    const fetchData = async () => {
+      if (!user?.ci) {
+        setRequestStatus(prev => ({ ...prev, loading: false }));
+        setLicenseRequestStatus(prev => ({ ...prev, loading: false }));
+        return;
+      }
+
+      try {
+        // === CORRECCIÓN DEL END DATE ===
+        const endDate = getAnniversaryThisYear(user.fecha_ingreso);
+
+        // Obtener días disponibles
+        const debtResponse = await axios.get(
+          `${process.env.NEXT_PUBLIC_API_BASE_URL}/vacations/accumulated-debt`,
+          {
+            params: {
+              carnetIdentidad: user.ci,
+              endDate
+            }
+          }
+        );
+
+        setVacationDebt(debtResponse.data.resumenGeneral.diasDisponiblesActuales);
+
+        // Verificar estado de última solicitud
+        const vacationStatusResponse = await axios.get(
+          `${process.env.NEXT_PUBLIC_API_BASE_URL}/vacation-requests/check-status/${user.ci}`
+        );
+
+        setRequestStatus({
+          canRequest: vacationStatusResponse.data.canRequest,
+          reason: vacationStatusResponse.data.reason || '',
+          loading: false
+        });
+
+        // Validación de licencias
+        const licenseValidationResponse = await axios.get(
+          `${process.env.NEXT_PUBLIC_API_BASE_URL}/licenses-validation/can-request/${user.ci}`
+        );
+
+        setLicenseRequestStatus({
+          canRequest: licenseValidationResponse.data.canRequest,
+          reason: licenseValidationResponse.data.reason || '',
+          availableDays: licenseValidationResponse.data.availableDays,
+          loading: false
+        });
+
+      } catch (error) {
+        console.error('Error fetching data:', error);
+        let errorMessage = 'Error al verificar disponibilidad';
+
+        if (axios.isAxiosError(error)) {
+          errorMessage =
+            error.response?.data?.reason ||
+            error.response?.data?.message ||
+            error.message;
+        }
+
+        setRequestStatus({
+          canRequest: false,
+          reason: errorMessage,
+          loading: false
+        });
+
+        setLicenseRequestStatus({
+          canRequest: false,
+          reason: errorMessage,
+          availableDays: 0,
+          loading: false
+        });
+      }
+    };
+
+    fetchData();
+  }, [user?.ci]);
+
+  const fetchDashboardData = async () => {
+    if (!user?.ci) return;
 
     try {
-      // === CORRECCIÓN DEL END DATE ===
       const endDate = getAnniversaryThisYear(user.fecha_ingreso);
 
-      // Obtener días disponibles
       const debtResponse = await axios.get(
         `${process.env.NEXT_PUBLIC_API_BASE_URL}/vacations/accumulated-debt`,
-        {
-          params: {
-            carnetIdentidad: user.ci,
-            endDate
-          }
-        }
+        { params: { carnetIdentidad: user.ci, endDate } }
       );
-
       setVacationDebt(debtResponse.data.resumenGeneral.diasDisponiblesActuales);
 
-      // Verificar estado de última solicitud
       const vacationStatusResponse = await axios.get(
         `${process.env.NEXT_PUBLIC_API_BASE_URL}/vacation-requests/check-status/${user.ci}`
       );
-
       setRequestStatus({
         canRequest: vacationStatusResponse.data.canRequest,
         reason: vacationStatusResponse.data.reason || '',
         loading: false
       });
 
-      // Validación de licencias
       const licenseValidationResponse = await axios.get(
         `${process.env.NEXT_PUBLIC_API_BASE_URL}/licenses-validation/can-request/${user.ci}`
       );
-
       setLicenseRequestStatus({
         canRequest: licenseValidationResponse.data.canRequest,
         reason: licenseValidationResponse.data.reason || '',
         availableDays: licenseValidationResponse.data.availableDays,
         loading: false
       });
-
     } catch (error) {
       console.error('Error fetching data:', error);
-      let errorMessage = 'Error al verificar disponibilidad';
-
-      if (axios.isAxiosError(error)) {
-        errorMessage =
-          error.response?.data?.reason ||
-          error.response?.data?.message ||
-          error.message;
-      }
-
-      setRequestStatus({
-        canRequest: false,
-        reason: errorMessage,
-        loading: false
-      });
-
-      setLicenseRequestStatus({
-        canRequest: false,
-        reason: errorMessage,
-        availableDays: 0,
-        loading: false
-      });
+      setRequestStatus(prev => ({ ...prev, canRequest: false, loading: false, reason: 'Error al verificar disponibilidad' }));
+      setLicenseRequestStatus(prev => ({ ...prev, canRequest: false, loading: false, availableDays: 0, reason: 'Error al verificar disponibilidad' }));
     }
   };
-
-  fetchData();
-}, [user?.ci]);
 
 
   // Determinar si el botón de Vacaciones debe estar deshabilitado
@@ -370,7 +407,15 @@ useEffect(() => {
               </Button>
             </span>
           </Tooltip>
-          <RequestPermissionDialog open={openDialog} onClose={() => setOpenDialog(false)} />
+          <RequestPermissionDialog
+            open={openDialog}
+            onClose={() => setOpenDialog(false)}
+            onSuccess={() => {
+              setOpenDialog(false);   // cerrar diálogo
+              fetchDashboardData();   // recargar la info
+            }}
+          />
+
         </Grid>
 
         {/* Tarjeta exclusiva para el supervisor */}
