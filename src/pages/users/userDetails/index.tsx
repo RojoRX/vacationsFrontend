@@ -322,8 +322,15 @@ const UserInformation: AclComponent = () => {
 
                 <Typography variant="body1" sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
                   <EventIcon sx={{ mr: 1, color: 'text.secondary' }} />
-                  <strong>Ingreso:</strong> {(user.fecha_ingreso)}
+                  <strong>Ingreso:</strong>&nbsp;
+                  {new Date(`${user.fecha_ingreso}T00:00:00`).toLocaleDateString('es-BO', {
+                    day: 'numeric',
+                    month: 'long',
+                    year: 'numeric',
+                  })}
+
                 </Typography>
+
 
                 <Typography variant="body1" sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
                   <PhoneIcon sx={{ mr: 1, color: 'text.secondary' }} />
