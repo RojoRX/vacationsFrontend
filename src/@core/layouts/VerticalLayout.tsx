@@ -21,6 +21,7 @@ import Customizer from 'src/@core/components/customizer'
 import Navigation from './components/vertical/navigation'
 import Footer from './components/shared-components/footer'
 import ScrollToTop from 'src/@core/components/scroll-to-top'
+import ChatAssistant from 'src/components/chatAssistant'
 
 const VerticalLayoutWrapper = styled('div')({
   height: '100%',
@@ -134,7 +135,11 @@ const VerticalLayout = (props: LayoutProps) => {
           </Fab>
         </ScrollToTop>
       )}
+
+      {/* Chat persistente */}
+      <ChatAssistant />
     </>
+
   )
 }
 

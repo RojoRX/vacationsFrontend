@@ -12,7 +12,6 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
-  TextField,
   Tooltip
 } from '@mui/material';
 import {
@@ -21,15 +20,13 @@ import {
   Info as InfoIcon
 } from '@mui/icons-material';
 import axios from 'src/lib/axios';
-import { format, isBefore, isAfter, parseISO, addDays } from 'date-fns';
+import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import useUser from 'src/hooks/useUser';
-import { formatDate } from 'src/utils/dateUtils';
 import { DatePicker, LocalizationProvider, PickersDay } from '@mui/x-date-pickers';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { calculateEndDate, getNextWorkDay } from 'src/utils/calculateEndDate';
 import router from 'next/router';
-import { left } from '@popperjs/core';
 
 interface VacationDebtDetail {
   startDate: string;
@@ -40,6 +37,7 @@ interface VacationDebtDetail {
   deudaAcumulativaHastaEstaGestion: number;
   deudaAcumulativaAnterior: number;
   diasDisponibles: number;
+  valido: boolean;
 }
 
 interface VacationDebtResponse {
@@ -72,40 +70,27 @@ const VacationRequestSubmissionForm = () => {
   const [nonHolidays, setNonHolidays] = useState<{ date: string; description: string }[]>([]);
 
   function getMostRecentAnniversary(ingresoDateStr: string, today: Date = new Date()): string {
-    // Parsear la fecha de ingreso
     const [ingresoYear, ingresoMonth, ingresoDay] = ingresoDateStr.split('-').map(Number);
-
-    // Obtener componentes de la fecha actual
     const currentYear = today.getFullYear();
-    const currentMonth = today.getMonth() + 1; // Los meses en Date son 0-indexados
+    const currentMonth = today.getMonth() + 1;
     const currentDay = today.getDate();
 
-    // Calcular año tentativo (mismo año que el actual)
     let anniversaryYear = currentYear;
+    const hasAnniversaryPassed = ingresoMonth < currentMonth || (ingresoMonth === currentMonth && ingresoDay <= currentDay);
+    if (!hasAnniversaryPassed) anniversaryYear = currentYear - 1;
 
-    // Verificar si la fecha de aniversario ya pasó este año
-    const hasAnniversaryPassed =
-      (ingresoMonth < currentMonth) ||
-      (ingresoMonth === currentMonth && ingresoDay <= currentDay);
-
-    // Ajustar el año si el aniversario aún no ha llegado
-    if (!hasAnniversaryPassed) {
-      anniversaryYear = currentYear - 1;
-    }
-
-    // Formatear la fecha resultante
     const formattedMonth = String(ingresoMonth).padStart(2, '0');
     const formattedDay = String(ingresoDay).padStart(2, '0');
 
-    //console.log("Informacion del hook" + " " + user?.fecha_ingreso);
     return `${anniversaryYear}-${formattedMonth}-${formattedDay}`;
-
-
   }
 
+  // ---------------------------
+  // Fetch vacaciones y seleccionar gestión más antigua válida con días
+  // ---------------------------
   useEffect(() => {
     const today = new Date();
-    const ingresoDate = (user?.fecha_ingreso || '');
+    const ingresoDate = user?.fecha_ingreso || '';
     const endDate = getMostRecentAnniversary(ingresoDate, today);
 
     const fetchVacationDebt = async () => {
@@ -113,20 +98,20 @@ const VacationRequestSubmissionForm = () => {
         setLoading(true);
         const response = await axios.get<VacationDebtResponse>(
           `${process.env.NEXT_PUBLIC_API_BASE_URL}/vacations/accumulated-debt`,
-          {
-            params: {
-              carnetIdentidad: user?.ci,
-              endDate: endDate
-            }
-          }
+          { params: { carnetIdentidad: user?.ci, endDate } }
         );
         setData(response.data);
 
-        //console.log(data)
-        const availablePeriod = response.data.detalles.find(d => d.diasDisponibles > 0);
-        if (availablePeriod) {
-          setSelectedPeriod(availablePeriod);
-          setDaysRequested(Math.min(availablePeriod.diasDisponibles, 30));
+        // Filtrar solo gestiones válidas con días > 0
+        const validPeriods = response.data.detalles
+          .filter(d => d.diasDisponibles > 0 && d.valido)
+          .sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime()); // más antigua primero
+
+        if (validPeriods.length > 0) {
+          setSelectedPeriod(validPeriods[0]);
+          setDaysRequested(Math.min(validPeriods[0].diasDisponibles, 30));
+        } else {
+          setSelectedPeriod(null);
         }
       } catch (err) {
         setError('Error al obtener la información de vacaciones');
@@ -136,29 +121,23 @@ const VacationRequestSubmissionForm = () => {
       }
     };
 
-    if (user?.ci) {
-      fetchVacationDebt();
-    }
+    if (user?.ci) fetchVacationDebt();
   }, [user?.ci]);
+
+  // ---------------------------
+  // Fetch feriados / días no laborables
+  // ---------------------------
   useEffect(() => {
     const fetchNonHolidays = async () => {
       try {
-         const res = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/non-holidays/all`);
-
-        setNonHolidays(
-          res.data.map((d: any) => ({
-            date: d.date, // YYYY-MM-DD
-            description: d.description
-          }))
-        );
+        const res = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/non-holidays/all`);
+        setNonHolidays(res.data.map((d: any) => ({ date: d.date, description: d.description })));
       } catch (e) {
-        console.error("Error cargando feriados:", e);
+        console.error('Error cargando feriados:', e);
       }
     };
-
     fetchNonHolidays();
   }, []);
-
 
   const handleRequestVacation = async () => {
     if (!selectedPeriod || daysRequested <= 0 || !selectedStartDate) return;
@@ -166,7 +145,6 @@ const VacationRequestSubmissionForm = () => {
     try {
       setRequestError(null);
       setRequestSuccess(false);
-
 
       const response = await axios.post(
         `${process.env.NEXT_PUBLIC_API_BASE_URL}/vacation-requests`,
@@ -178,112 +156,72 @@ const VacationRequestSubmissionForm = () => {
             endPeriod: selectedPeriod.endDate.split('T')[0]
           }
         }
-
       );
 
-      // Supongamos que response.data.id contiene el ID
       setRequestSuccess(true);
-      setRequestId(response.data.id || null); // Aquí guardamos el ID
+      setRequestId(response.data.id || null);
     } catch (err: unknown) {
-      const error = err as any
-      if (error?.response?.data?.message) {
-        setRequestError(error.response.data.message)
-      } else {
-        setRequestError(`Error inesperado: ${String(err)}`)
-      }
+      const error = err as any;
+      setRequestError(error?.response?.data?.message || `Error inesperado: ${String(err)}`);
     }
-
   };
+
   const handleDialogClose = () => {
     setOpenDialog(false);
     if (requestSuccess && requestId) {
       router.push(`/vacations/vacations-requests/${requestId}/`);
     }
   };
-  if (loading) {
-    return (
-      <Box display="flex" justifyContent="center" py={4}>
-        <CircularProgress />
-      </Box>
-    );
-  }
 
-  if (error) {
-    return (
-      <Alert severity="error" sx={{ my: 2 }}>
-        {error}
-      </Alert>
-    );
-  }
+  const createHolidayDayComponent = (nonHolidays: { date: string; description: string }[]) => {
+    return function HolidayDay(props: any) {
+      const { day, outsideCurrentMonth, ...other } = props;
+      const dayStr = format(day, 'yyyy-MM-dd');
+      const holiday = nonHolidays.find(h => h.date === dayStr);
 
-  if (!data || !selectedPeriod) {
-    return (
-      <Alert severity="info" sx={{ my: 2 }}>
-        No hay períodos con días disponibles para vacaciones.
-      </Alert>
-    );
-  }
+      if (!holiday) return <PickersDay day={day} outsideCurrentMonth={outsideCurrentMonth} {...other} />;
+
+      return (
+        <Tooltip title={holiday.description} arrow>
+          <PickersDay
+            day={day}
+            outsideCurrentMonth={outsideCurrentMonth}
+            {...other}
+            sx={{
+              backgroundColor: 'rgba(255, 0, 0, 0.25)',
+              borderRadius: '50%',
+              '&:hover': { backgroundColor: 'rgba(255, 0, 0, 0.45)' }
+            }}
+          />
+        </Tooltip>
+      );
+    };
+  };
+
+  if (loading) return <Box display="flex" justifyContent="center" py={4}><CircularProgress /></Box>;
+  if (error) return <Alert severity="error" sx={{ my: 2 }}>{error}</Alert>;
+  if (!data || !selectedPeriod) return <Alert severity="info" sx={{ my: 2 }}>No hay períodos válidos con días disponibles para vacaciones.</Alert>;
 
   const periodStart = new Date(selectedPeriod.startDate).getFullYear();
   const periodEnd = new Date(selectedPeriod.endDate).getFullYear();
   const today = new Date();
-  const minSelectableDate = today;
-  const maxSelectableDate = periodEnd;
   const endDate = calculateEndDate(selectedStartDate, selectedPeriod?.diasDisponibles || 0);
-  let endDatePlusOne: Date | null = null;
-  if (endDate) {
-    endDatePlusOne = getNextWorkDay(endDate); // Ajusta al siguiente día hábil si es fin de semana
-  }
-
-const createHolidayDayComponent = (nonHolidays: { date: string; description: string }[]) => {
-  return function HolidayDay(props: any) {
-    const { day, outsideCurrentMonth, ...other } = props;
-
-    const dayStr = format(day, "yyyy-MM-dd");
-    const holiday = nonHolidays.find(h => h.date === dayStr);
-
-    if (!holiday) {
-      return <PickersDay day={day} outsideCurrentMonth={outsideCurrentMonth} {...other} />;
-    }
-
-    return (
-      <Tooltip title={holiday.description} arrow>
-        <PickersDay
-          day={day}
-          outsideCurrentMonth={outsideCurrentMonth}
-          {...other}
-          sx={{
-            backgroundColor: "rgba(255, 0, 0, 0.25)",
-            borderRadius: "50%",
-            "&:hover": {
-              backgroundColor: "rgba(255, 0, 0, 0.45)"
-            }
-          }}
-        />
-      </Tooltip>
-    );
-  };
-};
-
-
-
+  const endDatePlusOne = endDate ? getNextWorkDay(endDate) : null;
 
   return (
     <Paper elevation={3} sx={{ p: 3, mb: 3, borderRadius: 2 }}>
+      {/* Header */}
       <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
         <VacationIcon sx={{ mr: 1, color: theme.palette.primary.main }} />
         <Typography variant="h6">Solicitud de Vacaciones</Typography>
       </Box>
 
+      {/* Resumen */}
       <Grid container spacing={2} sx={{ mb: 3 }}>
         <Grid item xs={12} md={6}>
           <Paper sx={{ p: 2, bgcolor: theme.palette.grey[100] }}>
-            <Typography variant="subtitle2" color="textSecondary">
-              Días Disponibles Totales
-            </Typography>
-            <Typography variant="h4" color="primary">
-              {data.resumenGeneral.diasDisponiblesActuales} días
-            </Typography>
+            <Typography variant="subtitle2" color="textSecondary">Días Disponibles Totales</Typography>
+            <Typography variant="h4" color="primary">{data.resumenGeneral.diasDisponiblesActuales} días</Typography>
           </Paper>
         </Grid>
         <Grid item xs={12} md={6}>
@@ -291,35 +229,24 @@ const createHolidayDayComponent = (nonHolidays: { date: string; description: str
             <Typography variant="subtitle2" color="textSecondary">
               Días Disponibles en Gestión {periodStart} - {periodEnd}
             </Typography>
-            <Typography variant="h4" color="secondary">
-              {selectedPeriod.diasDisponibles} días
-            </Typography>
+            <Typography variant="h4" color="secondary">{selectedPeriod.diasDisponibles} días</Typography>
           </Paper>
         </Grid>
       </Grid>
 
+      {/* Detalles */}
       <Paper sx={{ p: 3, mb: 3, borderLeft: `4px solid ${theme.palette.primary.main}` }}>
         <Box display="flex" alignItems="center" mb={2}>
           <InfoIcon color="primary" sx={{ mr: 1 }} />
           <Typography variant="h6">Período de Vacaciones Disponible</Typography>
         </Box>
-
         <Grid container spacing={2}>
           <Grid item xs={12} md={6}>
-            <Typography>
-              <strong>Rango del Período:</strong> {periodStart} - {periodEnd}
-            </Typography>
-            <Typography>
-              <strong>Días de vacación por Antiguedad:</strong> {selectedPeriod.diasDeVacacion}
-            </Typography>
+            <Typography><strong>Rango del Período:</strong> {periodStart} - {periodEnd}</Typography>
+            <Typography><strong>Días de vacación por Antiguedad:</strong> {selectedPeriod.diasDeVacacion}</Typography>
           </Grid>
           <Grid item xs={12} md={6}>
-            <Typography>
-              <strong>Días disponibles para solicitar:</strong> {selectedPeriod.diasDisponibles}
-            </Typography>
-            {/*<Typography>
-              <strong>Deuda acumulada:</strong> {selectedPeriod.deudaAcumulativaHastaEstaGestion}
-            </Typography>*/}
+            <Typography><strong>Días disponibles para solicitar:</strong> {selectedPeriod.diasDisponibles}</Typography>
           </Grid>
         </Grid>
 
@@ -328,121 +255,67 @@ const createHolidayDayComponent = (nonHolidays: { date: string; description: str
             variant="contained"
             startIcon={<SendIcon />}
             onClick={() => setOpenDialog(true)}
-            disabled={selectedPeriod.diasDisponibles <= 0}
+            disabled={selectedPeriod.diasDisponibles <= 0 || !selectedPeriod.valido}
             color="primary"
           >
             Solicitar Vacaciones
           </Button>
-
           <Button
-            variant="outlined" // Variante distinta (bordeado)
+            variant="outlined"
             startIcon={<InfoIcon />}
             onClick={() => router.push('/vacations/vacations-dashboard/')}
-            disabled={selectedPeriod.diasDisponibles <= 0}
-            color="secondary" // Color diferente para distinción
+            disabled={selectedPeriod.diasDisponibles <= 0 || !selectedPeriod.valido}
+            color="secondary"
           >
             Ver Detalles Gestión
           </Button>
         </Box>
-
-
       </Paper>
 
       {/* Diálogo de Solicitud */}
       <Dialog open={openDialog} onClose={() => setOpenDialog(false)}>
         <DialogTitle>Solicitar Vacaciones</DialogTitle>
         <DialogContent>
-          <Typography gutterBottom>
-            <strong>Período de gestión:</strong> {periodStart} - {periodEnd}
-          </Typography>
-          <Typography gutterBottom>
-            <strong>Días disponibles:</strong> {selectedPeriod.diasDisponibles}
-          </Typography>
+          <Typography gutterBottom><strong>Período de gestión:</strong> {periodStart} - {periodEnd}</Typography>
+          <Typography gutterBottom><strong>Días disponibles:</strong> {selectedPeriod.diasDisponibles}</Typography>
+
           <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={es}>
             <DatePicker
               label="Fecha de inicio"
               value={selectedStartDate}
               onChange={(newDate) => setSelectedStartDate(newDate)}
               disablePast
-              slots={{
-                day: createHolidayDayComponent(nonHolidays)
-              }}
-              slotProps={{
-                textField: { fullWidth: true, margin: "normal" }
-              }}
+              slots={{ day: createHolidayDayComponent(nonHolidays) }}
+              slotProps={{ textField: { fullWidth: true, margin: "normal" } }}
             />
           </LocalizationProvider>
 
-
-
-          {selectedStartDate && selectedPeriod.diasDisponibles > 0 && (
+          {selectedStartDate && (
             <Alert severity="info" sx={{ mt: 2 }}>
               <div>
-                <p>
-                  Ha seleccionado la fecha{" "}
-                  <strong>
-                    {format(selectedStartDate, "EEEE dd 'de' MMMM 'de' yyyy", { locale: es })}
-                  </strong>
-                  .
-                </p>
-
-                {endDate && (
-                  <p>
-                    Su vacación concluirá el{" "}
-                    <strong>
-                      {format(endDate, "EEEE dd 'de' MMMM 'de' yyyy", { locale: es })}
-                    </strong>
-                    .
-                  </p>
-                )}
-
-                {endDatePlusOne && (
-                  <p>
-                    Debe reincorporarse el día{" "}
-                    <strong>
-                      {format(endDatePlusOne, "EEEE dd 'de' MMMM 'de' yyyy", { locale: es })}
-                    </strong>
-                    .
-                  </p>
-                )}
+                <p>Ha seleccionado la fecha <strong>{format(selectedStartDate, "EEEE dd 'de' MMMM 'de' yyyy", { locale: es })}</strong>.</p>
+                {endDate && <p>Su vacación concluirá el <strong>{format(endDate, "EEEE dd 'de' MMMM 'de' yyyy", { locale: es })}</strong>.</p>}
+                {endDatePlusOne && <p>Debe reincorporarse el día <strong>{format(endDatePlusOne, "EEEE dd 'de' MMMM 'de' yyyy", { locale: es })}</strong>.</p>}
               </div>
             </Alert>
           )}
-          {requestSuccess && (
-            <Alert severity="success" sx={{ mt: 2 }}>
-              <strong> Solicitud enviada exitosamente</strong>
-            </Alert>
-          )}
 
-
-          {requestError && (
-            <Alert severity="error" sx={{ mt: 2 }}>
-              {requestError}
-            </Alert>
-          )}
+          {requestSuccess && <Alert severity="success" sx={{ mt: 2 }}><strong>Solicitud enviada exitosamente</strong></Alert>}
+          {requestError && <Alert severity="error" sx={{ mt: 2 }}>{requestError}</Alert>}
         </DialogContent>
 
         <DialogActions>
           {!requestSuccess && (
             <>
               <Button onClick={() => setOpenDialog(false)}>Cancelar</Button>
-              <Button
-                onClick={handleRequestVacation}
-                variant="contained"
-                disabled={!selectedStartDate}
-              >
-                Confirmar Solicitud
-              </Button>
+              <Button onClick={handleRequestVacation} variant="contained" disabled={!selectedStartDate}>Confirmar Solicitud</Button>
             </>
           )}
           {requestSuccess && (
-            <Button onClick={handleDialogClose} variant="contained">
-              Cerrar
-            </Button>
+            <Button onClick={handleDialogClose} variant="contained">Cerrar</Button>
           )}
         </DialogActions>
       </Dialog>
-
     </Paper>
   );
 };

@@ -1,26 +1,22 @@
 // ** React Imports
 import { ReactNode } from 'react'
+import { useRouter } from 'next/router'
 
 // ** MUI Imports
 import { Theme } from '@mui/material/styles'
 import useMediaQuery from '@mui/material/useMediaQuery'
 
 // ** Layout Imports
-// !Do not remove this Layout import
 import Layout from 'src/@core/layouts/Layout'
 
 // ** Navigation Imports
 import VerticalNavItems from 'src/navigation/vertical'
 import HorizontalNavItems from 'src/navigation/horizontal'
 
-// ** Component Import
-// Uncomment the below line (according to the layout type) when using server-side menu
-// import ServerSideVerticalNavItems from './components/vertical/ServerSideNavItems'
-// import ServerSideHorizontalNavItems from './components/horizontal/ServerSideNavItems'
-
+// ** Component Imports
 import VerticalAppBarContent from './components/vertical/AppBarContent'
 import HorizontalAppBarContent from './components/horizontal/AppBarContent'
-
+import ChatAssistant from 'src/components/chatAssistant'
 // ** Hook Import
 import { useSettings } from 'src/@core/hooks/useSettings'
 
@@ -30,23 +26,17 @@ interface Props {
 }
 
 const UserLayout = ({ children, contentHeightFixed }: Props) => {
-  // ** Hooks
   const { settings, saveSettings } = useSettings()
+  const router = useRouter()
 
-  // ** Vars for server side navigation
-  // const { menuItems: verticalMenuItems } = ServerSideVerticalNavItems()
-  // const { menuItems: horizontalMenuItems } = ServerSideHorizontalNavItems()
+  // Rutas donde ocultar el chat
+  const HIDDEN_ROUTES = ['/login', '/register', '/auth']
+  const shouldHideChat = HIDDEN_ROUTES.some(route =>
+    router.pathname === route || router.pathname.startsWith(`${route}/`)
+  )
 
-  /**
-   *  The below variable will hide the current layout menu at given screen size.
-   *  The menu will be accessible from the Hamburger icon only (Vertical Overlay Menu).
-   *  You can change the screen size from which you want to hide the current layout menu.
-   *  Please refer useMediaQuery() hook: https://mui.com/material-ui/react-use-media-query/,
-   *  to know more about what values can be passed to this hook.
-   *  ! Do not change this value unless you know what you are doing. It can break the template.
-   */
+  // Control de menu responsive
   const hidden = useMediaQuery((theme: Theme) => theme.breakpoints.down('lg'))
-
   if (hidden && settings.layout === 'horizontal') {
     settings.layout = 'vertical'
   }
@@ -60,9 +50,6 @@ const UserLayout = ({ children, contentHeightFixed }: Props) => {
       verticalLayoutProps={{
         navMenu: {
           navItems: VerticalNavItems()
-
-          // Uncomment the below line when using server-side menu in vertical layout and comment the above line
-          // navItems: verticalMenuItems
         },
         appBar: {
           content: props => (
@@ -79,18 +66,19 @@ const UserLayout = ({ children, contentHeightFixed }: Props) => {
         horizontalLayoutProps: {
           navMenu: {
             navItems: HorizontalNavItems()
-
-            // Uncomment the below line when using server-side menu in horizontal layout and comment the above line
-            // navItems: horizontalMenuItems
           },
           appBar: {
-            content: () => <HorizontalAppBarContent hidden={hidden} settings={settings} saveSettings={saveSettings} />
+            content: () => (
+              <HorizontalAppBarContent hidden={hidden} settings={settings} saveSettings={saveSettings} />
+            )
           }
         }
       })}
     >
       {children}
-      
+
+      {/* Chat persistente */}
+      {!shouldHideChat && <ChatAssistant />}
     </Layout>
   )
 }

@@ -2,39 +2,38 @@ import React, { useEffect, useState } from 'react';
 import {
     Typography, Button, FormControl, InputLabel,
     Select, MenuItem, Grid, Paper, Dialog, DialogTitle,
-    DialogContent, DialogContentText, DialogActions
+    DialogContent, DialogContentText, DialogActions, Switch, FormControlLabel
 } from '@mui/material';
 import axios from 'src/lib/axios';
 
 const CURRENT_YEAR = new Date().getFullYear();
 const START_YEAR = 1990;
-
 const YEARS = Array.from({ length: CURRENT_YEAR - START_YEAR + 1 }, (_, i) => START_YEAR + i);
 
 const SystemConfigEditor = () => {
     const [startYear, setStartYear] = useState<number | null>(null);
     const [selectedYear, setSelectedYear] = useState<number | null>(null);
+    const [validarGestiones, setValidarGestiones] = useState<boolean>(true);
     const [isConfirmOpen, setIsConfirmOpen] = useState(false);
 
     const fetchConfig = async () => {
         try {
-            const response = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/system-config/start-counting-year`);
-            const year = parseInt(response.data.value, 10);
-            if (!isNaN(year)) {
-                setStartYear(year);
-                setSelectedYear(year);
-            } else {
-                setStartYear(null);
-                setSelectedYear(null);
-            }
+            const yearResponse = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/system-config/start-counting-year`);
+            const year = parseInt(yearResponse.data.value, 10);
+            setStartYear(!isNaN(year) ? year : null);
+            setSelectedYear(!isNaN(year) ? year : null);
+
+            const rulesResponse = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/vacation-rules`);
+            setValidarGestiones(rulesResponse.data.validarGestionesAnterioresConDias ?? true);
         } catch (err) {
-            console.warn('No se encontró configuración guardada.');
+            console.warn('No se encontró configuración guardada.', err);
             setStartYear(null);
             setSelectedYear(null);
+            setValidarGestiones(true);
         }
     };
 
-    const handleSave = async () => {
+    const handleSaveYear = async () => {
         try {
             await axios.put(`${process.env.NEXT_PUBLIC_API_BASE_URL}/system-config/start-counting-year`, {
                 value: String(selectedYear),
@@ -46,6 +45,18 @@ const SystemConfigEditor = () => {
         }
     };
 
+    const handleToggleValidarGestiones = async () => {
+        try {
+            const newValue = !validarGestiones;
+            await axios.patch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/vacation-rules`, {
+                validarGestionesAnterioresConDias: newValue
+            });
+            setValidarGestiones(newValue);
+        } catch (err) {
+            console.error('Error al actualizar la validación de gestiones', err);
+        }
+    };
+
     useEffect(() => {
         fetchConfig();
     }, []);
@@ -53,13 +64,19 @@ const SystemConfigEditor = () => {
     return (
         <Paper sx={{ padding: 3, marginTop: 3 }}>
             <Typography variant="h6" gutterBottom>
-                Configuración del Sistema - Año de Inicio de Cálculo
+                Configuración del Sistema
             </Typography>
 
-            <Typography variant="body2" color="textSecondary" gutterBottom>
-                Esta configuración determina desde qué año el sistema comenzará a contar las vacaciones,
-                licencias y recesos para el cálculo de deuda o días disponibles.
-            </Typography>
+            <FormControlLabel
+                control={
+                    <Switch
+                        checked={validarGestiones}
+                        onChange={handleToggleValidarGestiones}
+                        color="primary"
+                    />
+                }
+                label="Validar gestiones anteriores con días disponibles"
+            />
 
             <Typography sx={{ mt: 2 }} variant="body1">
                 Año configurado actualmente:{' '}
@@ -76,9 +93,7 @@ const SystemConfigEditor = () => {
                             onChange={(e) => setSelectedYear(Number(e.target.value))}
                         >
                             {YEARS.map((year) => (
-                                <MenuItem key={year} value={year}>
-                                    {year}
-                                </MenuItem>
+                                <MenuItem key={year} value={year}>{year}</MenuItem>
                             ))}
                         </Select>
                     </FormControl>
@@ -95,6 +110,7 @@ const SystemConfigEditor = () => {
                     </Button>
                 </Grid>
             </Grid>
+
             {startYear !== null && (
                 <Button
                     variant="outlined"
@@ -114,7 +130,6 @@ const SystemConfigEditor = () => {
                 </Button>
             )}
 
-
             {/* Diálogo de confirmación */}
             <Dialog open={isConfirmOpen} onClose={() => setIsConfirmOpen(false)}>
                 <DialogTitle>Confirmar cambio</DialogTitle>
@@ -128,7 +143,7 @@ const SystemConfigEditor = () => {
                     <Button onClick={() => setIsConfirmOpen(false)} color="inherit">
                         Cancelar
                     </Button>
-                    <Button onClick={handleSave} color="primary" variant="contained">
+                    <Button onClick={handleSaveYear} color="primary" variant="contained">
                         Confirmar
                     </Button>
                 </DialogActions>
