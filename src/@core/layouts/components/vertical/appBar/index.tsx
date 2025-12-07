@@ -9,7 +9,6 @@ import { LayoutProps } from 'src/@core/layouts/types'
 
 // ** Util Import
 import { hexToRGBA } from 'src/@core/utils/hex-to-rgba'
-
 interface Props {
   hidden: LayoutProps['hidden']
   toggleNavVisibility: () => void
@@ -41,6 +40,7 @@ const Toolbar = styled(MuiToolbar)<ToolbarProps>(({ theme }) => ({
   minHeight: `${theme.mixins.toolbar.minHeight}px !important`,
   transition: 'padding .25s ease-in-out, box-shadow .25s ease-in-out, backdrop-filter .25s ease-in-out'
 }))
+
 
 const LayoutAppBar = (props: Props) => {
   // ** Props
@@ -94,6 +94,7 @@ const LayoutAppBar = (props: Props) => {
       >
         {(userAppBarContent && userAppBarContent(props)) || null}
       </Toolbar>
+
     </AppBar>
   )
 }

@@ -24,6 +24,8 @@ import AppBarContent from './components/horizontal/app-bar-content'
 // ** Util Import
 import { hexToRGBA } from 'src/@core/utils/hex-to-rgba'
 import ChatAssistant from 'src/components/chatAssistant'
+import { TutorialButton } from 'src/components/tutorial'
+import useUser from 'src/hooks/useUser'
 
 const HorizontalLayoutWrapper = styled('div')({
   height: '100%',
@@ -87,7 +89,7 @@ const HorizontalLayout = (props: LayoutProps) => {
   }
   const userAppBarProps = Object.assign({}, appBarProps)
   delete userAppBarProps.sx
-
+const user = useUser();
   return (
     <HorizontalLayoutWrapper className='layout-wrapper'>
       <MainContentWrapper className='layout-content-wrapper' sx={{ ...(contentHeightFixed && { maxHeight: '100vh' }) }}>

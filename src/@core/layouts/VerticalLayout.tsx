@@ -22,6 +22,8 @@ import Navigation from './components/vertical/navigation'
 import Footer from './components/shared-components/footer'
 import ScrollToTop from 'src/@core/components/scroll-to-top'
 import ChatAssistant from 'src/components/chatAssistant'
+import { TutorialButton } from 'src/components/tutorial'
+import useUser from 'src/hooks/useUser'
 
 const VerticalLayoutWrapper = styled('div')({
   height: '100%',
@@ -63,7 +65,7 @@ const VerticalLayout = (props: LayoutProps) => {
 
   // ** Toggle Functions
   const toggleNavVisibility = () => setNavVisible(!navVisible)
-
+  const user = useUser();
   return (
     <>
       <VerticalLayoutWrapper className='layout-wrapper'>
@@ -116,7 +118,6 @@ const VerticalLayout = (props: LayoutProps) => {
           >
             {children}
           </ContentWrapper>
-
           {/* Footer Component */}
           <Footer footerStyles={footerProps?.sx} footerContent={footerProps?.content} {...props} />
         </MainContentWrapper>

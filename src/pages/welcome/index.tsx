@@ -29,6 +29,7 @@ import Link from 'next/link';
 // ** Custom Hooks
 import useUser from 'src/hooks/useUser';
 import { current } from '@reduxjs/toolkit';
+import { TutorialButton } from 'src/components/tutorial';
 
 // Utilidad para obtener la fecha actual en formato ISO (hasta hoy)
 const getTodayIsoDate = () => new Date().toISOString().split('T')[0];
@@ -252,6 +253,17 @@ const WelcomeDashboard = () => {
                 <li>Solicitar permisos</li>
                 <li>Revisar el estado de tus solicitudes</li>
                 {user?.role === 'supervisor' && <li>Revisar solicitudes pendientes de tu equipo</li>}
+                <li>
+                  Si necesitas una guía puedes ver el tutorial aquí:
+                  <TutorialButton
+                    userType={user?.role}
+                    variant="text"
+                    buttonText="Ver guía"
+                    showBadge
+                    sx={{ ml: 1 }}
+                  />
+                </li>
+
               </Box>
             </CardContent>
           </Card>
