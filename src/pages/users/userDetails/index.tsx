@@ -11,7 +11,8 @@ import {
   DialogActions,
   DialogContent,
   DialogContentText,
-  DialogTitle
+  DialogTitle,
+  IconButton
 } from '@mui/material';
 import {
   Person as PersonIcon,
@@ -26,6 +27,8 @@ import {
   Person as DebtIcon,
   Apartment as DepartmentIcon
 } from '@mui/icons-material';
+import WorkOutlineIcon from '@mui/icons-material/WorkOutline';
+import DeleteIcon from '@mui/icons-material/Delete';
 import { TextField } from '@mui/material';
 import axios from 'src/lib/axios';
 import CustomHolidayForm from '../customholyday';
@@ -155,84 +158,6 @@ const UserInformation: AclComponent = () => {
       setLoading(false);
     }
   };
-
-  const handleRoleChange = async (event: SelectChangeEvent<string>) => {
-    const newRole = event.target.value as RoleEnum; // Asegura que el valor sea del tipo RoleEnum
-
-    if (!user || !user.id) {
-      setSnackbarMessage('Error: No se pudo obtener la información del usuario.');
-      setSnackbarSeverity('error');
-      setSnackbarOpen(true);
-
-      return;
-    }
-
-    try {
-      // 1. Usa PATCH en lugar de PUT para el endpoint de actualización de rol
-      // 2. Envía el rol en el formato esperado: { role: newRole }
-      const response = await axios.patch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/users/${user.id}/role`, { role: newRole });
-
-      // Si la operación fue exitosa, actualiza el estado del usuario en el contexto
-      // El backend devuelve el usuario actualizado, usa esos datos si están disponibles y completos
-      // Si el backend no devuelve el usuario actualizado, o solo parte de él,
-      // actualiza manualmente solo la propiedad 'role'
-      if (response.data && response.data.role) {
-        setUser({ ...user, role: response.data.role });
-      } else {
-        // Fallback: si el backend no devuelve el usuario actualizado, asume que el cambio fue exitoso
-        setUser({ ...user, role: newRole });
-      }
-
-
-      setSnackbarMessage('Rol actualizado exitosamente.');
-      setSnackbarSeverity('success');
-      setSnackbarOpen(true);
-
-    } catch (error: any) { // Captura el error para acceder a 'response'
-      console.error('Error al actualizar el rol:', error);
-
-      // Manejo de errores específicos del backend
-      if (error.response) {
-        const statusCode = error.response.status;
-        const errorMessage = error.response.data.message || 'Error desconocido del servidor.';
-
-        switch (statusCode) {
-          case 400: // BadRequestException (ej: límite de admins, usuario sin departamento/unidad)
-            setSnackbarMessage(`Error: ${errorMessage}`);
-            setSnackbarSeverity('error');
-            break;
-          case 404: // NotFoundException (ej: usuario no encontrado)
-            setSnackbarMessage(`Error: ${errorMessage}`);
-            setSnackbarSeverity('error');
-            break;
-          case 409: // ConflictException (ej: ya existe un supervisor, si tuvieras esa excepción sin reemplazo)
-            // Nota: Con la lógica de reemplazo en el backend, esta excepción no debería ocurrir
-            // si el nuevo rol es SUPERVISOR y ya hay uno. Pero si la dejaste en algún caso, se capturaría.
-            setSnackbarMessage(`Conflicto: ${errorMessage}`);
-            setSnackbarSeverity('warning'); // Podría ser warning si indica una situación manejada por el backend
-            break;
-          case 401: // Unauthorized (token inválido/expirado, manejado por AuthProvider globalmente)
-          case 403: // Forbidden (rol no permitido para la acción, manejado por RolesGuard)
-            setSnackbarMessage('No tienes permiso para realizar esta acción o tu sesión ha expirado.');
-            setSnackbarSeverity('error');
-
-            // Podrías forzar un logout aquí si no lo hace el interceptor de axios global
-            break;
-          default:
-            setSnackbarMessage(`Error del servidor: ${errorMessage}`);
-            setSnackbarSeverity('error');
-            break;
-        }
-      } else {
-        // Errores de red u otros errores que no tienen una respuesta HTTP
-        setSnackbarMessage('Error de red o desconocido al actualizar el rol.');
-        setSnackbarSeverity('error');
-      }
-      setSnackbarOpen(true);
-    }
-  };
-
-
   const handleHolidaySuccess = async () => {
     setSnackbarMessage('Receso personalizado creado exitosamente');
     if (ci) await fetchUser(ci as string);
@@ -374,65 +299,80 @@ const UserInformation: AclComponent = () => {
 
               </Box>
 
-              {currentUser?.role === 'admin' && (
-                <>
-                  <Divider sx={{ my: 2 }} />
-                  <FormControl fullWidth>
-                    <InputLabel id="role-select-label">Cambiar Rol</InputLabel>
-                    <Select
-                      labelId="role-select-label"
-                      value={user.role}
-                      onChange={handleRoleChange}
-                      label="Cambiar Rol"
-                    >
-                      <MenuItem value="USER">Usuario</MenuItem>
-                      <MenuItem value="SUPERVISOR">Supervisor</MenuItem>
-                      <MenuItem value="ADMIN">Administrador</MenuItem>
-                    </Select>
-                  </FormControl>
-                </>
-              )}
+              <Box
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between', // espacio entre botones y icono de eliminar
+                  flexWrap: 'wrap',
+                  mt: 2,
+                  gap: 1,
+                }}
+              >
+                {/* Grupo de botones principales centrados */}
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1, flexWrap: 'wrap', flexGrow: 1 }}>
+                  {/* Botón de editar */}
+                  <Button
+                    variant="outlined"
+                    startIcon={<EditIcon />}
+                    onClick={() => setEditDialogOpen(true)}
+                  >
+                    Editar Información
+                  </Button>
 
-              <Button
-                variant="outlined"
-                startIcon={<EditIcon />}
-                sx={{ mt: 2 }}
-                onClick={() => setEditDialogOpen(true)}
-              >
-                Editar Informacion
-              </Button>
-              {user.username === null ? (
-                <Button variant="contained" color="primary" sx={{ mt: 2, ml: 1 }} onClick={() => setOpenCreate(true)}>
-                  Crear credenciales
-                </Button>
-              ) : (
-                <Button variant="outlined" color="secondary" sx={{ mt: 2, ml: 1 }} onClick={() => setOpenChangePassword(true)}>
-                  Cambiar contraseña
-                </Button>
-              )}
-              <Button
-                variant="outlined"
-                color="error"
-                sx={{ mt: 2, ml: 1 }}
-                onClick={() => setDeleteDialogOpen(true)}
-              >
-                Eliminar Usuario
-              </Button>
-              <Button
-                variant="outlined"
-                startIcon={<WorkIcon />}
-                sx={{ mt: 2, ml: 1 }}
-                onClick={() => setOpenContractDialog(true)}
-              >
-                Contratos
-              </Button>
+                  {/* Crear credenciales o cambiar contraseña */}
+                  {user.username === null ? (
+                    <Button
+                      variant="contained"
+                      color="primary"
+                      onClick={() => setOpenCreate(true)}
+                    >
+                      Crear credenciales
+                    </Button>
+                  ) : (
+                    <Button
+                      variant="outlined"
+                      color="secondary"
+                      onClick={() => setOpenChangePassword(true)}
+                    >
+                      Cambiar contraseña
+                    </Button>
+                  )}
+
+                  {/* Configuración de usuario */}
+                  <Button
+                    variant="outlined"
+                    onClick={() => setOpenConfig(true)}
+                  >
+                    Configurar Usuario
+                  </Button>
+
+                  {/* Icono de contratos */}
+                  <IconButton
+                    color="primary"
+                    onClick={() => setOpenContractDialog(true)}
+                  >
+                    <WorkOutlineIcon />
+                  </IconButton>
+                </Box>
+
+                {/* Icono de eliminar al extremo derecho */}
+                <IconButton
+                  color="error"
+                  onClick={() => setDeleteDialogOpen(true)}
+                  sx={{ ml: 1 }}
+                >
+                  <DeleteIcon />
+                </IconButton>
+              </Box>
+
+
 
 
               <CreateCredentialsDialog open={openCreate} onClose={async () => {
                 setOpenCreate(false);
                 await fetchUser(user.ci);
               }} ci={user.ci} />
-              <Button variant='outlined' sx={{ mt: 2, ml: 1 }} onClick={() => setOpenConfig(true)}>Configurar Usuario</Button>
             </CardContent>
           </Card>
         </Grid>
