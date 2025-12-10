@@ -12,34 +12,49 @@ const navigation = (): VerticalNavItemsType => {
           path: '/welcome',
           action: 'read',
           subject: 'welcome-dashboard',
-          meta: { description: 'Formulario para solicitar vacaciones' },
+          meta: { 
+            description: 'Formulario para solicitar vacaciones',
+            keywords: ['vacaciones', 'solicitar', 'nuevo', 'formulario']
+          },
         },
         {
           title: 'Resumen',
           path: '/vacations/vacations-dashboard',
           action: 'read',
           subject: 'vacation-dashboard',
-          meta: { description: 'Resumen de tus vacaciones' },
+          meta: { 
+            description: 'Resumen de tus vacaciones',
+            keywords: ['vacaciones', 'resumen', 'historial', 'estado']
+          },
         },
         {
           title: 'Mis Solicitudes',
           path: '/vacations/vacations-requests',
           action: 'read',
           subject: 'vacation-request-list',
-          meta: { description: 'Ver tus solicitudes de vacaciones' },
+          meta: { 
+            description: 'Ver tus solicitudes de vacaciones',
+            keywords: ['vacaciones', 'solicitudes', 'historial', 'usuario']
+          },
         },
         {
           title: 'Solicitudes del Personal',
           path: '/vacations/vacations-supervisor',
           action: 'read',
           subject: 'supervisor-vacation-requests',
-          meta: { description: 'Gestionar solicitudes del personal a tu cargo' },
+          meta: { 
+            description: 'Gestionar solicitudes del personal a tu cargo',
+            keywords: ['vacaciones', 'supervisor', 'personal', 'gestionar']
+          },
         },
         {
           title: 'Todas las Solicitudes',
           path: '/vacations/vacations-admin',
           action: 'read',
-          meta: { description: 'Administración de todas las solicitudes de vacaciones' },
+          meta: { 
+            description: 'Administración de todas las solicitudes de vacaciones',
+            keywords: ['vacaciones', 'administrar', 'todas', 'solicitudes']
+          },
         },
       ],
     },
@@ -52,28 +67,40 @@ const navigation = (): VerticalNavItemsType => {
           path: '/welcome',
           action: 'read',
           subject: 'welcome-dashboard',
-          meta: { description: 'Formulario para solicitar permisos' },
+          meta: { 
+            description: 'Formulario para solicitar permisos',
+            keywords: ['permiso', 'solicitar', 'nuevo', 'formulario']
+          },
         },
         {
           title: 'Mis Permisos',
           path: '/permissions/user-licenses',
           action: 'read',
           subject: 'user-licenses',
-          meta: { description: 'Ver tus permisos activos' },
+          meta: { 
+            description: 'Ver tus permisos activos',
+            keywords: ['permiso', 'mis', 'usuario', 'historial']
+          },
         },
         {
           title: 'Solicitudes Pendientes del Personal',
           path: '/permissions/department-permission',
           action: 'read',
           subject: 'department-permission',
-          meta: { description: 'Gestionar permisos pendientes del personal' },
+          meta: { 
+            description: 'Gestionar permisos pendientes del personal',
+            keywords: ['permiso', 'supervisor', 'personal', 'pendiente']
+          },
         },
         {
           title: 'Gestión de Permisos',
           path: '/permissions/adminlicenses',
           action: 'read',
           subject: 'adminlicenses',
-          meta: { description: 'Administrar todos los permisos' },
+          meta: { 
+            description: 'Administrar todos los permisos',
+            keywords: ['permiso', 'administrar', 'todos', 'licencias']
+          },
         },
       ],
     },
@@ -87,7 +114,10 @@ const navigation = (): VerticalNavItemsType => {
           path: '/holidayPeriods/generalHoliday',
           action: 'read',
           subject: 'holiday-periods',
-          meta: { description: 'Ver los recesos generales' },
+          meta: { 
+            description: 'Ver los recesos generales',
+            keywords: ['receso', 'general', 'feriado', 'calendario']
+          },
         },
         {
           title: 'Mis Recesos',
@@ -95,7 +125,10 @@ const navigation = (): VerticalNavItemsType => {
           path: '/holidayPeriods/personalHolidayPeriods',
           action: 'read',
           subject: 'personal-holiday-periods',
-          meta: { description: 'Ver tus recesos personales' },
+          meta: { 
+            description: 'Ver tus recesos personales',
+            keywords: ['receso', 'personal', 'usuario', 'calendario']
+          },
         },
       ],
     },
@@ -107,25 +140,37 @@ const navigation = (): VerticalNavItemsType => {
           title: 'Buscar Usuarios',
           path: '/users/search-users',
           action: 'read',
-          meta: { description: 'Buscar y consultar usuarios' },
+          meta: { 
+            description: 'Buscar y consultar usuarios',
+            keywords: ['usuario', 'buscar', 'consultar', 'lista']
+          },
         },
         {
           title: 'Agregar Usuario',
           path: '/users/add-user',
           action: 'create',
-          meta: { description: 'Registrar un nuevo usuario' },
+          meta: { 
+            description: 'Registrar un nuevo usuario',
+            keywords: ['usuario', 'agregar', 'nuevo', 'registrar']
+          },
         },
         {
           title: 'Usuarios Eliminados',
           path: '/users/restore-users',
           action: 'update',
-          meta: { description: 'Restaurar usuarios eliminados' },
+          meta: { 
+            description: 'Restaurar usuarios eliminados',
+            keywords: ['usuario', 'restaurar', 'eliminado', 'historial']
+          },
         },
         {
           title: 'Modificar Roles',
           path: '/users/role-users',
           action: 'update',
-          meta: { description: 'Modificar roles de los usuarios' },
+          meta: { 
+            description: 'Modificar roles de los usuarios',
+            keywords: ['usuario', 'rol', 'modificar', 'permisos']
+          },
         },
       ],
     },
@@ -138,49 +183,70 @@ const navigation = (): VerticalNavItemsType => {
           icon: 'mdi:calendar-blank-outline',
           path: '/recesos/management',
           action: 'manage',
-          meta: { description: 'Administrar recesos generales' },
+          meta: { 
+            description: 'Administrar recesos generales',
+            keywords: ['receso', 'general', 'administrar']
+          },
         },
         {
           title: 'Recesos Administrativos',
           icon: 'mdi:calendar-blank-outline',
           path: '/recesos/admin-management',
           action: 'manage',
-          meta: { description: 'Administrar recesos administrativos' },
+          meta: { 
+            description: 'Administrar recesos administrativos',
+            keywords: ['receso', 'administrativo', 'gestión']
+          },
         },
         {
           title: 'Departamentos',
           icon: 'mdi:office-building',
           path: '/departments',
           action: 'manage',
-          meta: { description: 'Administrar departamentos' },
+          meta: { 
+            description: 'Administrar departamentos',
+            keywords: ['departamento', 'administrar', 'unidad']
+          },
         },
         {
           title: 'Unidades Académicas',
           icon: 'mdi:school-outline',
           path: '/management/academicUnits',
           action: 'manage',
-          meta: { description: 'Administrar unidades académicas' },
+          meta: { 
+            description: 'Administrar unidades académicas',
+            keywords: ['unidad', 'académica', 'administrar']
+          },
         },
         {
           title: 'Feriados',
           icon: 'mdi:office-building',
           path: '/nonholidays',
           action: 'manage',
-          meta: { description: 'Administrar feriados' },
+          meta: { 
+            description: 'Administrar feriados',
+            keywords: ['feriado', 'administrar', 'día no laborable']
+          },
         },
         {
           title: 'Políticas de Vacaciones',
           icon: 'mdi:beach',
           path: '/vacations/vacations-policy',
           action: 'manage',
-          meta: { description: 'Definir políticas de vacaciones' },
+          meta: { 
+            description: 'Definir políticas de vacaciones',
+            keywords: ['vacaciones', 'política', 'regla', 'administrar']
+          },
         },
         {
           title: 'Profesiones',
           icon: 'mdi:briefcase-outline',
           path: '/management/profession',
           action: 'manage',
-          meta: { description: 'Administrar profesiones' },
+          meta: { 
+            description: 'Administrar profesiones',
+            keywords: ['profesión', 'cargo', 'administrar']
+          },
         },
       ],
     },

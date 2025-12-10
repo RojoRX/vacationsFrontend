@@ -77,6 +77,11 @@ export const ChangePasswordDialog: React.FC<ChangePasswordDialogProps> = ({ open
   };
 
   const handleConfirm = async () => {
+    if (password && password.length < 8) {
+      setError("La contraseña debe tener al menos 8 caracteres.");
+      setConfirmOpen(false);
+      return;
+    }
     setConfirmOpen(false);
     setLoading(true);
     setError(null);
@@ -149,9 +154,21 @@ export const ChangePasswordDialog: React.FC<ChangePasswordDialogProps> = ({ open
         </DialogContent>
         <DialogActions>
           <Button onClick={handleClose} disabled={loading}>Cerrar</Button>
-          <Button onClick={() => setConfirmOpen(true)} disabled={loading} variant="contained">
+          <Button
+            onClick={() => {
+              if (password && password.length < 8) {
+                setError("La contraseña debe tener al menos 8 caracteres.");
+                return;
+              }
+              setError(null);
+              setConfirmOpen(true);
+            }}
+            disabled={loading}
+            variant="contained"
+          >
             Cambiar contraseña
           </Button>
+
         </DialogActions>
       </Dialog>
 

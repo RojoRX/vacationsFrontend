@@ -109,7 +109,7 @@ const UserInformation: AclComponent = () => {
   const [deleteResultMessage, setDeleteResultMessage] = useState('');
   const [submittingDelete, setSubmittingDelete] = useState(false);
   const [openContractDialog, setOpenContractDialog] = useState(false);
-
+  const [deleteSuccess, setDeleteSuccess] = useState<boolean | null>(null);
   const triggerReload = () => {
     setReloadRequests(prev => !prev); // Alternar el valor para forzar la recarga
     setSnackbar({
@@ -118,20 +118,45 @@ const UserInformation: AclComponent = () => {
       severity: 'success'
     });
   };
+  // handleDeleteUser actualizado
   const handleDeleteUser = async () => {
     setSubmittingDelete(true);
     try {
       const response = await axios.delete(`${process.env.NEXT_PUBLIC_API_BASE_URL}/users/${user?.id}`);
-      setDeleteResultMessage(response.data.message || 'Usuario eliminado exitosamente');
+
+      const rawMsg = response.data?.message || '';
+      // construir friendlyMsg como hicimos antes...
+      let friendlyMsg = 'Usuario eliminado correctamente';
+      if (rawMsg?.includes('físicamente')) {
+        friendlyMsg = `El usuario ${user?.fullName} fue eliminado permanentemente del sistema.`;
+      } else if (rawMsg?.includes('soft delete')) {
+        friendlyMsg = `El usuario ${user?.fullName} fue dado de baja correctamente.`;
+      } else if (rawMsg?.includes('ya estaba eliminado')) {
+        friendlyMsg = `El usuario ${user?.fullName} ya estaba previamente eliminado.`;
+      }
+
+      setDeleteResultMessage(friendlyMsg);
+      setDeleteSuccess(true);              // <-- éxito
       setDeleteResultDialogOpen(true);
     } catch (err: any) {
       setDeleteResultMessage(err.response?.data?.message || 'Error al eliminar usuario');
+      setDeleteSuccess(false);             // <-- fallo
       setDeleteResultDialogOpen(true);
     } finally {
       setSubmittingDelete(false);
       setDeleteDialogOpen(false);
     }
   };
+
+  // handler para cerrar el diálogo de resultado
+  const handleDeleteResultClose = () => {
+    setDeleteResultDialogOpen(false);
+    // redirigir solo si la eliminación fue exitosa
+    if (deleteSuccess === true) {
+      router.push('/users/add-user');
+    }
+  };
+
   const [openSummary, setOpenSummary] = useState(false);
 
 
@@ -359,11 +384,16 @@ const UserInformation: AclComponent = () => {
                 {/* Icono de eliminar al extremo derecho */}
                 <IconButton
                   color="error"
-                  onClick={() => setDeleteDialogOpen(true)}
+                  onClick={(e) => {
+                    e.stopPropagation();        // opcional pero recomendado si hay onClick en el contenedor
+                    setDeleteDialogOpen(true);  // solo abre el diálogo
+                  }}
+                  aria-label="Eliminar usuario"
                   sx={{ ml: 1 }}
                 >
                   <DeleteIcon />
                 </IconButton>
+
               </Box>
 
 
@@ -577,13 +607,33 @@ const UserInformation: AclComponent = () => {
         onSuccess={triggerReload}
       />
       <Dialog
-        open={deleteDialogOpen}
-        onClose={() => setDeleteDialogOpen(false)}
+        open={deleteResultDialogOpen}
+        onClose={handleDeleteResultClose}
       >
+        <DialogTitle>
+          {deleteSuccess ? 'Operación completada' : 'Resultado'}
+        </DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            {deleteResultMessage}
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={handleDeleteResultClose}
+            autoFocus
+          >
+            Cerrar
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>
         <DialogTitle>Confirmar Eliminación</DialogTitle>
         <DialogContent>
           <DialogContentText>
-            ¿Estás seguro que deseas eliminar al usuario {user.fullName}? Esta acción no se puede deshacer fácilmente.
+            ¿Estás seguro que deseas eliminar al usuario {user.fullName}?
+            Esta acción no se puede deshacer fácilmente.
           </DialogContentText>
         </DialogContent>
         <DialogActions>
@@ -598,28 +648,7 @@ const UserInformation: AclComponent = () => {
           </Button>
         </DialogActions>
       </Dialog>
-      <Dialog
-        open={deleteResultDialogOpen}
-        onClose={() => {
-          setDeleteResultDialogOpen(false);
-          router.push('/users/add-user'); // Redirige al formulario
-        }}
-      >
-        <DialogTitle>Resultado</DialogTitle>
-        <DialogContent>
-          <DialogContentText>{deleteResultMessage}</DialogContentText>
-        </DialogContent>
-        <DialogActions>
-          <Button
-            onClick={() => {
-              setDeleteResultDialogOpen(false);
-              router.push('/users/add-user');
-            }}
-          >
-            Cerrar
-          </Button>
-        </DialogActions>
-      </Dialog>
+
       <Dialog
         open={openSummary}
         onClose={() => setOpenSummary(false)}

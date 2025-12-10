@@ -44,7 +44,7 @@ const schema = yup.object().shape({
     ci: yup.string()
         .required('CI es requerido')
         .matches(/^\d+$/, 'CI debe contener solo números')
-        .min(4, 'CI debe tener al menos 4 dígitos')
+        .min(6, 'CI debe tener al menos 6 dígitos')
         .max(10, 'CI debe tener un máximo de 10 dígitos'),
     fullName: yup.string().required('Nombre completo es requerido'),
     fecha_ingreso: yup.string()
