@@ -221,16 +221,6 @@ return;
       </DialogTitle>
 
       <DialogContent dividers>
-        {vacationData && (
-          <Box mb={2}>
-            <Chip
-              label={`Días disponibles: ${vacationData.diasDeVacacionRestantes}`}
-              color="info"
-              variant="outlined"
-              size="medium"
-            />
-          </Box>
-        )}
 
         {error && (
           <Alert severity="error" sx={{ mb: 2 }}>
